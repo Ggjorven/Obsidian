@@ -30,7 +30,9 @@ project "Graphics"
 		"_CRT_SECURE_NO_WARNINGS",
 		"_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS",
 
-		"GLFW_INCLUDE_NONE"
+		"GLFW_INCLUDE_NONE",
+
+		"NANO_EXPERIMENTAL"
 	}
 
 	includedirs
@@ -92,6 +94,9 @@ project "Graphics"
 		systemversion(MacOSVersion)
 		staticruntime "on"
 
+	filter "action:vs*"
+		buildoptions { "/Zc:preprocessor" }
+
 	filter "action:xcode*"
 		-- Note: XCode only needs the full pchheader path
 		pchheader "src/NanoGraphics/ngpch.h"
@@ -114,16 +119,18 @@ project "Graphics"
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"
+		defines "NANO_DEBUG"
 		runtime "Debug"
 		symbols "on"
-
+		
         defines
         {
-            "TRACY_ENABLE"
+			"TRACY_ENABLE"
         }
-
+		
 	filter "configurations:Release"
 		defines "NG_CONFIG_RELEASE"
+		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
 

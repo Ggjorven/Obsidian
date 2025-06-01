@@ -1,26 +1,4 @@
-#include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
-
-#include <GLFW/glfw3.h>
-#undef APIENTRY
-
-#include <glm/glm.hpp>
-
-#include <Tracy/Tracy.hpp>
-
-#include <glad/glad.h>
-#undef APIENTRY
-
-#include <stb/stb_image.h>
-
-#define NANO_IMPLEMENTATION
-#include <Nano.hpp>
-
-int Main(int argc, char* argv[])
-{
-	Nano::Log::PrintLn("Hello, world!");
-	return 0;
-}
+#include "Main.hpp"
 
 #if !defined(NG_CONFIG_DIST)
 	int main(int argc, char* argv[])

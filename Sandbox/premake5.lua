@@ -28,7 +28,9 @@ project "Sandbox"
 		"_CRT_SECURE_NO_WARNINGS",
 		"_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS",
 
-		"GLFW_INCLUDE_NONE"
+		"GLFW_INCLUDE_NONE",
+
+		"NANO_EXPERIMENTAL"
 	}
 
 	includedirs
@@ -108,6 +110,9 @@ project "Sandbox"
 			'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/lib%{Dependencies.Vulkan.LibName}.dylib" "%{cfg.targetdir}"',
 		}
 
+	filter "action:vs*"
+    	buildoptions { "/Zc:preprocessor" }
+
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
@@ -127,16 +132,18 @@ project "Sandbox"
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"
+		defines "NANO_DEBUG"
 		runtime "Debug"
 		symbols "on"
-
+		
 		defines
 		{
 			"TRACY_ENABLE"
 		}
-
+		
 	filter "configurations:Release"
 		defines "NG_CONFIG_RELEASE"
+		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
 
