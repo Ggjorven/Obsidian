@@ -4,7 +4,7 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
-//#include "NanoGraphics/Renderer/GraphicsContext.hpp"
+#include "NanoGraphics/Renderer/GraphicsContext.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -45,10 +45,9 @@ namespace Nano::Graphics::Internal
         m_Window = glfwCreateWindow(static_cast<int>(specs.Width), static_cast<int>(specs.Height), specs.Title.data(), nullptr, nullptr);
         NG_ASSERT(m_Window, "[DesktopWindow] Failed to create a window.");
 
-        // Initialize context // TODO: ...
-        //GraphicsContext::AttachWindow(static_cast<void*>(m_Window));
-        //if (!GraphicsContext::Initialized())
-        //    GraphicsContext::Init();
+        // Initialize context
+        if (!GraphicsContext::Initialized())
+            GraphicsContext::Init(static_cast<void*>(m_Window));
 
         // Making sure we can access the data in the callbacks
         glfwSetWindowUserPointer(m_Window, (void*)&m_Specification);
@@ -160,7 +159,7 @@ namespace Nano::Graphics::Internal
         bool destroy = (--s_GLFWInstances == 0);
         if (destroy)
         {
-            //GraphicsContext::Destroy();
+            GraphicsContext::Destroy();
         }
 
         glfwDestroyWindow(m_Window);
