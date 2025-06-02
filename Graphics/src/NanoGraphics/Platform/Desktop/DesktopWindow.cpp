@@ -4,8 +4,6 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
-#include "NanoGraphics/Renderer/GraphicsContext.hpp"
-
 namespace Nano::Graphics::Internal
 {
 
@@ -23,7 +21,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructors & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    DesktopWindow::DesktopWindow(const WindowSpecification& specs, Window* instance)
+    DesktopWindow::DesktopWindow(const WindowSpecification& specs)
         : m_Specification(specs)
     {
         NG_ASSERT(!specs.Title.empty(), "[DesktopWindow] No title passed in.");
@@ -44,10 +42,6 @@ namespace Nano::Graphics::Internal
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         m_Window = glfwCreateWindow(static_cast<int>(specs.Width), static_cast<int>(specs.Height), specs.Title.data(), nullptr, nullptr);
         NG_ASSERT(m_Window, "[DesktopWindow] Failed to create a window.");
-
-        // Initialize context
-        if (!GraphicsContext::Initialized())
-            GraphicsContext::Init(static_cast<void*>(m_Window));
 
         // Making sure we can access the data in the callbacks
         glfwSetWindowUserPointer(m_Window, (void*)&m_Specification);
@@ -138,34 +132,16 @@ namespace Nano::Graphics::Internal
             MouseMovedEvent event = MouseMovedEvent((float)xPos, (float)yPos);
             data.EventCallback(event);
         });
-
-        //m_Renderer.Construct(RendererSpecification({
-        //    .WindowRef = instance,
-        //
-        //    .Width = m_Specification.Width,
-        //    .Height = m_Specification.Height,
-        //
-        //    .VSync = m_Specification.VSync,
-        //    }));
-        //m_Renderer->Recreate(m_Specification.Width, m_Specification.Height, m_Specification.VSync);
     }
 
     DesktopWindow::~DesktopWindow()
     {
         m_Closed = true;
 
-        //m_Renderer.Destroy();
-
-        bool destroy = (--s_GLFWInstances == 0);
-        if (destroy)
-        {
-            GraphicsContext::Destroy();
-        }
-
         glfwDestroyWindow(m_Window);
         m_Window = nullptr;
 
-        if (destroy)
+        if (--s_GLFWInstances == 0)
         {
             glfwTerminate();
         }
@@ -184,12 +160,7 @@ namespace Nano::Graphics::Internal
     void DesktopWindow::SwapBuffers()
     {
         NG_PROFILE("DesktopWindow::SwapBuffers()");
-    }
-
-    void DesktopWindow::Resize(uint32_t width, uint32_t height)
-    {
-        NG_PROFILE("DesktopWindow::Resize()");
-        //m_Renderer->Recreate(width, height, m_Specification.VSync);
+        NG_ASSERT(false, "[DesktopWindow] Unimplemented, maybe needs to be removed.");
     }
 
     void DesktopWindow::Close()
@@ -202,6 +173,8 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     Graphics::Maths::Vec2<uint32_t> DesktopWindow::GetSize() const 
     { 
+        NG_PROFILE("DesktopWindow::GetSize()");
+
         return { m_Specification.Width, m_Specification.Height }; 
     }
 
@@ -217,20 +190,18 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Setters
     ////////////////////////////////////////////////////////////////////////////////////
+    void DesktopWindow::SetSize(uint32_t width, uint32_t height)
+    {
+        NG_PROFILE("DesktopWindow::SetSize()");
+        glfwSetWindowSize(m_Window, static_cast<int>(width), static_cast<int>(height));
+    }
+
     void DesktopWindow::SetTitle(std::string_view title)
     {
         NG_PROFILE("DesktopWindow::SetTitle()");
 
         m_Specification.Title = title;
         glfwSetWindowTitle(m_Window, m_Specification.Title.data());
-    }
-
-    void DesktopWindow::SetVSync(bool vsync)
-    {
-        NG_PROFILE("DesktopWindow::SetVSync()");
-
-        m_Specification.VSync = vsync;
-        //m_Renderer->Recreate(m_Specification.Width, m_Specification.Height, vsync);
     }
 #endif
 

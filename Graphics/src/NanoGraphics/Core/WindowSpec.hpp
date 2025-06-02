@@ -15,17 +15,21 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // WindowSpecification
     ////////////////////////////////////////////////////////////////////////////////////
-    struct WindowSpecification
+    struct WindowSpecification 
     {
     public:
-        // Window
         std::string_view Title = {};
         uint32_t Width = 0, Height = 0;
 
         EventCallbackFn EventCallback = nullptr;
 
-        // Renderer
-        bool VSync = false;
+    public:
+        // Setters
+        inline WindowSpecification& SetTitle(std::string_view title) { Title = title; return *this; }
+        inline WindowSpecification& SetWidth(uint32_t width) { Width = width; return *this; }
+        inline WindowSpecification& SetHeight(uint32_t height) { Height = height; return *this; }
+        inline WindowSpecification& SetWidthAndHeight(uint32_t width, uint32_t height) { Width = width; Height = height; return *this; }
+        inline WindowSpecification& SetEventCallback(EventCallbackFn callback) { EventCallback = callback; return *this; }
     };
 
 }

@@ -33,6 +33,18 @@ project "Sandbox"
 		"NANO_EXPERIMENTAL"
 	}
 
+	-- Rendering API specfic selections
+	if gfxapi == "vulkan" then
+        defines { "NG_API_VULKAN" }
+		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
+    elseif gfxapi == "d3d12" then
+        defines { "NG_API_D3D12" }
+	elseif gfxapi == "d3d11" then
+        defines { "NG_API_D3D11" }
+	elseif gfxapi == "opengl" then
+        defines { "NG_API_OPENGL" }
+    end
+
 	includedirs
 	{
 		"src",
@@ -45,7 +57,6 @@ project "Sandbox"
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
-		"%{Dependencies.Vulkan.IncludeDir}",
 	}
 
 	links
@@ -76,10 +87,15 @@ project "Sandbox"
 			"%{Dependencies.GLFW.LibName}",
 			"%{Dependencies.glad.LibName}",
 			"%{Dependencies.Tracy.LibName}",
-
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
 		}
+
+		if gfxapi == "vulkan" then
+			links
+			{
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
+			}
+		end
 
     filter "system:macosx"
 		defines "NG_PLATFORM_DESKTOP"
@@ -87,16 +103,8 @@ project "Sandbox"
 		systemversion(MacOSVersion)
 		staticruntime "on"
 
-		libdirs
-		{
-			"%{Dependencies.Vulkan.LibDir}"
-		}
-
 		links
 		{
-			"%{Dependencies.Vulkan.LibName}",
-			"%{Dependencies.ShaderC.LibName}",
-
 			"AppKit.framework",
 			"IOKit.framework",
 			"CoreGraphics.framework",
@@ -104,11 +112,24 @@ project "Sandbox"
 			"QuartzCore.framework",
 		}
 
-		postbuildcommands
-		{
-			'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/libvulkan.1.dylib" "%{cfg.targetdir}"',
-			'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/lib%{Dependencies.Vulkan.LibName}.dylib" "%{cfg.targetdir}"',
-		}
+		if gfxapi == "vulkan" then
+			libdirs
+			{
+				"%{Dependencies.Vulkan.LibDir}"
+			}
+
+			links
+			{
+				"%{Dependencies.Vulkan.LibName}",
+				"%{Dependencies.ShaderC.LibName}",
+			}
+
+			postbuildcommands
+			{
+				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/libvulkan.1.dylib" "%{cfg.targetdir}"',
+				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/lib%{Dependencies.Vulkan.LibName}.dylib" "%{cfg.targetdir}"',
+			}
+		end
 
 	filter "action:vs*"
     	buildoptions { "/Zc:preprocessor" }
@@ -127,8 +148,14 @@ project "Sandbox"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
-			"%{Dependencies.Vulkan.IncludeDir}",
 		}
+
+		if gfxapi == "vulkan" then
+			externalincludedirs
+			{
+				"%{Dependencies.Vulkan.IncludeDir}",
+			}
+		end
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"

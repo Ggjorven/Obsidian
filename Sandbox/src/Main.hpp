@@ -1,32 +1,50 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Core/Window.hpp"
 
+#include "NanoGraphics/Renderer/Device.hpp"
+
+using namespace Nano;
 using namespace Nano::Graphics;
 
 int Main(int argc, char* argv[])
 {
-	Window window({
-		.Title = "First",
+	{
+		// Window Creation
+		Window* windowPtr;
+		WindowSpecification windowSpecs = WindowSpecification()
+			.SetTitle("First")
+			.SetWidthAndHeight(1280, 720)
+			.SetEventCallback([&](Event e) 
+			{
+				Events::EventHandler handler(e);
+				handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { windowPtr->Close(); });
+			});
+		Window window(windowSpecs);
+		windowPtr = &window;
 
-		.Width = 1280,
-		.Height = 720,
+		// Device Creation
+		DeviceSpecification deviceSpecs = DeviceSpecification()
+			.SetNativeWindow(windowPtr->GetNativeWindow())
+			.SetMessageCallback([](DeviceMessage msgType, const std::string& message)
+			{
+				switch (msgType)
+				{
+				case DeviceMessage::Error:
+					NG_LOG_ERROR("Device Error: {0}", message);
+					break;
+				case DeviceMessage::Warn:
+					NG_LOG_ERROR("Device Warning: {0}", message);
+					break;
+				}
+			});
+		Device device(deviceSpecs);
 
-		.EventCallback = [](Event e) {},
+		// Main Loop
+		while (window.IsOpen())
+		{
+			window.PollEvents();
+		}
+	}
 
-		.VSync = false,
-	});
-
-	NG_LOG_TRACE("Trace");
-	NG_LOG_INFO("Info {0} {1} {2}", 1, 2, 3);
-	NG_LOG_WARN("Warn");
-	NG_LOG_ERROR("Error");
-	NG_LOG_FATAL("Fatal");
-
-	NG_VERIFY(false, "First message");
-	NG_VERIFY(false, "Second message, {0} {1} {2}", 1, 2, 3);
-
-	NG_ASSERT(false, "Assert");
-
-	NG_UNREACHABLE();
 	return 0;
 }

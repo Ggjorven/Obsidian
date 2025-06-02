@@ -62,15 +62,15 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
 	// VulkanAllocator
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanAllocator
+    class VulkanAllocator : public Traits::NoConstruct
     {
     public:
         // Init & Destroy
-        static void Init();
+        static void Init(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
         static void Destroy();
 
         // Pipeline Cache
-        static VkPipelineCache CreatePipelineCache(std::span<const uint8_t> data);
+        static VkPipelineCache CreatePipelineCache(VkDevice logicalDevice, std::span<const uint8_t> data);
 		inline static VkPipelineCache GetPipelineCache() { return s_PipelineCache; }
 
         // Buffer
@@ -81,8 +81,8 @@ namespace Nano::Graphics::Internal
         // Image
         static VmaAllocation AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0);
 		static void CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height); // Note: The image will be in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL after the copy
-        static VkImageView CreateImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
-        static VkSampler CreateSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels);
+        static VkImageView CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+        static VkSampler CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels);
         static void DestroyImage(VkImage image, VmaAllocation allocation);
 
         // Utils

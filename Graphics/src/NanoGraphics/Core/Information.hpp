@@ -41,6 +41,14 @@ namespace Nano::Graphics::Information
     #endif
 
     // Rendering API choice
-    inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Vulkan;
+    #if defined(NG_API_VULKAN)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Vulkan;
+    #elif defined(NG_API_D3D12)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D12;
+    #elif defined(NG_API_D3D11)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D11;
+    #elif defined(NG_API_OPENGL)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::OpenGL;
+    #endif
 
 }

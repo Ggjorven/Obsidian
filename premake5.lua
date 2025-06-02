@@ -1,4 +1,21 @@
 ------------------------------------------------------------------------------
+-- Rendering API selection
+------------------------------------------------------------------------------
+newoption 
+{
+    trigger     = "gfxapi",
+    value       = "API",
+    description = "Choose a graphics API",
+    allowed = 
+	{
+        { "vulkan", "Vulkan" },
+        { "d3d12", "D3D12", "D3d12" },
+		{ "d3d11", "D3D11", "D3d11" },
+		{ "opengl", "Opengl", "OpenGL" },
+    }
+}
+
+------------------------------------------------------------------------------
 -- Utilities
 ------------------------------------------------------------------------------
 local function GetIOResult(cmd)
@@ -52,13 +69,19 @@ end)
 ------------------------------------------------------------------------------
 -- Dependencies
 ------------------------------------------------------------------------------
-VULKAN_SDK = os.getenv("VULKAN_SDK")
+gfxapi = _OPTIONS["gfxapi"] or "vulkan"
+VULKAN_SDK = nil
+VULKAN_VERSION = nil
 
-if not VULKAN_SDK or VULKAN_SDK == "" then
-    error("VULKAN_SDK environment variable is not set. Please make sure it properly installed.")
+if gfxapi == "vulkan" then
+	VULKAN_SDK = os.getenv("VULKAN_SDK")
+
+	if not VULKAN_SDK or VULKAN_SDK == "" then
+		error("VULKAN_SDK environment variable is not set. Please make sure it properly installed.")
+	end
+
+	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
 end
-
-VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
 
 MacOSVersion = "14.5"
 

@@ -81,7 +81,7 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        VulkanPhysicalDevice(VkSurfaceKHR surface);
+        VulkanPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::span<const char*> extensions);
         ~VulkanPhysicalDevice() = default;
 
         // Methods
@@ -93,8 +93,8 @@ namespace Nano::Graphics::Internal
         
     private:
         // Private methods
-        bool PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device);
-        bool ExtensionsSupported(VkPhysicalDevice device);
+        bool PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device, std::span<const char*> extensions);
+        bool ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions);
 
         bool FeaturesSupported(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& found);
         bool FeaturesSupported(const VkPhysicalDeviceDescriptorIndexingFeatures& requested, const VkPhysicalDeviceDescriptorIndexingFeatures& found);
@@ -106,12 +106,12 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Vulkan Logical Device
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanDevice
+    class VulkanLogicalDevice
     {
     public:
         // Constructor & Destructor
-        VulkanDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice);
-        ~VulkanDevice();
+        VulkanLogicalDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions);
+        ~VulkanLogicalDevice();
 
         // Methods
         void Wait() const;
@@ -136,7 +136,7 @@ namespace Nano::Graphics::Internal
 
 }
 
-template<> // TODO: ...
+template<>
 struct Nano::Enum::Bitwise<Nano::Graphics::Internal::QueueFamilyFlags>
 {
 public:

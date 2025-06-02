@@ -4,7 +4,7 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/VulkanContext.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
 #include <ranges>
 
@@ -215,10 +215,8 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanPhysicalDevice::VulkanPhysicalDevice(VkSurfaceKHR surface)
+    VulkanPhysicalDevice::VulkanPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::span<const char*> extensions)
     {
-        VkInstance instance = VulkanContext::GetVkInstance();
-
         uint32_t deviceCount;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -229,7 +227,7 @@ namespace Nano::Graphics::Internal
 
         for (const auto& device : devices) 
 		{
-            if (PhysicalDeviceSuitable(surface, device)) 
+            if (PhysicalDeviceSuitable(surface, device, extensions)) 
 			{
                 m_PhysicalDevice = device;
                 break;
@@ -271,11 +269,11 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
     // Private methods
 	////////////////////////////////////////////////////////////////////////////////////
-	bool VulkanPhysicalDevice::PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device)
+	bool VulkanPhysicalDevice::PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device, std::span<const char*> extensions)
 	{
 		QueueFamilyIndices indices = QueueFamilyIndices::Find(surface, device);
 
-		bool extensionsSupported = ExtensionsSupported(device);
+		bool extensionsSupported = ExtensionsSupported(device, extensions);
 		bool swapChainAdequate = false;
 
 		if (extensionsSupported)
@@ -301,7 +299,7 @@ namespace Nano::Graphics::Internal
 		return indices.IsComplete() && extensionsSupported && swapChainAdequate && FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures);
 	}
 
-	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device)
+	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions)
 	{
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -309,7 +307,7 @@ namespace Nano::Graphics::Internal
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-		std::set<std::string> requiredExtensions(VulkanContext::DeviceExtensions.begin(), VulkanContext::DeviceExtensions.end());
+		std::set<std::string> requiredExtensions(extensions.begin(), extensions.end());
 
 		for (const auto& extension : availableExtensions)
 			requiredExtensions.erase(extension.extensionName);
@@ -420,7 +418,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	VulkanDevice::VulkanDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice)
+    VulkanLogicalDevice::VulkanLogicalDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions)
 		: m_PhysicalDevice(physicalDevice)
 	{
 		QueueFamilyIndices indices = QueueFamilyIndices::Find(surface, m_PhysicalDevice.GetVkPhysicalDevice());
@@ -448,13 +446,13 @@ namespace Nano::Graphics::Internal
 		createInfo.queueCreateInfoCount = 1;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;
 		createInfo.pEnabledFeatures = &s_RequestedDeviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(VulkanContext::DeviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = VulkanContext::DeviceExtensions.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		if constexpr (VulkanContext::Validation)
+		if constexpr (VulkanDevice::Validation)
 		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanContext::ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = VulkanContext::ValidationLayers.data();
+			createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanDevice::ValidationLayers.size());
+			createInfo.ppEnabledLayerNames = VulkanDevice::ValidationLayers.data();
 		}
 		else
 		{
@@ -481,7 +479,7 @@ namespace Nano::Graphics::Internal
         }
 	}
 
-	VulkanDevice::~VulkanDevice()
+    VulkanLogicalDevice::~VulkanLogicalDevice()
 	{
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
@@ -489,7 +487,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Methods
 	////////////////////////////////////////////////////////////////////////////////////
-	void VulkanDevice::Wait() const
+	void VulkanLogicalDevice::Wait() const
 	{
         VK_VERIFY(vkDeviceWaitIdle(m_LogicalDevice));
 	}

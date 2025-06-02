@@ -1,10 +1,10 @@
 #include "ngpch.h"
-#include "VulkanContext.hpp"
+#include "VulkanDevice.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
-#include "NanoGraphics/Renderer/GraphicsContext.hpp"
+#include "NanoGraphics/Renderer/Device.hpp"
 
 #if defined(NG_PLATFORM_DESKTOP)
     #define GLFW_INCLUDE_VULKAN
@@ -13,6 +13,11 @@
 
 namespace
 {
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Error callback
+    ////////////////////////////////////////////////////////////////////////////////////
+    static Nano::Graphics::DeviceMessageCallback s_MessageCallback = {};
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Surface name
@@ -50,16 +55,29 @@ namespace
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
     {
+        if (static_cast<bool>(!s_MessageCallback)) [[unlikely]]
+            return VK_FALSE;
+
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
             // Note for future: Make sure to check if the vkQueuePresentKHR is NOT waiting on the imageAvailable semaphore, as it will cause a deadlock and many errors.
-            NG_LOG_ERROR("Validation Error: {0}", pCallbackData->pMessage);
+            s_MessageCallback(Nano::Graphics::DeviceMessage::Error, pCallbackData->pMessage);
             return VK_TRUE;
         }
         else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         {
-            NG_LOG_WARN("Validation Warning: {0}", pCallbackData->pMessage);
-            return VK_FALSE;
+            s_MessageCallback(Nano::Graphics::DeviceMessage::Warn, pCallbackData->pMessage);
+            return VK_TRUE;
+        }
+        else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        {
+            s_MessageCallback(Nano::Graphics::DeviceMessage::Info, pCallbackData->pMessage);
+            return VK_TRUE;
+        }
+        else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+        {
+            s_MessageCallback(Nano::Graphics::DeviceMessage::Trace, pCallbackData->pMessage);
+            return VK_TRUE;
         }
 
         return VK_FALSE;
@@ -74,7 +92,7 @@ namespace
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
         // Check if all requested layers are actually accessible
-        for (const char* layerName : Nano::Graphics::Internal::VulkanContext::ValidationLayers)
+        for (const char* layerName : Nano::Graphics::Internal::VulkanDevice::ValidationLayers)
         {
             bool layerFound = false;
 
@@ -102,22 +120,32 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Init & Destroy
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanContext::Init(void* window)
+    VulkanDevice::VulkanDevice(const DeviceSpecification& specs)
     {
-        NG_ASSERT(window, "[VulkanContext] No window was attached.");
+        NG_ASSERT(specs.NativeWindow, "[VulkanDevice] No window was attached.");
+
+        if constexpr (Validation)
+        {
+            s_MessageCallback = specs.MessageCallback;
+            
+            if (static_cast<bool>(!specs.MessageCallback))
+            {
+                NG_LOG_WARN("[VulkanDevice] Validation layers are enabled during Debug & Release builds, but no MessageCallback was passed in. Was this intentional?");
+            }
+        }
 
         InitInstance();
-        InitDevices(window);
+        InitDevices(specs.NativeWindow, specs.Extensions);
 
-        VulkanAllocator::Init();
+        VulkanAllocator::Init(m_Instance, m_PhysicalDevice->GetVkPhysicalDevice(), m_LogicalDevice->GetVkDevice());
     }
 
-    void VulkanContext::Destroy()
+    VulkanDevice::~VulkanDevice()
     {
         VulkanAllocator::Destroy();
 
         // Note: No need to 'destroy' the physical device since it was something we selected, not created.
-        m_Device.Destroy();
+        m_LogicalDevice.Destroy();
 
         if constexpr (Validation)
         {
@@ -129,32 +157,9 @@ namespace Nano::Graphics::Internal
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Static Getters
-    ////////////////////////////////////////////////////////////////////////////////////
-    VulkanDevice& VulkanContext::GetVulkanDevice()
-    {
-        return GraphicsContext::GetInternalContext().m_Device;
-    }
-
-    VulkanPhysicalDevice& VulkanContext::GetVulkanPhysicalDevice()
-    {
-        return GraphicsContext::GetInternalContext().m_PhysicalDevice;
-    }
-
-    VkInstance VulkanContext::GetVkInstance()
-    {
-        return GraphicsContext::GetInternalContext().m_Instance;
-    }
-
-    VkDebugUtilsMessengerEXT VulkanContext::GetVkDebugger()
-    {
-        return GraphicsContext::GetInternalContext().m_DebugMessenger;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanContext::InitInstance()
+    void VulkanDevice::InitInstance()
     {
         ///////////////////////////////////////////////////////////
         // Instance Creation
@@ -172,7 +177,7 @@ namespace Nano::Graphics::Internal
         if constexpr (Validation)
         {
             if (!validationSupport)
-                NG_LOG_WARN("[VulkanContext] Requested validation layers, but no support found.");
+                NG_LOG_WARN("[VulkanDevice] Requested validation layers, but no support found.");
         }
 
         std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_SURFACE_TYPE_NAME };
@@ -258,7 +263,7 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void VulkanContext::InitDevices(void* window)
+    void VulkanDevice::InitDevices(void* window, std::span<const char*> extensions)
     {
         VkSurfaceKHR surface = VK_NULL_HANDLE;
 
@@ -266,8 +271,12 @@ namespace Nano::Graphics::Internal
             VK_VERIFY(glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(window), nullptr, &surface));
         #endif
 
-        m_PhysicalDevice.Construct(surface);
-        m_Device.Construct(surface, m_PhysicalDevice);
+        // Note: We don't check for duplicate like swapchain/portability
+        std::vector<const char*> fullExtensions(extensions.begin(), extensions.end());
+        fullExtensions.insert(fullExtensions.end(), DeviceExtensions.begin(), DeviceExtensions.end());
+
+        m_PhysicalDevice.Construct(m_Instance, surface, fullExtensions);
+        m_LogicalDevice.Construct(surface, m_PhysicalDevice, fullExtensions);
 
         vkDestroySurfaceKHR(m_Instance, surface, nullptr);
     }

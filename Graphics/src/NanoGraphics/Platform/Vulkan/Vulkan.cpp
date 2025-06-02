@@ -4,7 +4,7 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/VulkanContext.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
 #if defined(NG_COMPILER_GCC)
 	#pragma GCC diagnostic push
@@ -58,7 +58,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Init & Destroy
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanAllocator::Init()
+    void VulkanAllocator::Init(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice)
     {
         VkAllocationCallbacks callbacks = {};
         callbacks.pUserData = nullptr;
@@ -69,9 +69,9 @@ namespace Nano::Graphics::Internal
         callbacks.pfnInternalFree = nullptr;
 
         VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.instance = VulkanContext::GetVkInstance();
-        allocatorInfo.physicalDevice = VulkanContext::GetVulkanPhysicalDevice().GetVkPhysicalDevice();
-        allocatorInfo.device = VulkanContext::GetVulkanDevice().GetVkDevice();
+        allocatorInfo.instance = instance;
+        allocatorInfo.physicalDevice = physicalDevice;
+        allocatorInfo.device = logicalDevice;
         allocatorInfo.pAllocationCallbacks = &callbacks;
 
         VK_VERIFY(vmaCreateAllocator(&allocatorInfo, &s_Allocator));
@@ -86,14 +86,14 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Pipeline Cache
     ////////////////////////////////////////////////////////////////////////////////////
-    VkPipelineCache VulkanAllocator::CreatePipelineCache(std::span<const uint8_t> data)
+    VkPipelineCache VulkanAllocator::CreatePipelineCache(VkDevice logicalDevice, std::span<const uint8_t> data)
     {
         VkPipelineCacheCreateInfo cacheCreateInfo = {};
         cacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
         cacheCreateInfo.initialDataSize = data.size();
         cacheCreateInfo.pInitialData = data.data();
 
-        VK_VERIFY(vkCreatePipelineCache(VulkanContext::GetVulkanDevice().GetVkDevice(), &cacheCreateInfo, nullptr, &s_PipelineCache));
+        VK_VERIFY(vkCreatePipelineCache(logicalDevice, &cacheCreateInfo, nullptr, &s_PipelineCache));
         return s_PipelineCache;
     }
 
@@ -206,7 +206,7 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBufferToImage(cmdBuf, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
 
-    VkImageView VulkanAllocator::CreateImageView(VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+    VkImageView VulkanAllocator::CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
     {
         NG_PROFILE("VkAllocator::CreateImageView()");
 
@@ -224,12 +224,12 @@ namespace Nano::Graphics::Internal
         viewInfo.subresourceRange.aspectMask = aspectFlags;
 
         VkImageView imageView = VK_NULL_HANDLE;
-        VK_VERIFY(vkCreateImageView(VulkanContext::GetVulkanDevice().GetVkDevice(), &viewInfo, nullptr, &imageView));
+        VK_VERIFY(vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView));
 
         return imageView;
     }
 
-    VkSampler VulkanAllocator::CreateSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels)
+    VkSampler VulkanAllocator::CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels)
     {
         NG_PROFILE("VkAllocator::CreateSampler()");
 
@@ -242,7 +242,7 @@ namespace Nano::Graphics::Internal
         samplerInfo.addressModeW = addressmode;
 
         VkPhysicalDeviceProperties properties = {};
-        vkGetPhysicalDeviceProperties(VulkanContext::GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
         samplerInfo.anisotropyEnable = VK_TRUE;                             // Can be disabled: just set VK_FALSE
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // And 1.0f
@@ -258,7 +258,7 @@ namespace Nano::Graphics::Internal
         samplerInfo.mipLodBias = 0.0f; // Optional
 
         VkSampler sampler = VK_NULL_HANDLE;
-        VK_VERIFY(vkCreateSampler(VulkanContext::GetVulkanDevice().GetVkDevice(), &samplerInfo, nullptr, &sampler));
+        VK_VERIFY(vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler));
 
         return sampler;
     }

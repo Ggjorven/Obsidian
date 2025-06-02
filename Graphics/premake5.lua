@@ -32,8 +32,24 @@ project "Graphics"
 
 		"GLFW_INCLUDE_NONE",
 
-		"NANO_EXPERIMENTAL"
+		"NANO_EXPERIMENTAL",
 	}
+
+	-- Rendering API specfic selections
+	if gfxapi == "vulkan" then
+        defines { "NG_API_VULKAN" }
+		removefiles { "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/D3D11/**", "src/NanoGraphics/Platform/OpenGL/**" }
+		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
+    elseif gfxapi == "d3d12" then
+        defines { "NG_API_D3D12" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D11/**", "src/NanoGraphics/Platform/OpenGL/**" }
+	elseif gfxapi == "d3d11" then
+        defines { "NG_API_D3D11" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/OpenGL/**" }
+	elseif gfxapi == "opengl" then
+        defines { "NG_API_OPENGL" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/D3D11/**" }
+    end
 
 	includedirs
 	{
@@ -46,7 +62,6 @@ project "Graphics"
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
-		"%{Dependencies.Vulkan.IncludeDir}",
 	}
 
 	links
@@ -68,11 +83,13 @@ project "Graphics"
             "NOMINMAX"
         }
 
-		links
-		{
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
-		}
+		if gfxapi == "vulkan" then
+			links
+			{
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
+			}
+		end
 
 	filter "system:linux"
 		defines "NG_PLATFORM_DESKTOP"
@@ -80,11 +97,16 @@ project "Graphics"
 		systemversion "latest"
 		staticruntime "on"
 
+		if gfxapi == "vulkan" then
+			links
+			{
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
+				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
+			}
+		end
+		
 		links
 		{
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
-
 			"Xrandr", "Xi", "GLU", "GL", "GLX", "X11", "dl", "pthread", "stdc++fs"
 		}
 
@@ -114,8 +136,14 @@ project "Graphics"
 			"%{Dependencies.stb.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
-			"%{Dependencies.Vulkan.IncludeDir}",
 		}
+		
+		if gfxapi == "vulkan" then
+			externalincludedirs
+			{
+				"%{Dependencies.Vulkan.IncludeDir}",
+			}
+		end
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"
