@@ -1,6 +1,8 @@
 #include "Main.hpp"
 
-#if !defined(NG_CONFIG_DIST)
+#if 1
+
+#if !defined(NG_CONFIG_DIST) 
 	int main(int argc, char* argv[])
 	{
 		return Main(argc, argv);
@@ -16,4 +18,18 @@
 	{
 		return Main(argc, argv);
 	}
+#endif
+
+#else
+
+NANO_BENCHMARK_INIT("Main")
+{
+	NANO_BENCHMARK_AUTO("Init-Destroy")
+	{
+		Main(__argc, __argv);
+	};
+}
+
+NANO_BENCHMARK_MAIN()
+
 #endif

@@ -3,14 +3,11 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
+#include "NanoGraphics/Renderer/Image.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
 #include <Nano/Nano.hpp>
-
-#include <cstdint>
-#include <vector>
-#include <optional>
 
 namespace Nano::Graphics
 {
@@ -29,6 +26,9 @@ namespace Nano::Graphics
         inline Device(const DeviceSpecification& specs)
             : m_Device(specs) {}
         ~Device() = default;
+
+        // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
+        Image CreateImage(const ImageSpecification& specs) const;
 
     private:
         Type m_Device;

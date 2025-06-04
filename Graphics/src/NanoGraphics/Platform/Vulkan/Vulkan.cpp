@@ -56,9 +56,9 @@ namespace Nano::Graphics::Internal
 {
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Init & Destroy
+    // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanAllocator::Init(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice)
+    VulkanAllocator::VulkanAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice)
     {
         VkAllocationCallbacks callbacks = {};
         callbacks.pUserData = nullptr;
@@ -74,13 +74,13 @@ namespace Nano::Graphics::Internal
         allocatorInfo.device = logicalDevice;
         allocatorInfo.pAllocationCallbacks = &callbacks;
 
-        VK_VERIFY(vmaCreateAllocator(&allocatorInfo, &s_Allocator));
+        VK_VERIFY(vmaCreateAllocator(&allocatorInfo, &m_Allocator));
     }
 
-    void VulkanAllocator::Destroy()
+    VulkanAllocator::~VulkanAllocator()
     {
-        vmaDestroyAllocator(s_Allocator);
-        s_Allocator = VK_NULL_HANDLE;
+        vmaDestroyAllocator(m_Allocator);
+        m_Allocator = VK_NULL_HANDLE;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -93,18 +93,23 @@ namespace Nano::Graphics::Internal
         cacheCreateInfo.initialDataSize = data.size();
         cacheCreateInfo.pInitialData = data.data();
 
-        VK_VERIFY(vkCreatePipelineCache(logicalDevice, &cacheCreateInfo, nullptr, &s_PipelineCache));
-        return s_PipelineCache;
+        VK_VERIFY(vkCreatePipelineCache(logicalDevice, &cacheCreateInfo, nullptr, &m_PipelineCache));
+        return m_PipelineCache;
+    }
+
+    VkPipelineCache VulkanAllocator::GetPipelineCache() const
+    {
+        return m_PipelineCache;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Buffer
     ////////////////////////////////////////////////////////////////////////////////////
-    VmaAllocation VulkanAllocator::AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& dstBuffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags)
+    VmaAllocation VulkanAllocator::AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& dstBuffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags) const
     {
         NG_PROFILE("VkAllocator::AllocateBuffer()");
 
-        NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+        NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((size > 0), "[VkAllocator] Invalid size passed in for buffer allocation.");
 
         VkBufferCreateInfo bufferInfo = {};
@@ -118,12 +123,12 @@ namespace Nano::Graphics::Internal
         allocInfo.requiredFlags = requiredFlags;
 
         VmaAllocation allocation = VK_NULL_HANDLE;
-        VK_VERIFY(vmaCreateBuffer(s_Allocator, &bufferInfo, &allocInfo, &dstBuffer, &allocation, nullptr));
+        VK_VERIFY(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocInfo, &dstBuffer, &allocation, nullptr));
 
         return allocation;
     }
 
-    void VulkanAllocator::CopyBuffer(VkCommandBuffer cmdBuf, VkBuffer& srcBuffer, VkBuffer& dstBuffer, size_t size, size_t offset)
+    void VulkanAllocator::CopyBuffer(VkCommandBuffer cmdBuf, VkBuffer& srcBuffer, VkBuffer& dstBuffer, size_t size, size_t offset) const
     {
         NG_PROFILE("VkAllocator::CopyBuffer()");
 
@@ -138,25 +143,25 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBuffer(cmdBuf, srcBuffer, dstBuffer, 1, &copyRegion);
     }
 
-    void VulkanAllocator::DestroyBuffer(VkBuffer buffer, VmaAllocation allocation)
+    void VulkanAllocator::DestroyBuffer(VkBuffer buffer, VmaAllocation allocation) const
     {
         NG_PROFILE("VkAllocator::DestroyBuffer()");
 
-        NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+        NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((buffer != VK_NULL_HANDLE), "[VkAllocator] Invalid buffer passed in.");
 		NG_ASSERT((allocation != VK_NULL_HANDLE), "[VkAllocator] Invalid allocation passed in.");
 
-        vmaDestroyBuffer(s_Allocator, buffer, allocation);
+        vmaDestroyBuffer(m_Allocator, buffer, allocation);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Image
     ////////////////////////////////////////////////////////////////////////////////////
-    VmaAllocation VulkanAllocator::AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags)
+    VmaAllocation VulkanAllocator::AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags) const
     {
         NG_PROFILE("VkAllocator::AllocateImage()");
 
-		NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+		NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((width > 0) && (height > 0), "[VkAllocator] Invalid width or height passed in for image allocation.");
 
         VkImageCreateInfo imageInfo = {};
@@ -179,12 +184,12 @@ namespace Nano::Graphics::Internal
         allocCreateInfo.requiredFlags = requiredFlags;
 
         VmaAllocation allocation = VK_NULL_HANDLE;
-        VK_VERIFY(vmaCreateImage(s_Allocator, &imageInfo, &allocCreateInfo, &image, &allocation, nullptr));
+        VK_VERIFY(vmaCreateImage(m_Allocator, &imageInfo, &allocCreateInfo, &image, &allocation, nullptr));
 
         return allocation;
     }
 
-    void VulkanAllocator::CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height)
+    void VulkanAllocator::CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height) const
     {
         NG_PROFILE("VkAllocator::CopyBufferToImage()");
 
@@ -195,7 +200,7 @@ namespace Nano::Graphics::Internal
         region.bufferRowLength = 0;
         region.bufferImageHeight = 0;
 
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // TODO: Make parameters
         region.imageSubresource.mipLevel = 0;
         region.imageSubresource.baseArrayLayer = 0;
         region.imageSubresource.layerCount = 1;
@@ -206,7 +211,7 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBufferToImage(cmdBuf, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
 
-    VkImageView VulkanAllocator::CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+    VkImageView VulkanAllocator::CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) const
     {
         NG_PROFILE("VkAllocator::CreateImageView()");
 
@@ -229,7 +234,7 @@ namespace Nano::Graphics::Internal
         return imageView;
     }
 
-    VkSampler VulkanAllocator::CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels)
+    VkSampler VulkanAllocator::CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels) const
     {
         NG_PROFILE("VkAllocator::CreateSampler()");
 
@@ -263,41 +268,41 @@ namespace Nano::Graphics::Internal
         return sampler;
     }
 
-    void VulkanAllocator::DestroyImage(VkImage image, VmaAllocation allocation)
+    void VulkanAllocator::DestroyImage(VkImage image, VmaAllocation allocation) const
     {
         NG_PROFILE("VkAllocator::DestroyImage()");
 
-		NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+		NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((image != VK_NULL_HANDLE), "[VkAllocator] Invalid image passed in.");
 		NG_ASSERT((allocation != VK_NULL_HANDLE), "[VkAllocator] Invalid allocation passed in.");
 
-        vmaDestroyImage(s_Allocator, image, allocation);
+        vmaDestroyImage(m_Allocator, image, allocation);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Utils
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanAllocator::MapMemory(VmaAllocation& allocation, void*& mapData)
+    void VulkanAllocator::MapMemory(VmaAllocation& allocation, void*& mapData) const
     {
         NG_PROFILE("VkAllocator::MapMemory()");
 
-		NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+		NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((allocation != VK_NULL_HANDLE), "[VkAllocator] Invalid allocation passed in.");
 
-        vmaMapMemory(s_Allocator, allocation, &mapData);
+        vmaMapMemory(m_Allocator, allocation, &mapData);
     }
 
-    void VulkanAllocator::UnMapMemory(VmaAllocation& allocation)
+    void VulkanAllocator::UnMapMemory(VmaAllocation& allocation) const
     {
         NG_PROFILE("VkAllocator::MapMemory()");
 
-        NG_ASSERT(s_Allocator, "[VkAllocator] Allocator not initialized.");
+        NG_ASSERT(m_Allocator, "[VkAllocator] Allocator not initialized.");
 		NG_ASSERT((allocation != VK_NULL_HANDLE), "[VkAllocator] Invalid allocation passed in.");
 
-        vmaUnmapMemory(s_Allocator, allocation);
+        vmaUnmapMemory(m_Allocator, allocation);
     }
 
-    void VulkanAllocator::SetData(VmaAllocation& allocation, void* data, size_t size)
+    void VulkanAllocator::SetData(VmaAllocation& allocation, void* data, size_t size) const
     {
         NG_PROFILE("VkAllocator::SetData()");
 
@@ -312,7 +317,7 @@ namespace Nano::Graphics::Internal
         VulkanAllocator::UnMapMemory(allocation);
     }
 
-    void VulkanAllocator::SetMappedData(void* mappedData, void* data, size_t size)
+    void VulkanAllocator::SetMappedData(void* mappedData, void* data, size_t size) const
     {
 		NG_PROFILE("VkAllocator::SetMappedData()");
 

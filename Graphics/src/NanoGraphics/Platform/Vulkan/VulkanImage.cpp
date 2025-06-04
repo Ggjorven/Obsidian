@@ -1,23 +1,27 @@
 #include "ngpch.h"
-#include "VulkanDevice.hpp"
+#include "VulkanImage.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
+#include <type_traits>
+
 namespace Nano::Graphics::Internal
 {
+
+    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanDevice::VulkanDevice(const DeviceSpecification& specs)
-        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice())
+    VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
+        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
     }
 
-    VulkanDevice::~VulkanDevice()
+    VulkanImage::~VulkanImage()
     {
     }
 

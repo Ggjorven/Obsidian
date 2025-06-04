@@ -449,10 +449,10 @@ namespace Nano::Graphics::Internal
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		if constexpr (VulkanDevice::Validation)
+		if constexpr (VulkanContext::Validation)
 		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanDevice::ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = VulkanDevice::ValidationLayers.data();
+			createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanContext::ValidationLayers.size());
+			createInfo.ppEnabledLayerNames = VulkanContext::ValidationLayers.data();
 		}
 		else
 		{

@@ -8,7 +8,7 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // Flags
     ////////////////////////////////////////////////////////////////////////////////////
-    enum class ResourceState : uint32_t
+    enum class ResourceState : uint16_t //uint32_t
     {
         Unknown = 0,
 
@@ -26,16 +26,16 @@ namespace Nano::Graphics
         CopyDest = 1 << 11,
         CopySource = 1 << 12,
         Present = 1 << 13,
-        AccelStructRead = 1 << 14,
-        AccelStructWrite = 1 << 15,
-        AccelStructBuildInput = 1 << 16,
-        AccelStructBuildBlas = 1 << 17,
+        //AccelStructRead = 1 << 14,
+        //AccelStructWrite = 1 << 15,
+        //AccelStructBuildInput = 1 << 16,
+        //AccelStructBuildBlas = 1 << 17,
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // ResourceType
     ////////////////////////////////////////////////////////////////////////////////////
-    enum class ResourceType : uint32_t
+    enum class ResourceType : uint8_t
     {
         Unknown = 0,
 

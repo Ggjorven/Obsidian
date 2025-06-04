@@ -5,6 +5,7 @@
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 
 #include <cstdint>
+#include <cmath>
 #include <string>
 
 namespace Nano::Graphics
@@ -85,19 +86,6 @@ namespace Nano::Graphics
         Image3D
     };
 
-    enum class ImageViewType : uint8_t
-    {
-        Unknown = 0,
-
-        View1D,
-        View1DArray,
-        View2D,
-        View2DArray,
-        View3D,
-        ViewCube,
-        ViewCubeArray
-    };
-
     using MipLevel = uint32_t;
     using ArraySlice = uint32_t;
 
@@ -137,7 +125,7 @@ namespace Nano::Graphics
 
         uint32_t Width = 0, Height = 0, Depth = 0;
         uint32_t ArraySize = 1;
-        uint32_t MipLevels = 1;
+        uint32_t MipLevels = 1; // Note: Max = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1;
         uint32_t SampleCount = 1;
 
         bool IsShaderResource = false;
@@ -160,7 +148,8 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
         inline constexpr ImageSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
         inline constexpr ImageSpecification& SetMipLevels(uint32_t mipLevels) { MipLevels = mipLevels; return *this; }
-        inline constexpr ImageSpecification& SetMipLevels(uint32_t count) { SampleCount = count; return *this; }
+        inline ImageSpecification& SetMaxMipLevels() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
+        inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
         inline constexpr ImageSpecification& SetUseMipmaps(bool enabled) { UseMipmaps = enabled; return *this; }
@@ -169,31 +158,23 @@ namespace Nano::Graphics
         inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
-    // TODO: Image Slice (in Image.hpp)
-
     ////////////////////////////////////////////////////////////////////////////////////
     // ImageViewSpecification
     ////////////////////////////////////////////////////////////////////////////////////
-    struct ImageViewSpecification
+    struct ImageSubresourceSpecification // Note: This is used to specify a Subresource of an Image for a command.
     {
     public:
-        Image* ImageReference = nullptr;
-        ImageViewType ViewType = ImageViewType::Unknown;
-
         MipLevel BaseMipLevel = 0;
         MipLevel NumMipLevels = 1;
         ArraySlice BaseArraySlice = 0;
         ArraySlice NumArraySlices = 1;
 
-        std::string DebugName = {};
-
     public:
-        inline constexpr ImageViewSpecification& SetImageReference(Image& image) { ImageReference = &image; return *this; }
-        inline constexpr ImageViewSpecification& SetBaseMipLevel(MipLevel level) { BaseMipLevel = level; return *this; }
-        inline constexpr ImageViewSpecification& SetNumMipLevels(MipLevel level) { NumMipLevels = level; return *this; }
-        inline constexpr ImageViewSpecification& SetBaseArraySlice(ArraySlice base) { BaseArraySlice = base; return *this; }
-        inline constexpr ImageViewSpecification& SetNumArraySlices(ArraySlice num) { NumArraySlices = num; return *this; }
-        inline ImageViewSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        // Setters
+        inline constexpr ImageSubresourceSpecification& SetBaseMipLevel(MipLevel level) { BaseMipLevel = level; return *this; }
+        inline constexpr ImageSubresourceSpecification& SetNumMipLevels(MipLevel level) { NumMipLevels = level; return *this; }
+        inline constexpr ImageSubresourceSpecification& SetBaseArraySlice(ArraySlice base) { BaseArraySlice = base; return *this; }
+        inline constexpr ImageSubresourceSpecification& SetNumArraySlices(ArraySlice num) { NumArraySlices = num; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

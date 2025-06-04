@@ -51,38 +51,38 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
 	// VulkanAllocator
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanAllocator : public Traits::NoConstruct
+    class VulkanAllocator : public Traits::NoCopy // TODO: Update methods
     {
     public:
-        // Init & Destroy
-        static void Init(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
-        static void Destroy();
+        // Constructor & Destructor
+        VulkanAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice);
+        ~VulkanAllocator();
 
         // Pipeline Cache
-        static VkPipelineCache CreatePipelineCache(VkDevice logicalDevice, std::span<const uint8_t> data);
-		inline static VkPipelineCache GetPipelineCache() { return s_PipelineCache; }
+        VkPipelineCache CreatePipelineCache(VkDevice logicalDevice, std::span<const uint8_t> data);
+        VkPipelineCache GetPipelineCache() const;
 
         // Buffer
-        static VmaAllocation AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& dstBuffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0);
-        static void CopyBuffer(VkCommandBuffer cmdBuf, VkBuffer& srcBuffer, VkBuffer& dstBuffer, size_t size, size_t offset = 0);
-        static void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation);
+        VmaAllocation AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& dstBuffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0) const;
+        void CopyBuffer(VkCommandBuffer cmdBuf, VkBuffer& srcBuffer, VkBuffer& dstBuffer, size_t size, size_t offset = 0) const;
+        void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation) const;
 
         // Image
-        static VmaAllocation AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0);
-		static void CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height); // Note: The image will be in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL after the copy
-        static VkImageView CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
-        static VkSampler CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels);
-        static void DestroyImage(VkImage image, VmaAllocation allocation);
+        VmaAllocation AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0) const;
+		void CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height) const; // Note: The image will be in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL after the copy
+        VkImageView CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) const;
+        VkSampler CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels) const;
+        void DestroyImage(VkImage image, VmaAllocation allocation) const;
 
         // Utils
-        static void MapMemory(VmaAllocation& allocation, void*& mapData);
-        static void UnMapMemory(VmaAllocation& allocation);
-        static void SetData(VmaAllocation& allocation, void* data, size_t size);
-        static void SetMappedData(void* mappedData, void* data, size_t size);
+        void MapMemory(VmaAllocation& allocation, void*& mapData) const;
+        void UnMapMemory(VmaAllocation& allocation) const;
+        void SetData(VmaAllocation& allocation, void* data, size_t size) const;
+        void SetMappedData(void* mappedData, void* data, size_t size) const;
 
     private:
-		inline static VmaAllocator s_Allocator = VK_NULL_HANDLE;
-		inline static VkPipelineCache s_PipelineCache = VK_NULL_HANDLE;
+		VmaAllocator m_Allocator = VK_NULL_HANDLE;
+		VkPipelineCache m_PipelineCache = VK_NULL_HANDLE;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -130,6 +130,9 @@ namespace Nano::Graphics::Internal
         case VK_OPERATION_DEFERRED_KHR:                          return "VK_OPERATION_DEFERRED_KHR";
         case VK_OPERATION_NOT_DEFERRED_KHR:                      return "VK_OPERATION_NOT_DEFERRED_KHR";
         case VK_PIPELINE_COMPILE_REQUIRED_EXT:                   return "VK_PIPELINE_COMPILE_REQUIRED_EXT";
+
+        default:
+            break;
         }
 
         NG_UNREACHABLE();

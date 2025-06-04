@@ -3,6 +3,8 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
+#include <Nano/Nano.hpp>
+
 using namespace Nano;
 using namespace Nano::Graphics;
 
@@ -38,6 +40,14 @@ int Main(int argc, char* argv[])
 				}
 			});
 		Device device(deviceSpecs);
+
+		// Image creation (!TEST!, should be in SwapChain but doesn't exist yet)
+		ImageSpecification imageSpecs = ImageSpecification()
+			.SetImageFormat(Format::BGRA8Unorm)
+			.SetImageDimension(ImageDimension::Image2D)
+			.SetWidthAndHeight(1280, 720)
+			.SetDebugName("First image");
+		Image image = device.CreateImage(imageSpecs);
 
 		// Main Loop
 		while (window.IsOpen())
