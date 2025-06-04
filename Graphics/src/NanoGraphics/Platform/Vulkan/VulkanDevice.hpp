@@ -43,6 +43,9 @@ namespace Nano::Graphics::Internal
         VulkanDevice(const DeviceSpecification& specs);
         ~VulkanDevice();
 
+        // Internal methods
+        void SetDebugName(void* object, VkObjectType type, const std::string& name);
+
         // Internal Getters
         VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }
         VulkanPhysicalDevice& GetVulkanPhysicalDevice() { return m_PhysicalDevice.Get(); }

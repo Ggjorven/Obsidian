@@ -20,6 +20,13 @@ namespace
     static Nano::Graphics::DeviceMessageCallback s_MessageCallback = {};
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // Extension function pointers
+    ////////////////////////////////////////////////////////////////////////////////////
+    static PFN_vkCreateDebugUtilsMessengerEXT s_vkCreateDebugUtilsMessengerEXT = nullptr;
+    static PFN_vkDestroyDebugUtilsMessengerEXT s_vkDestroyDebugUtilsMessengerEXT = nullptr;
+    static PFN_vkSetDebugUtilsObjectNameEXT s_vkSetDebugUtilsObjectNameEXT = nullptr;
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Surface name
     ////////////////////////////////////////////////////////////////////////////////////
     #if defined(NG_PLATFORM_WINDOWS)
@@ -35,22 +42,31 @@ namespace
     ////////////////////////////////////////////////////////////////////////////////////
     // Function wrappers
     ////////////////////////////////////////////////////////////////////////////////////
-    static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+    static void GetvkCreateDebugUtilsMessengerEXT(VkInstance instance)
     {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-
-        if (func != nullptr)
-            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
+        if (!s_vkCreateDebugUtilsMessengerEXT)
+        {
+            s_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+            NG_ASSERT(s_vkCreateDebugUtilsMessengerEXT, "Extension not present.");
+        }
     }
 
-    static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+    static void GetvkDestroyDebugUtilsMessengerEXT(VkInstance instance)
     {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (!s_vkDestroyDebugUtilsMessengerEXT)
+        {
+            s_vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+            NG_ASSERT(s_vkDestroyDebugUtilsMessengerEXT, "Extension not present.");
+        }
+    }
 
-        if (func != nullptr)
-            func(instance, debugMessenger, pAllocator);
+    static void GetvkSetDebugUtilsObjectNameEXT(VkInstance instance)
+    {
+        if (!s_vkSetDebugUtilsObjectNameEXT)
+        {
+            s_vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+            NG_ASSERT(s_vkSetDebugUtilsObjectNameEXT, "Extension not present.");
+        }
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
@@ -150,10 +166,21 @@ namespace Nano::Graphics::Internal
         if constexpr (Validation)
         {
             if (m_DebugMessenger)
-                DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+                s_vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
         }
 
         vkDestroyInstance(m_Instance, nullptr);
+    }
+
+    void VulkanDevice::SetDebugName(void* object, VkObjectType type, const std::string& name)
+    {
+        VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+        nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        nameInfo.objectType = type;
+        nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+        nameInfo.pObjectName = name.c_str();
+
+        s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -252,13 +279,20 @@ namespace Nano::Graphics::Internal
         VK_VERIFY(vkCreateInstance(&createInfo, nullptr, &m_Instance));
 
         ///////////////////////////////////////////////////////////
+        // Load extension function pointers
+        ///////////////////////////////////////////////////////////
+        GetvkCreateDebugUtilsMessengerEXT(m_Instance);
+        GetvkDestroyDebugUtilsMessengerEXT(m_Instance);
+        GetvkSetDebugUtilsObjectNameEXT(m_Instance);
+
+        ///////////////////////////////////////////////////////////
         // Debugger Creation
         ///////////////////////////////////////////////////////////
         if constexpr (Validation)
         {
             if (validationSupport)
             {
-                VK_VERIFY(CreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger));
+                s_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger);
             }
         }
     }
@@ -271,12 +305,12 @@ namespace Nano::Graphics::Internal
             VK_VERIFY(glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(window), nullptr, &surface));
         #endif
 
-        // Note: We don't check for duplicate like swapchain/portability
-        std::vector<const char*> fullExtensions(extensions.begin(), extensions.end());
-        fullExtensions.insert(fullExtensions.end(), DeviceExtensions.begin(), DeviceExtensions.end());
+        std::set<const char*> extensionSet(extensions.begin(), extensions.end());
+        extensionSet.insert(DeviceExtensions.begin(), DeviceExtensions.end());
+        std::vector<const char*> fullExtensions(extensionSet.begin(), extensionSet.end());
 
-        m_PhysicalDevice.Construct(m_Instance, surface, fullExtensions);
-        m_LogicalDevice.Construct(surface, m_PhysicalDevice, fullExtensions);
+        m_PhysicalDevice.Construct(m_Instance, surface, std::span<const char*>(fullExtensions));
+        m_LogicalDevice.Construct(surface, m_PhysicalDevice, std::span<const char*>(fullExtensions));
 
         vkDestroySurfaceKHR(m_Instance, surface, nullptr);
     }

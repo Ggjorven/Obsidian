@@ -1,11 +1,9 @@
 #pragma once
 
-#include "NanoGraphics/Core/Events.hpp"
-#include "NanoGraphics/Core/Logging.hpp"
-
 #include <cstdint>
+#include <span>
+#include <string>
 #include <functional>
-#include <string_view>
 
 namespace Nano::Graphics
 {
@@ -20,15 +18,15 @@ namespace Nano::Graphics
     struct DeviceSpecification
     {
     public:
-        void* NativeWindow;
-        DeviceMessageCallback MessageCallback;
-        std::span<const char*> Extensions; // Vulkan specific (SwapChain and MacOS related extensions included by default)
+        void* NativeWindow = nullptr;
+        DeviceMessageCallback MessageCallback = nullptr;
+        std::span<const char*> Extensions = {}; // Vulkan specific (SwapChain and MacOS related extensions included by default)
 
     public:
         // Setters
-        inline DeviceSpecification& SetNativeWindow(void* nativeWindow) { NativeWindow = nativeWindow; return *this; }
+        inline constexpr DeviceSpecification& SetNativeWindow(void* nativeWindow) { NativeWindow = nativeWindow; return *this; }
         inline DeviceSpecification& SetMessageCallback(DeviceMessageCallback messageCallback) { MessageCallback = messageCallback; return *this; }
-        inline DeviceSpecification& SetExtensions(std::span<const char*> extensions) { Extensions = extensions; return *this; }
+        inline constexpr DeviceSpecification& SetExtensions(std::span<const char*> extensions) { Extensions = extensions; return *this; }
     };
 
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NanoGraphics/Renderer/ResourceSpec.hpp"
+
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
 #include <cstdint>

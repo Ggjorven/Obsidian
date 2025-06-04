@@ -1,6 +1,7 @@
 # NanoGraphics
 
 NanoGraphics is an extensive abstraction layer around multiple graphics APIs allowing for performance-based rendering.
+Heavily inspired by NVRHI, but with a more modern API and more abstraction.
 
 ## Features
 

@@ -40,15 +40,22 @@ namespace Nano::Graphics::Information
         #error Nano Graphics Settings: Unsupported configuration/Failed to query...
     #endif
 
-    // Rendering API choice
     #if defined(NG_API_VULKAN)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Vulkan;
     #elif defined(NG_API_D3D12)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D12;
+        #error Nano Graphics Settings: D3D12 not implemented yet.
     #elif defined(NG_API_D3D11)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D11;
+        #error Nano Graphics Settings: D3D11 not implemented yet.
     #elif defined(NG_API_OPENGL)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::OpenGL;
+        #error Nano Graphics Settings: OpenGL not implemented yet.
+    #else
+        #error Nano Graphics Settings: Unsupported API/Failed to query...
     #endif
+    
+    // Frames In Flight
+    inline constexpr const uint8_t BackBufferCount = 3;
 
 }
