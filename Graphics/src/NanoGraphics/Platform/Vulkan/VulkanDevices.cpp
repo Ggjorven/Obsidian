@@ -271,7 +271,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	bool VulkanPhysicalDevice::PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device, std::span<const char*> extensions)
 	{
-		QueueFamilyIndices indices = QueueFamilyIndices::Find(surface, device);
+		m_QueueIndices = QueueFamilyIndices::Find(surface, device);
 
 		bool extensionsSupported = ExtensionsSupported(device, extensions);
 		bool swapChainAdequate = false;
@@ -296,7 +296,7 @@ namespace Nano::Graphics::Internal
 
 		vkGetPhysicalDeviceFeatures2(device, &deviceFeatures);
 
-		return indices.IsComplete() && extensionsSupported && swapChainAdequate && FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures);
+		return m_QueueIndices.IsComplete() && extensionsSupported && swapChainAdequate && FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures);
 	}
 
 	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions)
@@ -418,10 +418,10 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-    VulkanLogicalDevice::VulkanLogicalDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions)
+    VulkanLogicalDevice::VulkanLogicalDevice(VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions)
 		: m_PhysicalDevice(physicalDevice)
 	{
-		QueueFamilyIndices indices = QueueFamilyIndices::Find(surface, m_PhysicalDevice.GetVkPhysicalDevice());
+		const QueueFamilyIndices& indices = m_PhysicalDevice.GetQueueFamilyIndices();
 
         uint32_t queueCount = (indices.SameQueue() ? 1 : 3);
         std::vector<float> queuePriorities(queueCount, 1.0f);

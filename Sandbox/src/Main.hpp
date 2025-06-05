@@ -16,6 +16,7 @@ int Main(int argc, char* argv[])
 		WindowSpecification windowSpecs = WindowSpecification()
 			.SetTitle("First")
 			.SetWidthAndHeight(1280, 720)
+			.SetFlags(WindowFlags::Default)
 			.SetEventCallback([&](Event e) 
 			{
 				Events::EventHandler handler(e);
@@ -40,6 +41,13 @@ int Main(int argc, char* argv[])
 				}
 			});
 		Device device(deviceSpecs);
+
+		// CommandPool & Lists
+		CommandListPool pool = device.AllocateCommandListPool();
+
+		CommandListSpecification listSpecs = CommandListSpecification()
+			.SetQueue(CommandQueue::Graphics);
+		CommandList list = pool.AllocateList(listSpecs);
 
 		// Image creation (!TEST!, should be in SwapChain but doesn't exist yet)
 		ImageSpecification imageSpecs = ImageSpecification()

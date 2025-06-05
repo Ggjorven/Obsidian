@@ -33,6 +33,8 @@ namespace Nano::Graphics
 		inline void PollEvents() { m_Window.PollEvents(); }
 		inline void SwapBuffers() { m_Window.SwapBuffers(); }
 
+		inline void Show() { m_Window.Show(); }
+		inline void SetFocus() { m_Window.SetFocus(); }
 		inline void Close() { m_Window.Close(); }
 
 		// Getters
@@ -45,6 +47,7 @@ namespace Nano::Graphics
 
 		// Additional getters
 		inline bool IsOpen() const { return m_Window.IsOpen(); }
+		inline bool IsFocused() const { return m_Window.IsFocused(); }
 		inline bool IsMinimized() const { return m_Window.IsMinimized(); }
 
 		inline void* GetNativeWindow() { return m_Window.GetNativeWindow(); }

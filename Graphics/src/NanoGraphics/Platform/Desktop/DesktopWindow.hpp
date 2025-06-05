@@ -33,6 +33,8 @@ namespace Nano::Graphics::Internal
 		void PollEvents();
 		void SwapBuffers();
 
+		void Show();
+		void SetFocus();
 		void Close();
 
 		// Getters
@@ -45,6 +47,7 @@ namespace Nano::Graphics::Internal
 
 		// Additional getters
 		inline bool IsOpen() const { return !m_Closed; }
+		bool IsFocused() const;
 		inline bool IsMinimized() const { return ((m_Specification.Width == 0) || (m_Specification.Height == 0)); }
 
 		inline void* GetNativeWindow() { return static_cast<void*>(m_Window); }

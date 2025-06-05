@@ -18,7 +18,7 @@ namespace Nano::Graphics
     struct DeviceSpecification
     {
     public:
-        void* NativeWindow = nullptr;
+        void* NativeWindow = nullptr; // Note: Just creating a device with one window is fine, the device can be used across all created windows.
         DeviceMessageCallback MessageCallback = nullptr;
         std::span<const char*> Extensions = {}; // Vulkan specific (SwapChain and MacOS related extensions included by default)
 

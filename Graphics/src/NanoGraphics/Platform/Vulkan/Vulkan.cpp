@@ -35,19 +35,32 @@ namespace
     ////////////////////////////////////////////////////////////////////////////////////
     // Callbacks
     ////////////////////////////////////////////////////////////////////////////////////
-    static void* VKAPI_PTR VmaAllocFn(void*, size_t size, size_t, VkSystemAllocationScope)
+    static void* VKAPI_PTR VmaAllocFn(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
     {
+        (void)pUserData; (void)alignment; (void)allocationScope;
         return std::malloc(size);
     }
 
-    static void VKAPI_PTR VmaFreeFn(void*, void* pMemory)
+    static void VKAPI_PTR VmaFreeFn(void* pUserData, void* pMemory)
     {
+        (void)pUserData;
         std::free(pMemory);
     }
 
-    static void* VKAPI_PTR VmaReallocFn(void*, void* pOriginal, size_t size, size_t, VkSystemAllocationScope)
+    static void* VKAPI_PTR VmaReallocFn(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
     {
+        (void)pUserData; (void)alignment; (void)allocationScope;
         return std::realloc(pOriginal, size);
+    }
+
+    static void VKAPI_PTR VmaInternalAllocFn(void* pUserData, size_t size, VkInternalAllocationType type, VkSystemAllocationScope allocationScope)
+    {
+        (void)pUserData; (void)size; (void)type; (void)allocationScope;
+    }
+
+    static void VKAPI_PTR VmaInternalFreeFn(void* pUserData, size_t size, VkInternalAllocationType type, VkSystemAllocationScope allocationScope)
+    {
+        (void)pUserData; (void)size; (void)type; (void)allocationScope;
     }
 
 }
@@ -60,19 +73,18 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanAllocator::VulkanAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice)
     {
-        VkAllocationCallbacks callbacks = {};
-        callbacks.pUserData = nullptr;
-        callbacks.pfnAllocation = &VmaAllocFn;
-        callbacks.pfnFree = &VmaFreeFn;
-        callbacks.pfnReallocation = &VmaReallocFn;
-        callbacks.pfnInternalAllocation = nullptr;
-        callbacks.pfnInternalFree = nullptr;
+        m_Callbacks.pUserData = nullptr;
+        m_Callbacks.pfnAllocation = &VmaAllocFn;
+        m_Callbacks.pfnFree = &VmaFreeFn;
+        m_Callbacks.pfnReallocation = &VmaReallocFn;
+        m_Callbacks.pfnInternalAllocation = &VmaInternalAllocFn;
+        m_Callbacks.pfnInternalFree = &VmaInternalFreeFn;
 
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.instance = instance;
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = logicalDevice;
-        allocatorInfo.pAllocationCallbacks = &callbacks;
+        allocatorInfo.pAllocationCallbacks = &m_Callbacks;
 
         VK_VERIFY(vmaCreateAllocator(&allocatorInfo, &m_Allocator));
     }
@@ -93,7 +105,7 @@ namespace Nano::Graphics::Internal
         cacheCreateInfo.initialDataSize = data.size();
         cacheCreateInfo.pInitialData = data.data();
 
-        VK_VERIFY(vkCreatePipelineCache(logicalDevice, &cacheCreateInfo, nullptr, &m_PipelineCache));
+        VK_VERIFY(vkCreatePipelineCache(logicalDevice, &cacheCreateInfo, &m_Callbacks, &m_PipelineCache));
         return m_PipelineCache;
     }
 

@@ -38,10 +38,23 @@ namespace Nano::Graphics::Internal
             glfwSetErrorCallback(GLFWErrorCallBack);
         }
 
+        // Set user set flags
+        glfwWindowHint(GLFW_RESIZABLE, static_cast<bool>(specs.Flags & WindowFlags::Resizable));
+        // Note: Decorated must be set after the window is created: https://github.com/glfw/glfw/issues/2060
+        glfwWindowHint(GLFW_VISIBLE, static_cast<bool>(specs.Flags & WindowFlags::Visible));
+        glfwWindowHint(GLFW_MAXIMIZED, static_cast<bool>(specs.Flags & WindowFlags::Maximized));
+        glfwWindowHint(GLFW_FLOATING, static_cast<bool>(specs.Flags & WindowFlags::Floating));
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, static_cast<bool>(specs.Flags & WindowFlags::Transparent));
+        glfwWindowHint(GLFW_FOCUSED, static_cast<bool>(specs.Flags & WindowFlags::Focused));
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, static_cast<bool>(specs.Flags & WindowFlags::FocusOnShow));
+        glfwWindowHint(GLFW_CENTER_CURSOR, static_cast<bool>(specs.Flags & WindowFlags::CenterCursor));
+
         // Create the window
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_Window = glfwCreateWindow(static_cast<int>(specs.Width), static_cast<int>(specs.Height), specs.Title.data(), nullptr, nullptr);
+        m_Window = glfwCreateWindow(static_cast<int>(specs.Width), static_cast<int>(specs.Height), specs.Title.c_str(), nullptr, nullptr);
         NG_ASSERT(m_Window, "[DesktopWindow] Failed to create a window.");
+
+        glfwSetWindowAttrib(m_Window, GLFW_DECORATED, static_cast<bool>(specs.Flags & WindowFlags::Decorated));
 
         // Making sure we can access the data in the callbacks
         glfwSetWindowUserPointer(m_Window, (void*)&m_Specification);
@@ -159,8 +172,17 @@ namespace Nano::Graphics::Internal
 
     void DesktopWindow::SwapBuffers()
     {
-        NG_PROFILE("DesktopWindow::SwapBuffers()");
         NG_ASSERT(false, "[DesktopWindow] Unimplemented, maybe needs to be removed.");
+    }
+
+    void DesktopWindow::Show()
+    {
+        glfwShowWindow(m_Window);
+    }
+
+    void DesktopWindow::SetFocus()
+    {
+        glfwFocusWindow(m_Window);
     }
 
     void DesktopWindow::Close()
@@ -173,8 +195,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     Graphics::Maths::Vec2<uint32_t> DesktopWindow::GetSize() const 
     { 
-        NG_PROFILE("DesktopWindow::GetSize()");
-
         return { m_Specification.Width, m_Specification.Height }; 
     }
 
@@ -202,6 +222,14 @@ namespace Nano::Graphics::Internal
 
         m_Specification.Title = title;
         glfwSetWindowTitle(m_Window, m_Specification.Title.data());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Getters
+    ////////////////////////////////////////////////////////////////////////////////////
+    bool DesktopWindow::IsFocused() const
+    {
+        return static_cast<bool>(glfwGetWindowAttrib(m_Window, GLFW_FOCUSED));
     }
 #endif
 

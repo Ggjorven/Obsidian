@@ -86,6 +86,13 @@ namespace Nano::Graphics
         Image3D
     };
 
+    enum class ImageSubresourceViewType : uint8_t
+    {
+        AllAspects = 0,
+        DepthOnly,
+        StencilOnly
+    };
+
     using MipLevel = uint32_t;
     using ArraySlice = uint32_t;
 

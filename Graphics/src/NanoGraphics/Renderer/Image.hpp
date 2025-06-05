@@ -12,6 +12,7 @@ namespace Nano::Graphics
 {
 
     class Device;
+    class ImageSubresourceView;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Image
@@ -42,7 +43,39 @@ namespace Nano::Graphics
         friend class Device;
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ImageSlice
+    ////////////////////////////////////////////////////////////////////////////////////
     // TODO: Image Slice
-    // TODO: Image subresource view
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ImageSubresourceView
+    ////////////////////////////////////////////////////////////////////////////////////
+    class ImageSubresourceView : public Traits::NoCopy
+    {
+    public:
+        using Type = Types::SelectorType<Information::RenderingAPI,
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanImageSubresourceView>
+        >;
+    public:
+        // Destructor
+        ~ImageSubresourceView() = default;
+
+        // Methods
+
+        // Getters
+        inline const ImageSubresourceSpecification& GetSpecification() const { return m_ImageSubresourceView.GetSpecification(); }
+
+    private:
+        // Constructor 
+        ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
+            : m_ImageSubresourceView(image, specs) {}
+
+    private:
+        Type m_ImageSubresourceView;
+
+        friend class Image;
+    };
+
 
 }

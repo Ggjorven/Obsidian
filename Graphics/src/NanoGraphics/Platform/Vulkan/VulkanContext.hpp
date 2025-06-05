@@ -50,8 +50,10 @@ namespace Nano::Graphics::Internal
         void Error(const std::string& message);
 
         // Internal Getters
-        VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }
-        VulkanPhysicalDevice& GetVulkanPhysicalDevice() { return m_PhysicalDevice.Get(); }
+        inline VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }
+        inline const VulkanLogicalDevice& GetVulkanLogicalDevice() const { return m_LogicalDevice.Get(); }
+        inline VulkanPhysicalDevice& GetVulkanPhysicalDevice() { return m_PhysicalDevice.Get(); }
+        inline const VulkanPhysicalDevice& GetVulkanPhysicalDevice() const { return m_PhysicalDevice.Get(); }
 
         inline VkInstance GetVkInstance() const { return m_Instance; }
         inline VkDebugUtilsMessengerEXT GetVkDebugger() const { return m_DebugMessenger; }

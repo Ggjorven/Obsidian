@@ -25,6 +25,9 @@ namespace Nano::Graphics::Internal
         VulkanDevice(const DeviceSpecification& specs);
         ~VulkanDevice();
 
+        // Methods
+        void Wait() const;
+
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }
         inline const VulkanAllocator& GetAllocator() const { return m_Allocator; }

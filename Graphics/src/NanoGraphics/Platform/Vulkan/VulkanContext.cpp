@@ -326,7 +326,7 @@ namespace Nano::Graphics::Internal
         std::vector<const char*> fullExtensions(extensionSet.begin(), extensionSet.end());
 
         m_PhysicalDevice.Construct(m_Instance, surface, std::span<const char*>(fullExtensions));
-        m_LogicalDevice.Construct(surface, m_PhysicalDevice, std::span<const char*>(fullExtensions));
+        m_LogicalDevice.Construct(m_PhysicalDevice, std::span<const char*>(fullExtensions));
 
         vkDestroySurfaceKHR(m_Instance, surface, nullptr);
     }

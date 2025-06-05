@@ -92,6 +92,8 @@ namespace Nano::Graphics::Internal
 
         // Getters
         inline VkPhysicalDevice GetVkPhysicalDevice() const { return m_PhysicalDevice; }
+
+        inline const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueIndices; }
         
     private:
         // Private methods
@@ -103,6 +105,8 @@ namespace Nano::Graphics::Internal
 
     private:
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+
+        QueueFamilyIndices m_QueueIndices = {};
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -112,7 +116,7 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        VulkanLogicalDevice(VkSurfaceKHR surface, VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions);
+        VulkanLogicalDevice(VulkanPhysicalDevice& physicalDevice, std::span<const char*> extensions);
         ~VulkanLogicalDevice();
 
         // Methods
