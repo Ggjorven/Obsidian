@@ -25,16 +25,7 @@ namespace Nano::Graphics::Internal
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Note: Allows us to reset the command buffer and reuse it.
-
-        switch (specs.Queue)
-        {
-        case CommandQueue::Graphics:    poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().GraphicsQueue; break;
-        case CommandQueue::Compute:     poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().ComputeQueue; break;
-        case CommandQueue::Present:     poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().PresentQueue; break;
-
-        default:
-            NG_UNREACHABLE();
-        }
+        poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
         
         VK_VERIFY(vkCreateCommandPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, m_Device.GetAllocator().GetCallbacks(), &m_CommandPool));
 

@@ -27,10 +27,13 @@ namespace Nano::Graphics
     struct CommandListSpecification
     {
     public:
+        CommandQueue Queue = CommandQueue::Graphics;
+
         std::string DebugName = {};
 
     public:
         // Setters
+        inline constexpr CommandListSpecification& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
         inline CommandListSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
@@ -40,13 +43,10 @@ namespace Nano::Graphics
     struct CommandListPoolSpecification
     {
     public:
-        CommandQueue Queue = CommandQueue::Graphics;
-
         std::string DebugName = {};
 
     public:
         // Setters
-        inline constexpr CommandListPoolSpecification& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
         inline CommandListPoolSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
