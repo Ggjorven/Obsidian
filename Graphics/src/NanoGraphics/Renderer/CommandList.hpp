@@ -6,6 +6,8 @@
 
 #include <Nano/Nano.hpp>
 
+#include <span>
+
 namespace Nano::Graphics
 {
 
@@ -53,11 +55,16 @@ namespace Nano::Graphics
 
         // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline CommandList AllocateList(const CommandListSpecification& specs) const { return CommandList(*this, specs); }
+        inline void FreeList(CommandList& list) const { m_Pool.FreeList(list); }
+        inline void FreeLists(std::span<CommandList*> lists) const { m_Pool.FreeLists(lists); }
+
+        // Helper methods
+        inline void ResetList(CommandList& list) const { m_Pool.ResetList(list); }
 
     private:
         // Constructor
-        inline CommandListPool(const Device& device)
-            : m_Pool(device) {}
+        inline CommandListPool(const Device& device, const CommandListPoolSpecification& specs)
+            : m_Pool(device, specs) {}
 
     private:
         Type m_Pool;

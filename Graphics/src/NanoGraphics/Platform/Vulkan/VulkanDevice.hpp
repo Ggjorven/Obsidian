@@ -12,6 +12,11 @@
 #include <tuple>
 #include <array>
 
+namespace Nano::Graphics
+{
+    class CommandListPool;
+}
+
 namespace Nano::Graphics::Internal
 {
 
@@ -27,6 +32,12 @@ namespace Nano::Graphics::Internal
 
         // Methods
         void Wait() const;
+
+        // Destruction methods
+        void FreePool(CommandListPool& pool) const;
+
+        // Helper methods
+        void ResetPool(CommandListPool& pool) const;
 
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }

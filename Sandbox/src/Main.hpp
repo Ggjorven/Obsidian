@@ -36,18 +36,24 @@ int Main(int argc, char* argv[])
 					NG_LOG_ERROR("Device Error: {0}", message);
 					break;
 				case DeviceMessage::Warn:
-					NG_LOG_ERROR("Device Warning: {0}", message);
+					NG_LOG_WARN("Device Warning: {0}", message);
 					break;
 				}
 			});
 		Device device(deviceSpecs);
 
 		// CommandPool & Lists
-		CommandListPool pool = device.AllocateCommandListPool();
+		CommandListPoolSpecification poolSpecs = CommandListPoolSpecification()
+			.SetQueue(CommandQueue::Graphics)
+			.SetDebugName("First pool");
+		CommandListPool pool = device.AllocateCommandListPool(poolSpecs);
 
 		CommandListSpecification listSpecs = CommandListSpecification()
-			.SetQueue(CommandQueue::Graphics);
+			.SetDebugName("First list");
 		CommandList list = pool.AllocateList(listSpecs);
+
+		pool.FreeList(list);
+		device.FreePool(pool);
 
 		// Image creation (!TEST!, should be in SwapChain but doesn't exist yet)
 		ImageSpecification imageSpecs = ImageSpecification()

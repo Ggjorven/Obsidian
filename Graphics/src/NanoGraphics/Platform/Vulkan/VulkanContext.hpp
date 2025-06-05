@@ -44,10 +44,10 @@ namespace Nano::Graphics::Internal
         ~VulkanContext();
 
         // Internal methods
-        void SetDebugName(void* object, VkObjectType type, const std::string& name);
+        void SetDebugName(void* object, VkObjectType type, const std::string& name) const;
 
-        void Warn(const std::string& message);
-        void Error(const std::string& message);
+        void Warn(const std::string& message) const;
+        void Error(const std::string& message) const;
 
         // Internal Getters
         inline VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }

@@ -168,18 +168,20 @@ namespace Nano::Graphics::Internal
         vkDestroyInstance(m_Instance, nullptr);
     }
 
-    void VulkanContext::SetDebugName(void* object, VkObjectType type, const std::string& name)
+    void VulkanContext::SetDebugName(void* object, VkObjectType type, const std::string& name) const
     {
-        VkDebugUtilsObjectNameInfoEXT nameInfo = {};
-        nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-        nameInfo.objectType = type;
-        nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
-        nameInfo.pObjectName = name.c_str();
+        #if !defined(NG_CONFIG_DIST)
+            VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+            nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+            nameInfo.objectType = type;
+            nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+            nameInfo.pObjectName = name.c_str();
 
-        s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo);
+            s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo);
+        #endif
     }
 
-    void VulkanContext::Warn(const std::string& message)
+    void VulkanContext::Warn(const std::string& message) const
     {
         #if !defined(NG_CONFIG_DIST)
             if (static_cast<bool>(!s_MessageCallback)) [[unlikely]]
@@ -189,7 +191,7 @@ namespace Nano::Graphics::Internal
         #endif
     }
 
-    void VulkanContext::Error(const std::string& message)
+    void VulkanContext::Error(const std::string& message) const
     {
         #if !defined(NG_CONFIG_DIST)
             if (static_cast<bool>(!s_MessageCallback)) [[unlikely]]

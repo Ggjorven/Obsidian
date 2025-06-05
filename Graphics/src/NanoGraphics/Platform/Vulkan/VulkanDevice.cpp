@@ -29,4 +29,18 @@ namespace Nano::Graphics::Internal
         m_Context.GetVulkanLogicalDevice().Wait();
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Destruction methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanDevice::FreePool(CommandListPool& pool) const
+    {
+        vkDestroyCommandPool(m_Context.GetVulkanLogicalDevice().GetVkDevice(), (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool(), m_Allocator.GetCallbacks());
+    }
+
+    void VulkanDevice::ResetPool(CommandListPool& pool) const
+    {
+        vkResetCommandPool(m_Context.GetVulkanLogicalDevice().GetVkDevice(), (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool(), 0);
+    }
+
+
 }

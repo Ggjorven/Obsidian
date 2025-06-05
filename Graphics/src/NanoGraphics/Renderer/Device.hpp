@@ -31,10 +31,14 @@ namespace Nano::Graphics
         // Methods 
         inline void Wait() const { m_Device.Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
 
-        // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
-        inline CommandListPool AllocateCommandListPool() const { return CommandListPool(*this); }
+        // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
+        inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) const { return CommandListPool(*this, specs); }
+        inline void FreePool(CommandListPool& pool) const { m_Device.FreePool(pool); }
 
         inline Image CreateImage(const ImageSpecification& specs) const { return Image(*this, specs); }
+
+        // Helper methods
+        inline void ResetPool(CommandListPool& pool) const { m_Device.ResetPool(pool); }
 
     private:
         Type m_Device;

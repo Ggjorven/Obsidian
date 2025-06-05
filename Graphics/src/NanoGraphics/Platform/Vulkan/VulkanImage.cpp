@@ -8,12 +8,13 @@
 #include "NanoGraphics/Renderer/Image.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanResource.hpp"
 
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>,   "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Image::Type, VulkanImage>,     "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
