@@ -81,6 +81,8 @@ namespace Nano::Graphics::Internal
 		const VulkanDevice& m_Device;
 		ImageSpecification m_Specification;
 
+		ResourceState m_CurrentState = ResourceState::Unknown;
+
 		VkImage m_Image = VK_NULL_HANDLE;
 		VmaAllocation m_Allocation = VK_NULL_HANDLE;
 

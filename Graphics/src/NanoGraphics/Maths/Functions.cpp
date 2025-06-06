@@ -22,27 +22,27 @@ namespace Nano::Graphics::Maths
 	////////////////////////////////////////////////////////////////////////////////////
 	// Matrices
 	////////////////////////////////////////////////////////////////////////////////////
-	Mat4 Perspective(float fov, float aspectRatio, float nearClip, float farClip)
+	Mat4<float> Perspective(float fov, float aspectRatio, float nearClip, float farClip)
 	{
 		return glm::perspective(fov, aspectRatio, nearClip, farClip);
 	}
 
-	Mat4 Orthographic(float aspectRatio, float zoom)
+	Mat4<float> Orthographic(float aspectRatio, float zoom)
 	{
 		return Orthographic(-aspectRatio * zoom, aspectRatio * zoom, -1.0f * zoom, 1.0f * zoom, -1.0f, 1.0f);
 	}
 
-	Mat4 Orthographic(float left, float right, float bottom, float top, float nearClip, float farClip)
+	Mat4<float> Orthographic(float left, float right, float bottom, float top, float nearClip, float farClip)
 	{
 		return glm::ortho(left, right, bottom, top, nearClip, farClip);
 	}
 
-	Mat4 LookAt(const Vec3<float>& position, const Vec3<float>& target, const Vec3<float>& up)
+	Mat4<float> LookAt(const Vec3<float>& position, const Vec3<float>& target, const Vec3<float>& up)
 	{
 		return glm::lookAt(position, target, up);
 	}
 
-	Mat4 Translate(const Mat4& matrix, const Vec3<float>& translation)
+	Mat4<float> Translate(const Mat4<float>& matrix, const Vec3<float>& translation)
 	{
 		return glm::translate(matrix, translation);
 	}

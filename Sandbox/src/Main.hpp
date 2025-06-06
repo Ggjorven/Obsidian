@@ -44,7 +44,6 @@ int Main(int argc, char* argv[])
 
 		// CommandPool & Lists
 		CommandListPoolSpecification poolSpecs = CommandListPoolSpecification()
-			.SetQueue(CommandQueue::Graphics)
 			.SetDebugName("First pool");
 		CommandListPool pool = device.AllocateCommandListPool(poolSpecs);
 

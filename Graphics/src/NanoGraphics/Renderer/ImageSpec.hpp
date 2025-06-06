@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <cmath>
 #include <string>
+#include <limits>
+#include <numeric>
 
 namespace Nano::Graphics
 {
@@ -136,8 +138,8 @@ namespace Nano::Graphics
         uint32_t SampleCount = 1;
 
         bool IsShaderResource = false;
+        bool IsUnorderedAccessed = false;
         bool IsRenderTarget = false;
-        bool UseMipmaps = false;
 
         ResourceState State = ResourceState::Unknown;
         bool KeepResourceState = false; // Note: After executing commands will go back to set ResourceState ^
@@ -159,7 +161,6 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
-        inline constexpr ImageSpecification& SetUseMipmaps(bool enabled) { UseMipmaps = enabled; return *this; }
         inline constexpr ImageSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
         inline constexpr ImageSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }
         inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
@@ -182,6 +183,35 @@ namespace Nano::Graphics
         inline constexpr ImageSubresourceSpecification& SetNumMipLevels(MipLevel level) { NumMipLevels = level; return *this; }
         inline constexpr ImageSubresourceSpecification& SetBaseArraySlice(ArraySlice base) { BaseArraySlice = base; return *this; }
         inline constexpr ImageSubresourceSpecification& SetNumArraySlices(ArraySlice num) { NumArraySlices = num; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ImageSlice
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ImageSlice
+    {
+    public:
+        uint32_t X = 0;
+        uint32_t Y = 0;
+        uint32_t Z = 0;
+
+        uint32_t Width = std::numeric_limits<uint32_t>::max();
+        uint32_t Height = std::numeric_limits<uint32_t>::max();
+        uint32_t Depth = std::numeric_limits<uint32_t>::max();
+
+        MipLevel ImageMipLevel = 0;
+        ArraySlice ImageArraySlice = 0;
+
+    public:
+        // Setters
+        inline constexpr ImageSlice& setOrigin(uint32_t x, uint32_t y, uint32_t z = 0) { X = x; Y = y; Z = z; return *this; }
+        inline constexpr ImageSlice& setWidth(uint32_t width) { Width = width; return *this; }
+        inline constexpr ImageSlice& setHeight(uint32_t height) { Height = height; return *this; }
+        inline constexpr ImageSlice& setDepth(uint32_t depth) { Depth = depth; return *this; }
+        inline constexpr ImageSlice& SetWidthAndHeight(uint32_t width, uint32_t height) { Width = width; Height = height; return *this; }
+        inline constexpr ImageSlice& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
+        inline constexpr ImageSlice& SetMipLevel(MipLevel level) { ImageMipLevel = level; return *this; }
+        inline constexpr ImageSlice& SetArraySlice(ArraySlice slice) { ImageArraySlice = slice; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

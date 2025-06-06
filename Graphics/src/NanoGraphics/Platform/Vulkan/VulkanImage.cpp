@@ -34,6 +34,12 @@ namespace Nano::Graphics::Internal
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
         : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
+        // Validation checks
+        if (m_Specification.KeepResourceState && m_Specification.State == ResourceState::Unknown)
+        {
+            m_Device.GetContext().Error("[VulkanImage] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
+        }
+
     }
 
     VulkanImage::~VulkanImage()

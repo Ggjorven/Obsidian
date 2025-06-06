@@ -20,14 +20,14 @@ namespace Nano::Graphics::Maths
 	////////////////////////////////////////////////////////////////////////////////////
 	// Matrices
 	////////////////////////////////////////////////////////////////////////////////////
-	Mat4 Perspective(float fov, float aspectRatio, float nearClip = 0.1f, float farClip = 100.0f);
+	Mat4<float> Perspective(float fov, float aspectRatio, float nearClip = 0.1f, float farClip = 100.0f);
 
-	Mat4 Orthographic(float aspectRatio, float zoom = 1.0f);
-	Mat4 Orthographic(float left, float right, float bottom, float top, float nearClip = -1.0f, float farClip = 1.0f);
+	Mat4<float> Orthographic(float aspectRatio, float zoom = 1.0f);
+	Mat4<float> Orthographic(float left, float right, float bottom, float top, float nearClip = -1.0f, float farClip = 1.0f);
 
-	Mat4 LookAt(const Vec3<float>& position, const Vec3<float>& target, const Vec3<float>& up = { 0.0f, 1.0f, 0.0f });
+	Mat4<float> LookAt(const Vec3<float>& position, const Vec3<float>& target, const Vec3<float>& up = { 0.0f, 1.0f, 0.0f });
 
-	Mat4 Translate(const Mat4& matrix, const Vec3<float>& translation);
+	Mat4<float> Translate(const Mat4<float>& matrix, const Vec3<float>& translation);
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// Trigonometry 
