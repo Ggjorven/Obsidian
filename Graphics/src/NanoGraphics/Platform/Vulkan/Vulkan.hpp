@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NanoGraphics/Core/Logging.hpp"
+#include "NanoGraphics/Core/Information.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -10,7 +11,7 @@
 #include <tuple>
 #include <span>
 
-#if defined(NANO_COMPILER_GCC)
+#if defined(NG_COMPILER_GCC)
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
@@ -18,7 +19,7 @@
     #include <vma/vk_mem_alloc.h>
 
     #pragma GCC diagnostic pop
-#elif !defined(NANO_PLATFORM_APPLE)
+#elif !defined(NG_PLATFORM_APPLE)
     #pragma warning(push, 0)
 
     #include <vulkan/vulkan.h>

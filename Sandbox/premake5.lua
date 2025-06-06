@@ -79,6 +79,7 @@ project "Sandbox"
 	filter "system:linux"
 		defines "NG_PLATFORM_DESKTOP"
 		defines "NG_PLATFORM_LINUX"
+		defines "NG_PLATFORM_UNIX"
 		systemversion "latest"
 		staticruntime "on"
 
@@ -100,6 +101,8 @@ project "Sandbox"
     filter "system:macosx"
 		defines "NG_PLATFORM_DESKTOP"
 		defines "NG_PLATFORM_MACOS"
+		defines "NG_PLATFORM_UNIX"
+		defines "NG_PLATFORM_APPLE"
 		systemversion(MacOSVersion)
 		staticruntime "on"
 

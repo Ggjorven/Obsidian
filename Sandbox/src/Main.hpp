@@ -38,6 +38,9 @@ int Main(int argc, char* argv[])
 				case DeviceMessage::Warn:
 					NG_LOG_WARN("Device Warning: {0}", message);
 					break;
+
+				default:
+					break;
 				}
 			});
 		Device device(deviceSpecs);
