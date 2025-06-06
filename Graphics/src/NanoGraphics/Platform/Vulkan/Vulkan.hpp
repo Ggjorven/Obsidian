@@ -60,19 +60,13 @@ namespace Nano::Graphics::Internal
         ~VulkanAllocator();
 
         // Pipeline Cache
-        VkPipelineCache CreatePipelineCache(VkDevice logicalDevice, std::span<const uint8_t> data);
+        VkPipelineCache CreatePipelineCache(std::span<const uint8_t> data);
         VkPipelineCache GetPipelineCache() const;
 
-        // Buffer
-        VmaAllocation AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& dstBuffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0) const;
-        void CopyBuffer(VkCommandBuffer cmdBuf, VkBuffer& srcBuffer, VkBuffer& dstBuffer, size_t size, size_t offset = 0) const;
-        void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation) const;
+        // Buffers
 
         // Image
-        VmaAllocation AllocateImage(VmaMemoryUsage memUsage, VkImage& image, uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0) const;
-		void CopyBufferToImage(VkCommandBuffer cmdBuf, VkBuffer& buffer, VkImage& image, uint32_t width, uint32_t height) const; // Note: The image will be in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL after the copy
-        VkImageView CreateImageView(VkDevice logicalDevice, VkImage& image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) const;
-        VkSampler CreateSampler(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode addressmode, VkSamplerMipmapMode mipmapMode, uint32_t mipLevels) const;
+        VmaAllocation CreateImage(VmaMemoryUsage memUsage, VkImage& image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkSampleCountFlags samples, VkMemoryPropertyFlags requiredFlags = 0) const;
         void DestroyImage(VkImage image, VmaAllocation allocation) const;
 
         // Utils
@@ -85,6 +79,8 @@ namespace Nano::Graphics::Internal
         inline const VkAllocationCallbacks* GetCallbacks() const { return &m_Callbacks; }
 
     private:
+        VkDevice m_Device;
+
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 		VkPipelineCache m_PipelineCache = VK_NULL_HANDLE;
 

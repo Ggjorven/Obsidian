@@ -15,6 +15,8 @@
 namespace Nano::Graphics
 {
     class CommandListPool;
+    class Image;
+    class Sampler;
 }
 
 namespace Nano::Graphics::Internal
@@ -35,6 +37,11 @@ namespace Nano::Graphics::Internal
 
         // Destruction methods
         void FreePool(CommandListPool& pool) const;
+
+        void DestroyImage(Image& image) const;
+        void DestroySubresourceViews(Image& image) const;
+
+        void DestroySampler(Sampler& sampler) const;
 
         // Helper methods
         void ResetPool(CommandListPool& pool) const;

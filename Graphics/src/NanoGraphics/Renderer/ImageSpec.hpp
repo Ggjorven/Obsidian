@@ -13,12 +13,10 @@
 namespace Nano::Graphics
 {
 
-    class Image;
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Flags
     ////////////////////////////////////////////////////////////////////////////////////
-    enum class Format : uint8_t // TODO: Remove unsupported formats
+    enum class Format : uint8_t
     {
         Unknown = 0,
 
@@ -70,6 +68,28 @@ namespace Nano::Graphics
         RGBA32SInt,
         RGBA32Float,
 
+        D16,
+        D24S8,
+        X24G8UInt,
+        D32,
+        D32S8,
+        X32G8UInt,
+
+        BC1Unorm,
+        BC1UnormSRGB,
+        BC2Unorm,
+        BC2UnormSRGB,
+        BC3Unorm,
+        BC3UnormSRGB,
+        BC4Unorm,
+        BC4Snorm,
+        BC5Unorm,
+        BC5Snorm,
+        BC6HUFloat,
+        BC6HSFloat,
+        BC7Unorm,
+        BC7UnormSRGB,
+
         Count,
     };
 
@@ -97,6 +117,14 @@ namespace Nano::Graphics
 
     using MipLevel = uint32_t;
     using ArraySlice = uint32_t;
+
+    enum class FilterMode : uint8_t
+    {
+        None = 0,
+
+        Nearest,
+        Linear
+    };
 
     enum class SamplerAddressMode : uint8_t
     {
@@ -132,7 +160,7 @@ namespace Nano::Graphics
         Format ImageFormat = Format::Unknown;
         ImageDimension Dimension = ImageDimension::Unknown;
 
-        uint32_t Width = 0, Height = 0, Depth = 0;
+        uint32_t Width = 0, Height = 0, Depth = 1;
         uint32_t ArraySize = 1;
         uint32_t MipLevels = 1; // Note: Max = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1;
         uint32_t SampleCount = 1;
@@ -172,6 +200,9 @@ namespace Nano::Graphics
     struct ImageSubresourceSpecification // Note: This is used to specify a Subresource of an Image for a command.
     {
     public:
+        inline constexpr static MipLevel AllMipLevels = std::numeric_limits<uint32_t>::max();
+        inline constexpr static ArraySlice AllArraySlices = std::numeric_limits<uint32_t>::max();
+    public:
         MipLevel BaseMipLevel = 0;
         MipLevel NumMipLevels = 1;
         ArraySlice BaseArraySlice = 0;
@@ -183,12 +214,16 @@ namespace Nano::Graphics
         inline constexpr ImageSubresourceSpecification& SetNumMipLevels(MipLevel level) { NumMipLevels = level; return *this; }
         inline constexpr ImageSubresourceSpecification& SetBaseArraySlice(ArraySlice base) { BaseArraySlice = base; return *this; }
         inline constexpr ImageSubresourceSpecification& SetNumArraySlices(ArraySlice num) { NumArraySlices = num; return *this; }
+
+        // Operators
+        inline constexpr bool operator == (const ImageSubresourceSpecification& other) const { return ((BaseMipLevel == other.BaseMipLevel) && (NumMipLevels == other.NumMipLevels) && (BaseArraySlice == other.BaseArraySlice) && (NumArraySlices == other.NumArraySlices)); }
+        inline constexpr bool operator != (const ImageSubresourceSpecification& other) const { return !(*this == other); }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // ImageSlice
     ////////////////////////////////////////////////////////////////////////////////////
-    struct ImageSlice
+    struct ImageSliceSpecification
     {
     public:
         uint32_t X = 0;
@@ -204,14 +239,14 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr ImageSlice& setOrigin(uint32_t x, uint32_t y, uint32_t z = 0) { X = x; Y = y; Z = z; return *this; }
-        inline constexpr ImageSlice& setWidth(uint32_t width) { Width = width; return *this; }
-        inline constexpr ImageSlice& setHeight(uint32_t height) { Height = height; return *this; }
-        inline constexpr ImageSlice& setDepth(uint32_t depth) { Depth = depth; return *this; }
-        inline constexpr ImageSlice& SetWidthAndHeight(uint32_t width, uint32_t height) { Width = width; Height = height; return *this; }
-        inline constexpr ImageSlice& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
-        inline constexpr ImageSlice& SetMipLevel(MipLevel level) { ImageMipLevel = level; return *this; }
-        inline constexpr ImageSlice& SetArraySlice(ArraySlice slice) { ImageArraySlice = slice; return *this; }
+        inline constexpr ImageSliceSpecification& setOrigin(uint32_t x, uint32_t y, uint32_t z = 0) { X = x; Y = y; Z = z; return *this; }
+        inline constexpr ImageSliceSpecification& setWidth(uint32_t width) { Width = width; return *this; }
+        inline constexpr ImageSliceSpecification& setHeight(uint32_t height) { Height = height; return *this; }
+        inline constexpr ImageSliceSpecification& setDepth(uint32_t depth) { Depth = depth; return *this; }
+        inline constexpr ImageSliceSpecification& SetWidthAndHeight(uint32_t width, uint32_t height) { Width = width; Height = height; return *this; }
+        inline constexpr ImageSliceSpecification& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
+        inline constexpr ImageSliceSpecification& SetMipLevel(MipLevel level) { ImageMipLevel = level; return *this; }
+        inline constexpr ImageSliceSpecification& SetArraySlice(ArraySlice slice) { ImageArraySlice = slice; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -220,13 +255,16 @@ namespace Nano::Graphics
     struct SamplerSpecification
     {
     public:
+        inline constexpr static float DisableMaxAnisotropyValue = 1.0f;
+        inline constexpr static float MaxMaxAnisotropyValue = -1.0f;
+    public:
         Maths::Vec4<float> BorderColour = { 1.0f, 1.0f, 1.0f, 1.0f };
-        float MaxAnisotropy = 1.0f;
+        float MaxAnisotropy = MaxMaxAnisotropyValue;
         float MipBias = 0.0f;
 
-        bool MinFilter = true;
-        bool MagFilter = true;
-        bool MipFilter = true;
+        FilterMode MinFilter = FilterMode::Nearest;
+        FilterMode MagFilter = FilterMode::Nearest;
+        FilterMode MipFilter = FilterMode::Nearest;
         
         SamplerAddressMode AddressU = SamplerAddressMode::Clamp;
         SamplerAddressMode AddressV = SamplerAddressMode::Clamp;
@@ -241,9 +279,9 @@ namespace Nano::Graphics
         inline constexpr SamplerSpecification& SetBorderColour(const Maths::Vec4<float> colour) { BorderColour = colour; return *this; }
         inline constexpr SamplerSpecification& SetMaxAnisotropy(float max) { MaxAnisotropy = max; return *this; }
         inline constexpr SamplerSpecification& SetMipBias(float bias) { MipBias = bias; return *this; }
-        inline constexpr SamplerSpecification& SetMinFilter(bool enabled) { MinFilter = enabled; return *this; }
-        inline constexpr SamplerSpecification& SetMagFilter(bool enabled) { MagFilter = enabled; return *this; }
-        inline constexpr SamplerSpecification& SetMipFilter(bool enabled) { MipFilter = enabled; return *this; }
+        inline constexpr SamplerSpecification& SetMinFilter(FilterMode filter) { MinFilter = filter; return *this; }
+        inline constexpr SamplerSpecification& SetMagFilter(FilterMode filter) { MagFilter = filter; return *this; }
+        inline constexpr SamplerSpecification& SetMipFilter(FilterMode filter) { MipFilter = filter; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeU(SamplerAddressMode u) { AddressU = u; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeV(SamplerAddressMode v) { AddressV = v; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeW(SamplerAddressMode w) { AddressW = w; return *this; }
@@ -252,5 +290,42 @@ namespace Nano::Graphics
         inline SamplerSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Helper
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr bool FormatHasDepth(Format format)
+    {
+        switch (format)
+        {
+        case Format::D16:
+        case Format::D24S8:
+        case Format::D32:
+        case Format::D32S8:
+            return true;
+
+        default:
+            break;
+        }
+
+        return false;
+    }
+
+    inline constexpr bool FormatHasStencil(Format format)
+    {
+        switch (format)
+        {
+        case Format::D24S8:
+        case Format::X24G8UInt:
+        case Format::D32S8:
+        case Format::X32G8UInt:
+            return true;
+
+        default:
+            break;
+        }
+
+        return false;
+    }
 
 }

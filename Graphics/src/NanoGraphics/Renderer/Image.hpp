@@ -27,8 +27,6 @@ namespace Nano::Graphics
         // Destructor
         ~Image() = default;
 
-        // Methods
-
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
 
@@ -44,37 +42,30 @@ namespace Nano::Graphics
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // ImageSlice
+    // Sampler
     ////////////////////////////////////////////////////////////////////////////////////
-    // TODO: Image Slice
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // ImageSubresourceView
-    ////////////////////////////////////////////////////////////////////////////////////
-    class ImageSubresourceView : public Traits::NoCopy
+    class Sampler : public Traits::NoCopy
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanImageSubresourceView>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanSampler>
         >;
     public:
         // Destructor
-        ~ImageSubresourceView() = default;
-
-        // Methods
+        ~Sampler() = default;
 
         // Getters
-        inline const ImageSubresourceSpecification& GetSpecification() const { return m_ImageSubresourceView.GetSpecification(); }
+        inline const SamplerSpecification& GetSpecification() const { return m_Sampler.GetSpecification(); }
 
     private:
         // Constructor 
-        ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
-            : m_ImageSubresourceView(image, specs) {}
+        Sampler(const Device& device, const SamplerSpecification& specs)
+            : m_Sampler(device, specs) {}
 
     private:
-        Type m_ImageSubresourceView;
+        Type m_Sampler;
 
-        friend class Image;
+        friend class Device;
     };
 
 

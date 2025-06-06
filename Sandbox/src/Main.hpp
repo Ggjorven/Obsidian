@@ -62,8 +62,11 @@ int Main(int argc, char* argv[])
 			.SetImageFormat(Format::BGRA8Unorm)
 			.SetImageDimension(ImageDimension::Image2D)
 			.SetWidthAndHeight(1280, 720)
+			.SetIsRenderTarget(true)
 			.SetDebugName("First image");
 		Image image = device.CreateImage(imageSpecs);
+
+		device.DestroyImage(image);
 
 		// Main Loop
 		while (window.IsOpen())
