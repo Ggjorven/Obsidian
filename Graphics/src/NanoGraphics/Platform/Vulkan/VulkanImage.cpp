@@ -8,7 +8,6 @@
 #include "NanoGraphics/Renderer/Image.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanResource.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -57,10 +56,12 @@ namespace Nano::Graphics::Internal
             ImageSpecificationToVkImageUsageFlags(m_Specification),
             SampleCountToVkSampleCountFlags(m_Specification.SampleCount)
         );
+
+        m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
     }
 
-    VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs, VkImage image)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_Image(image)
+    VulkanImage::VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image)
+        : m_Device(device), m_Specification(specs), m_Image(image)
     {
     }
 
@@ -103,10 +104,10 @@ namespace Nano::Graphics::Internal
         createInfo.viewType = imageViewType;
         createInfo.format = vkFormat;
         createInfo.components = {
-            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            /*.r*/ VK_COMPONENT_SWIZZLE_IDENTITY,
+            /*.g*/ VK_COMPONENT_SWIZZLE_IDENTITY,
+            /*.b*/ VK_COMPONENT_SWIZZLE_IDENTITY,
+            /*.a*/ VK_COMPONENT_SWIZZLE_IDENTITY
         };
         
         createInfo.subresourceRange.aspectMask = aspectflags;
@@ -129,11 +130,11 @@ namespace Nano::Graphics::Internal
             createInfo.components.g = VK_COMPONENT_SWIZZLE_R;
         }
 
-        VK_VERIFY(vkCreateImageView(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, m_Device.GetAllocator().GetCallbacks(), &imageView.m_ImageView));
+        VK_VERIFY(vkCreateImageView(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, VulkanAllocator::GetCallbacks(), &imageView.m_ImageView));
 
         if (!m_Specification.DebugName.empty())
         {
-            std::string debugName = std::string("ImageView for: ") + m_Specification.DebugName;
+            std::string debugName = std::string("ImageView for: ") + std::string(m_Specification.DebugName);
             m_Device.GetContext().SetDebugName(imageView.m_ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, debugName.c_str());
         }
 
@@ -170,7 +171,7 @@ namespace Nano::Graphics::Internal
         samplerInfo.maxLod = std::numeric_limits<float>::max();
         samplerInfo.mipLodBias = m_Specification.MipBias;
 
-        VK_VERIFY(vkCreateSampler(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &samplerInfo, m_Device.GetAllocator().GetCallbacks(), &m_Sampler));
+        VK_VERIFY(vkCreateSampler(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &samplerInfo, VulkanAllocator::GetCallbacks(), &m_Sampler));
     }
 
     VulkanSampler::~VulkanSampler()

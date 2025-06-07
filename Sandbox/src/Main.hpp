@@ -25,54 +25,52 @@ int Main(int argc, char* argv[])
 		Window window(windowSpecs);
 		windowPtr = &window;
 
+		// Destroy prep
+		std::queue<DeviceDestroyFn> destroyQueue = {};
+		auto emptyQueue = [&]() { while (!destroyQueue.empty()) { destroyQueue.front()(); destroyQueue.pop(); } };
+
 		// Device Creation
 		DeviceSpecification deviceSpecs = DeviceSpecification()
 			.SetNativeWindow(windowPtr->GetNativeWindow())
-			.SetMessageCallback([](DeviceMessage msgType, const std::string& message)
+			.SetMessageCallback([](DeviceMessageType msgType, const std::string& message)
 			{
 				switch (msgType)
 				{
-				case DeviceMessage::Error:
+				case DeviceMessageType::Error:
 					NG_LOG_ERROR("Device Error: {0}", message);
 					break;
-				case DeviceMessage::Warn:
+				case DeviceMessageType::Warn:
 					NG_LOG_WARN("Device Warning: {0}", message);
 					break;
 
 				default:
 					break;
 				}
+			})
+			.SetDestroyCallback([&](DeviceDestroyFn fn)
+			{
+				destroyQueue.push(fn);
 			});
 		Device device(deviceSpecs);
 
-		// CommandPool & Lists
-		CommandListPoolSpecification poolSpecs = CommandListPoolSpecification()
-			.SetDebugName("First pool");
-		CommandListPool pool = device.AllocateCommandListPool(poolSpecs);
-
-		CommandListSpecification listSpecs = CommandListSpecification()
-			.SetDebugName("First list");
-		CommandList list = pool.AllocateList(listSpecs);
-
-		pool.FreeList(list);
-		device.FreePool(pool);
-
-		// Image creation (!TEST!, should be in SwapChain but doesn't exist yet)
-		ImageSpecification imageSpecs = ImageSpecification()
-			.SetImageFormat(Format::BGRA8Unorm)
-			.SetImageDimension(ImageDimension::Image2D)
-			.SetWidthAndHeight(1280, 720)
-			.SetIsRenderTarget(true)
-			.SetDebugName("First image");
-		Image image = device.CreateImage(imageSpecs);
-
-		device.DestroyImage(image);
+		// Swapchain
+		SwapchainSpecification swapchainSpecs = SwapchainSpecification()
+			.SetWindow(window)
+			.SetFormat(Format::BGRA8Unorm)
+			.SetColourSpace(ColourSpace::SRGB)
+			.SetVSync(false);
+		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
 
 		// Main Loop
 		while (window.IsOpen())
 		{
+			emptyQueue();
+
 			window.PollEvents();
 		}
+
+		device.DestroySwapchain(swapchain);
+		emptyQueue();
 	}
 
 	return 0;

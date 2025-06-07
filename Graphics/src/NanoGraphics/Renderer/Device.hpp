@@ -3,8 +3,9 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
-#include "NanoGraphics/Renderer/CommandList.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"
+#include "NanoGraphics/Renderer/Swapchain.hpp"
+#include "NanoGraphics/Renderer/CommandList.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
@@ -32,6 +33,9 @@ namespace Nano::Graphics
         inline void Wait() const { m_Device.Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
 
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
+        inline Swapchain CreateSwapchain(const SwapchainSpecification& specs) const { return Swapchain(*this, specs); }
+        inline void DestroySwapchain(Swapchain& swapchain) const { return m_Device.DestroySwapchain(swapchain); }
+
         inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) const { return CommandListPool(*this, specs); }
         inline void FreePool(CommandListPool& pool) const { m_Device.FreePool(pool); }
 

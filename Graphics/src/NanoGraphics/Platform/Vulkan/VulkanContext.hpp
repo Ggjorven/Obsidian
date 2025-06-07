@@ -40,7 +40,7 @@ namespace Nano::Graphics::Internal
         });
     public:
         // Constructors & Destructor
-        VulkanContext(void* window, DeviceMessageCallback callback, std::span<const char*> extensions);
+        VulkanContext(void* window, DeviceMessageCallback messageCallback, DeviceDestroyCallback destroyCallback, std::span<const char*> extensions);
         ~VulkanContext();
 
         // Internal methods
@@ -48,6 +48,8 @@ namespace Nano::Graphics::Internal
 
         void Warn(const std::string& message) const;
         void Error(const std::string& message) const;
+
+        void Destroy(DeviceDestroyFn destroyFn) const;
 
         // Internal Getters
         inline VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }
@@ -69,6 +71,8 @@ namespace Nano::Graphics::Internal
 
         Memory::DeferredConstruct<VulkanLogicalDevice, true> m_LogicalDevice = {};
         Memory::DeferredConstruct<VulkanPhysicalDevice> m_PhysicalDevice = {};
+
+        DeviceDestroyCallback m_DestroyCallback = nullptr;
     };
 
 }

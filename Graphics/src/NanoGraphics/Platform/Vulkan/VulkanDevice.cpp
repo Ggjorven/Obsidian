@@ -16,7 +16,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanDevice::VulkanDevice(const DeviceSpecification& specs)
-        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice())
+        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.DestroyCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice())
     {
     }
 
@@ -35,32 +35,62 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Destruction methods
     ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanDevice::DestroySwapchain(Swapchain& swapchain) const
+    {
+
+    }
+
     void VulkanDevice::FreePool(CommandListPool& pool) const
     {
-        vkDestroyCommandPool(m_Context.GetVulkanLogicalDevice().GetVkDevice(), (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool(), m_Allocator.GetCallbacks());
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkCommandPool commandPool = (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
+        m_Context.Destroy([device, commandPool]() mutable 
+        {
+            vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
+        });
     }
 
     void VulkanDevice::DestroyImage(Image& image) const
     {
-        VulkanImage& vkImage = *reinterpret_cast<VulkanImage*>(&image);
         DestroySubresourceViews(image);
-        m_Allocator.DestroyImage(vkImage.GetVkImage(), vkImage.GetVmaAllocation());
+
+        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
+        VkImage vkImage = vulkanImage.GetVkImage();
+        VmaAllocation allocation = vulkanImage.GetVmaAllocation();
+        m_Context.Destroy([vkImage, allocation, allocator = &m_Allocator]() mutable
+        {
+            allocator->DestroyImage(vkImage, allocation);
+        });
     }
 
     void VulkanDevice::DestroySubresourceViews(Image& image) const
     {
         VulkanImage& vkImage = *reinterpret_cast<VulkanImage*>(&image);
 
-        for (const auto& [key, view] : vkImage.GetImageViews())
-            vkDestroyImageView(m_Context.GetVulkanLogicalDevice().GetVkDevice(), view.GetVkImageView(), m_Allocator.GetCallbacks());
+        std::vector<VkImageView> imageViews;
+        imageViews.reserve(vkImage.GetImageViews().size());
+        for (const auto& [_, view] : vkImage.GetImageViews())
+            imageViews.push_back(view.GetVkImageView());
 
-        vkImage.GetImageViews().clear();
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        m_Context.Destroy([device, imageViews = std::move(imageViews)]() mutable
+        {
+            for (const auto& iview : imageViews)
+                vkDestroyImageView(device, iview, VulkanAllocator::GetCallbacks());
+        });
     }
 
     void VulkanDevice::DestroySampler(Sampler& sampler) const
     {
-        VulkanSampler& vkSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
-        vkDestroySampler(m_Context.GetVulkanLogicalDevice().GetVkDevice(), vkSampler.GetVkSampler(), m_Allocator.GetCallbacks());
+        VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkSampler vkSampler = vulkanSampler.GetVkSampler();
+        m_Context.Destroy([device, vkSampler]() mutable
+        {
+            vkDestroySampler(device, vkSampler, VulkanAllocator::GetCallbacks());
+        });
+
     }
 
     void VulkanDevice::ResetPool(CommandListPool& pool) const

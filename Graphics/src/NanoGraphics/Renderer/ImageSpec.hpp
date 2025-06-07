@@ -6,9 +6,9 @@
 
 #include <cstdint>
 #include <cmath>
-#include <string>
 #include <limits>
 #include <numeric>
+#include <string_view>
 
 namespace Nano::Graphics
 {
@@ -89,8 +89,14 @@ namespace Nano::Graphics
         BC6HSFloat,
         BC7Unorm,
         BC7UnormSRGB,
+    };
 
-        Count,
+    enum class FormatKind : uint8_t
+    {
+        Integer,
+        Normalized,
+        Float,
+        DepthStencil
     };
 
     enum class ImageDimension : uint8_t
@@ -172,10 +178,10 @@ namespace Nano::Graphics
         ResourceState State = ResourceState::Unknown;
         bool KeepResourceState = false; // Note: After executing commands will go back to set ResourceState ^
 
-        std::string DebugName = {};
+        std::string_view DebugName = {};
 
     public:
-        // Setters
+        // Setters // TODO: Make MaxMipLevels constexpr
         inline constexpr ImageSpecification& SetImageFormat(Format format) { ImageFormat = format; return *this; }
         inline constexpr ImageSpecification& SetImageDimension(ImageDimension dimension) { Dimension = dimension; return *this; }
         inline constexpr ImageSpecification& SetWidth(uint32_t width) { Width = width; return *this; }
@@ -191,7 +197,7 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
         inline constexpr ImageSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
         inline constexpr ImageSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }
-        inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -272,7 +278,7 @@ namespace Nano::Graphics
 
         SamplerReductionType ReductionType = SamplerReductionType::Standard;
 
-        std::string DebugName = {};
+        std::string_view DebugName = {};
 
     public:
         // Setters
@@ -287,45 +293,119 @@ namespace Nano::Graphics
         inline constexpr SamplerSpecification& SetAddressModeW(SamplerAddressMode w) { AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetUVW(SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w) { AddressU = u; AddressV = v; AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetReductionType(SamplerReductionType type) { ReductionType = type; return *this; }
-        inline SamplerSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline constexpr SamplerSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
 
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Helper
     ////////////////////////////////////////////////////////////////////////////////////
-    inline constexpr bool FormatHasDepth(Format format)
+    namespace Internal
     {
-        switch (format)
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // FormatInfo
+        ////////////////////////////////////////////////////////////////////////////////////
+        struct FormatInfo
         {
-        case Format::D16:
-        case Format::D24S8:
-        case Format::D32:
-        case Format::D32S8:
-            return true;
+        public:
+            Format FormatType;
+            uint8_t BytesPerBlock;
+            uint8_t BlockSize;
+            FormatKind Kind;
 
-        default:
-            break;
-        }
+            // Map all booleans to 1 byte (1 bit per bool)
+            bool HasRed     : 1;
+            bool HasGreen   : 1;
+            bool HasBlue    : 1;
+            bool HasAlpha   : 1;
+            bool HasDepth   : 1;
+            bool HasStencil : 1;
+            bool IsSigned   : 1;
+            bool IsSRGB     : 1;
+        };
 
-        return false;
-    }
+        ////////////////////////////////////////////////////////////////////////////////////
+        // FormatInfo array
+        ////////////////////////////////////////////////////////////////////////////////////
+        inline constexpr const auto g_FormatInfo = std::to_array<FormatInfo>({
+            // Format                   Bytes  Block    Kind                      Red    Green  Blue   Alpha  Depth  Stencl Signed SRGB
+            { Format::Unknown,          0,     0,       FormatKind::Integer,      false, false, false, false, false, false, false, false },
+            { Format::R8UInt,           1,     1,       FormatKind::Integer,      true,  false, false, false, false, false, false, false },
+            { Format::R8SInt,           1,     1,       FormatKind::Integer,      true,  false, false, false, false, false, true,  false },
+            { Format::R8Unorm,          1,     1,       FormatKind::Normalized,   true,  false, false, false, false, false, false, false },
+            { Format::R8Snorm,          1,     1,       FormatKind::Normalized,   true,  false, false, false, false, false, true,  false },
+            { Format::RG8UInt,          2,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, false, false },
+            { Format::RG8SInt,          2,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, true,  false },
+            { Format::RG8Unorm,         2,     1,       FormatKind::Normalized,   true,  true,  false, false, false, false, false, false },
+            { Format::RG8Snorm,         2,     1,       FormatKind::Normalized,   true,  true,  false, false, false, false, true,  false },
+            { Format::R16UInt,          2,     1,       FormatKind::Integer,      true,  false, false, false, false, false, false, false },
+            { Format::R16SInt,          2,     1,       FormatKind::Integer,      true,  false, false, false, false, false, true,  false },
+            { Format::R16Unorm,         2,     1,       FormatKind::Normalized,   true,  false, false, false, false, false, false, false },
+            { Format::R16Snorm,         2,     1,       FormatKind::Normalized,   true,  false, false, false, false, false, true,  false },
+            { Format::R16Float,         2,     1,       FormatKind::Float,        true,  false, false, false, false, false, true,  false },
+            { Format::BGRA4Unorm,       2,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::B5G6R5Unorm,      2,     1,       FormatKind::Normalized,   true,  true,  true,  false, false, false, false, false },
+            { Format::B5G5R5A1Unorm,    2,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA8UInt,        4,     1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA8SInt,        4,     1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, true,  false },
+            { Format::RGBA8Unorm,       4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA8Snorm,       4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, true,  false },
+            { Format::BGRA8Unorm,       4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::SRGBA8Unorm,      4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, true  },
+            { Format::SBGRA8Unorm,      4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::R10G10B10A2Unorm, 4,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::R11G11B10Float,   4,     1,       FormatKind::Float,        true,  true,  true,  false, false, false, false, false },
+            { Format::RG16UInt,         4,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, false, false },
+            { Format::RG16SInt,         4,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, true,  false },
+            { Format::RG16Unorm,        4,     1,       FormatKind::Normalized,   true,  true,  false, false, false, false, false, false },
+            { Format::RG16Snorm,        4,     1,       FormatKind::Normalized,   true,  true,  false, false, false, false, true,  false },
+            { Format::RG16Float,        4,     1,       FormatKind::Float,        true,  true,  false, false, false, false, true,  false },
+            { Format::R32UInt,          4,     1,       FormatKind::Integer,      true,  false, false, false, false, false, false, false },
+            { Format::R32SInt,          4,     1,       FormatKind::Integer,      true,  false, false, false, false, false, true,  false },
+            { Format::R32Float,         4,     1,       FormatKind::Float,        true,  false, false, false, false, false, true,  false },
+            { Format::RGBA16UInt,       8,     1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA16SInt,       8,     1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, true,  false },
+            { Format::RGBA16Float,      8,     1,       FormatKind::Float,        true,  true,  true,  true,  false, false, true,  false },
+            { Format::RGBA16Unorm,      8,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA16Snorm,      8,     1,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, true,  false },
+            { Format::RG32UInt,         8,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, false, false },
+            { Format::RG32SInt,         8,     1,       FormatKind::Integer,      true,  true,  false, false, false, false, true,  false },
+            { Format::RG32Float,        8,     1,       FormatKind::Float,        true,  true,  false, false, false, false, true,  false },
+            { Format::RGB32UInt,        12,    1,       FormatKind::Integer,      true,  true,  true,  false, false, false, false, false },
+            { Format::RGB32SInt,        12,    1,       FormatKind::Integer,      true,  true,  true,  false, false, false, true,  false },
+            { Format::RGB32Float,       12,    1,       FormatKind::Float,        true,  true,  true,  false, false, false, true,  false },
+            { Format::RGBA32UInt,       16,    1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, false, false },
+            { Format::RGBA32SInt,       16,    1,       FormatKind::Integer,      true,  true,  true,  true,  false, false, true,  false },
+            { Format::RGBA32Float,      16,    1,       FormatKind::Float,        true,  true,  true,  true,  false, false, true,  false },
+            { Format::D16,              2,     1,       FormatKind::DepthStencil, false, false, false, false, true,  false, false, false },
+            { Format::D24S8,            4,     1,       FormatKind::DepthStencil, false, false, false, false, true,  true,  false, false },
+            { Format::X24G8UInt,        4,     1,       FormatKind::Integer,      false, false, false, false, false, true,  false, false },
+            { Format::D32,              4,     1,       FormatKind::DepthStencil, false, false, false, false, true,  false, false, false },
+            { Format::D32S8,            8,     1,       FormatKind::DepthStencil, false, false, false, false, true,  true,  false, false },
+            { Format::X32G8UInt,        8,     1,       FormatKind::Integer,      false, false, false, false, false, true,  false, false },
+            { Format::BC1Unorm,         8,     4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::BC1UnormSRGB,     8,     4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, true  },
+            { Format::BC2Unorm,         16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::BC2UnormSRGB,     16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, true  },
+            { Format::BC3Unorm,         16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::BC3UnormSRGB,     16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, true  },
+            { Format::BC4Unorm,         8,     4,       FormatKind::Normalized,   true,  false, false, false, false, false, false, false },
+            { Format::BC4Snorm,         8,     4,       FormatKind::Normalized,   true,  false, false, false, false, false, true,  false },
+            { Format::BC5Unorm,         16,    4,       FormatKind::Normalized,   true,  true,  false, false, false, false, false, false },
+            { Format::BC5Snorm,         16,    4,       FormatKind::Normalized,   true,  true,  false, false, false, false, true,  false },
+            { Format::BC6HUFloat,       16,    4,       FormatKind::Float,        true,  true,  true,  false, false, false, false, false },
+            { Format::BC6HSFloat,       16,    4,       FormatKind::Float,        true,  true,  true,  false, false, false, true,  false },
+            { Format::BC7Unorm,         16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, false },
+            { Format::BC7UnormSRGB,     16,    4,       FormatKind::Normalized,   true,  true,  true,  true,  false, false, false, true  },
+        });
 
-    inline constexpr bool FormatHasStencil(Format format)
-    {
-        switch (format)
-        {
-        case Format::D24S8:
-        case Format::X24G8UInt:
-        case Format::D32S8:
-        case Format::X32G8UInt:
-            return true;
+        ////////////////////////////////////////////////////////////////////////////////////
+        // Helper methods
+        ////////////////////////////////////////////////////////////////////////////////////
+        inline constexpr bool FormatHasDepth(Format format) { return Internal::g_FormatInfo[static_cast<size_t>(format)].HasDepth; }
+        inline constexpr bool FormatHasStencil(Format format) { return Internal::g_FormatInfo[static_cast<size_t>(format)].HasStencil; }
 
-        default:
-            break;
-        }
-
-        return false;
     }
 
 }

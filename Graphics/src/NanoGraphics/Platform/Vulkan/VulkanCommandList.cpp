@@ -27,9 +27,9 @@ namespace Nano::Graphics::Internal
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Note: Allows us to reset the command buffer and reuse it.
         poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
         
-        VK_VERIFY(vkCreateCommandPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, m_Device.GetAllocator().GetCallbacks(), &m_CommandPool));
+        VK_VERIFY(vkCreateCommandPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        m_Device.GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, specs.DebugName);
+        m_Device.GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
     }
 
     VulkanCommandListPool::~VulkanCommandListPool()
@@ -41,8 +41,14 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandListPool::FreeList(CommandList& list) const
     {
+        const VulkanContext& context = m_Device.GetContext();
+
+        VkDevice device = context.GetVulkanLogicalDevice().GetVkDevice();
         VkCommandBuffer commandBuffer = (*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
-        vkFreeCommandBuffers(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 1ul, &commandBuffer);
+        m_Device.GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
+        { 
+            vkFreeCommandBuffers(device, commandPool, 1ul, &commandBuffer);
+        });
     }
 
     void VulkanCommandListPool::FreeLists(std::span<CommandList*> lists) const
@@ -56,7 +62,11 @@ namespace Nano::Graphics::Internal
             commandBuffers.push_back(commandBuffer);
         }
 
-        vkFreeCommandBuffers(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
+        m_Device.GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffers = std::move(commandBuffers)]() mutable
+        {
+            vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        });
     }
 
     void VulkanCommandListPool::ResetList(CommandList& list) const
@@ -78,7 +88,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
 
-        m_Pool.GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, specs.DebugName);
+        m_Pool.GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::string(specs.DebugName));
     }
 
     VulkanCommandList::~VulkanCommandList()

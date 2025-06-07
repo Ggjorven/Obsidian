@@ -65,7 +65,7 @@ namespace Nano::Graphics::Internal
         static QueueFamilyIndices Find(VkSurfaceKHR surface, VkPhysicalDevice device); 
     };
 
-    struct SwapChainSupportDetails
+    struct SwapchainSupportDetails
     {
     public:
         VkSurfaceCapabilitiesKHR Capabilities;
@@ -73,7 +73,7 @@ namespace Nano::Graphics::Internal
         std::vector<VkPresentModeKHR> PresentModes;
 
     public:
-        static SwapChainSupportDetails Query(VkSurfaceKHR surface, VkPhysicalDevice device);
+        static SwapchainSupportDetails Query(VkSurfaceKHR surface, VkPhysicalDevice device);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -94,6 +94,7 @@ namespace Nano::Graphics::Internal
         inline VkPhysicalDevice GetVkPhysicalDevice() const { return m_PhysicalDevice; }
 
         inline const QueueFamilyIndices& GetQueueFamilyIndices() const { return m_QueueIndices; }
+        inline const SwapchainSupportDetails& GetSwapchainSupportDetails() const { return m_SwapchainSupportDetails; }
         
     private:
         // Private methods
@@ -107,6 +108,7 @@ namespace Nano::Graphics::Internal
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 
         QueueFamilyIndices m_QueueIndices = {};
+        SwapchainSupportDetails m_SwapchainSupportDetails = {};
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@
 
 namespace Nano::Graphics
 {
+    class Swapchain;
     class CommandListPool;
     class Image;
     class Sampler;
@@ -36,6 +37,8 @@ namespace Nano::Graphics::Internal
         void Wait() const;
 
         // Destruction methods
+        void DestroySwapchain(Swapchain& swapchain) const;
+
         void FreePool(CommandListPool& pool) const;
 
         void DestroyImage(Image& image) const;

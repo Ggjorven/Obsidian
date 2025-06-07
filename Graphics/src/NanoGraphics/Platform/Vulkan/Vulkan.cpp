@@ -74,18 +74,18 @@ namespace Nano::Graphics::Internal
     VulkanAllocator::VulkanAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice logicalDevice)
         : m_Device(logicalDevice)
     {
-        m_Callbacks.pUserData = nullptr;
-        m_Callbacks.pfnAllocation = &VmaAllocFn;
-        m_Callbacks.pfnFree = &VmaFreeFn;
-        m_Callbacks.pfnReallocation = &VmaReallocFn;
-        m_Callbacks.pfnInternalAllocation = &VmaInternalAllocFn;
-        m_Callbacks.pfnInternalFree = &VmaInternalFreeFn;
+        s_Callbacks.pUserData = nullptr;
+        s_Callbacks.pfnAllocation = &VmaAllocFn;
+        s_Callbacks.pfnFree = &VmaFreeFn;
+        s_Callbacks.pfnReallocation = &VmaReallocFn;
+        s_Callbacks.pfnInternalAllocation = &VmaInternalAllocFn;
+        s_Callbacks.pfnInternalFree = &VmaInternalFreeFn;
 
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.instance = instance;
         allocatorInfo.physicalDevice = physicalDevice;
         allocatorInfo.device = logicalDevice;
-        allocatorInfo.pAllocationCallbacks = &m_Callbacks;
+        allocatorInfo.pAllocationCallbacks = &s_Callbacks;
 
         VK_VERIFY(vmaCreateAllocator(&allocatorInfo, &m_Allocator));
     }
@@ -106,7 +106,7 @@ namespace Nano::Graphics::Internal
         cacheCreateInfo.initialDataSize = data.size();
         cacheCreateInfo.pInitialData = data.data();
 
-        VK_VERIFY(vkCreatePipelineCache(m_Device, &cacheCreateInfo, &m_Callbacks, &m_PipelineCache));
+        VK_VERIFY(vkCreatePipelineCache(m_Device, &cacheCreateInfo, &s_Callbacks, &m_PipelineCache));
         return m_PipelineCache;
     }
 

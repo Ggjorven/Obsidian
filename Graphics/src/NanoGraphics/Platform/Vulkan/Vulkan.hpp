@@ -76,7 +76,7 @@ namespace Nano::Graphics::Internal
         void SetMappedData(void* mappedData, void* data, size_t size) const;
 
         // Getters
-        inline const VkAllocationCallbacks* GetCallbacks() const { return &m_Callbacks; }
+        inline static const VkAllocationCallbacks* GetCallbacks() { return &s_Callbacks; }
 
     private:
         VkDevice m_Device;
@@ -84,7 +84,7 @@ namespace Nano::Graphics::Internal
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 		VkPipelineCache m_PipelineCache = VK_NULL_HANDLE;
 
-        VkAllocationCallbacks m_Callbacks = {};
+        inline static VkAllocationCallbacks s_Callbacks = {};
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

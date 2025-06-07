@@ -186,9 +186,9 @@ namespace Nano::Graphics::Internal
 		return indices;
 	}
 
-	SwapChainSupportDetails SwapChainSupportDetails::Query(VkSurfaceKHR surface, VkPhysicalDevice device)
+	SwapchainSupportDetails SwapchainSupportDetails::Query(VkSurfaceKHR surface, VkPhysicalDevice device)
 	{
-        SwapChainSupportDetails details = {};
+        SwapchainSupportDetails details = {};
 
 		// Capabilities
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.Capabilities);
@@ -217,13 +217,16 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanPhysicalDevice::VulkanPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::span<const char*> extensions)
     {
+        NG_ASSERT(instance, "[VkPhysicalDevice] No valid instance passed in.");
+        NG_ASSERT(instance, "[VkPhysicalDevice] No valid surface passed in.");
+
         uint32_t deviceCount;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        VK_VERIFY(vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr));
 
         NG_ASSERT((deviceCount != 0), "[VkPhysicalDevice] Failed to find a GPU with Vulkan support!");
 
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        VK_VERIFY(vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()));
 
         for (const auto& device : devices) 
 		{
@@ -272,14 +275,14 @@ namespace Nano::Graphics::Internal
 	bool VulkanPhysicalDevice::PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device, std::span<const char*> extensions)
 	{
 		m_QueueIndices = QueueFamilyIndices::Find(surface, device);
+        m_SwapchainSupportDetails = SwapchainSupportDetails::Query(surface, device);
 
 		bool extensionsSupported = ExtensionsSupported(device, extensions);
 		bool swapChainAdequate = false;
 
 		if (extensionsSupported)
 		{
-			SwapChainSupportDetails swapChainSupport = SwapChainSupportDetails::Query(surface, device);
-			swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
+			swapChainAdequate = !m_SwapchainSupportDetails.Formats.empty() && !m_SwapchainSupportDetails.PresentModes.empty();
 		}
 
         VkPhysicalDeviceFeatures supportedFeatures = {};
@@ -302,10 +305,10 @@ namespace Nano::Graphics::Internal
 	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions)
 	{
 		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+        VK_VERIFY(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr));
 
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+		VK_VERIFY(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data()));
 
 		std::set<std::string> requiredExtensions(extensions.begin(), extensions.end());
 

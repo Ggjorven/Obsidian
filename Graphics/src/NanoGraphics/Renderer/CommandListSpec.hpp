@@ -27,11 +27,11 @@ namespace Nano::Graphics
     struct CommandListSpecification
     {
     public:
-        std::string DebugName = {};
+        std::string_view DebugName = {};
 
     public:
         // Setters
-        inline CommandListSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline constexpr CommandListSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -40,11 +40,11 @@ namespace Nano::Graphics
     struct CommandListPoolSpecification
     {
     public:
-        std::string DebugName = {};
+        std::string_view DebugName = {};
 
     public:
         // Setters
-        inline CommandListPoolSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline constexpr CommandListPoolSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
 }

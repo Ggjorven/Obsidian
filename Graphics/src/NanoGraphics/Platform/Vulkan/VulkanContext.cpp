@@ -77,22 +77,22 @@ namespace
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
             // Note for future: Make sure to check if the vkQueuePresentKHR is NOT waiting on the imageAvailable semaphore, as it will cause a deadlock and many errors.
-            s_MessageCallback(Nano::Graphics::DeviceMessage::Error, pCallbackData->pMessage);
+            s_MessageCallback(Nano::Graphics::DeviceMessageType::Error, pCallbackData->pMessage);
             return VK_TRUE;
         }
         else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         {
-            s_MessageCallback(Nano::Graphics::DeviceMessage::Warn, pCallbackData->pMessage);
+            s_MessageCallback(Nano::Graphics::DeviceMessageType::Warn, pCallbackData->pMessage);
             return VK_TRUE;
         }
         else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
         {
-            s_MessageCallback(Nano::Graphics::DeviceMessage::Info, pCallbackData->pMessage);
+            s_MessageCallback(Nano::Graphics::DeviceMessageType::Info, pCallbackData->pMessage);
             return VK_TRUE;
         }
         else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
         {
-            s_MessageCallback(Nano::Graphics::DeviceMessage::Trace, pCallbackData->pMessage);
+            s_MessageCallback(Nano::Graphics::DeviceMessageType::Trace, pCallbackData->pMessage);
             return VK_TRUE;
         }
 
@@ -136,15 +136,17 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Init & Destroy
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanContext::VulkanContext(void* window, DeviceMessageCallback callback, std::span<const char*> extensions)
+    VulkanContext::VulkanContext(void* window, DeviceMessageCallback messageCallback, DeviceDestroyCallback destroyCallback, std::span<const char*> extensions)
+        : m_DestroyCallback(destroyCallback)
     {
         NG_ASSERT(window, "[VulkanContext] No window was attached.");
+        NG_ASSERT(destroyCallback, "[VulkanContext] No destroy callback was passed in.");
 
         if constexpr (Validation)
         {
-            s_MessageCallback = callback;
+            s_MessageCallback = messageCallback;
 
-            if (static_cast<bool>(!callback))
+            if (static_cast<bool>(!messageCallback))
             {
                 NG_LOG_WARN("[VulkanContext] Validation layers are enabled during Debug & Release builds, but no MessageCallback was passed in. Was this intentional?");
             }
@@ -187,7 +189,7 @@ namespace Nano::Graphics::Internal
             if (static_cast<bool>(!s_MessageCallback)) [[unlikely]]
                 return;
 
-            s_MessageCallback(DeviceMessage::Warn, message);
+            s_MessageCallback(DeviceMessageType::Warn, message);
         #endif
     }
 
@@ -197,8 +199,14 @@ namespace Nano::Graphics::Internal
             if (static_cast<bool>(!s_MessageCallback)) [[unlikely]]
                 return;
 
-            s_MessageCallback(DeviceMessage::Error, message);
+            s_MessageCallback(DeviceMessageType::Error, message);
         #endif
+    }
+
+    void VulkanContext::Destroy(DeviceDestroyFn destroyFn) const
+    {
+        NG_ASSERT(m_DestroyCallback, "[VkContext] Destroy callback is invalid.");
+        m_DestroyCallback(destroyFn);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -297,17 +305,15 @@ namespace Nano::Graphics::Internal
         VK_VERIFY(vkCreateInstance(&createInfo, nullptr, &m_Instance));
 
         ///////////////////////////////////////////////////////////
-        // Load extension function pointers
-        ///////////////////////////////////////////////////////////
-        GetvkCreateDebugUtilsMessengerEXT(m_Instance);
-        GetvkDestroyDebugUtilsMessengerEXT(m_Instance);
-        GetvkSetDebugUtilsObjectNameEXT(m_Instance);
-
-        ///////////////////////////////////////////////////////////
         // Debugger Creation
         ///////////////////////////////////////////////////////////
         if constexpr (Validation)
         {
+            // Load extension function pointers
+            GetvkCreateDebugUtilsMessengerEXT(m_Instance);
+            GetvkDestroyDebugUtilsMessengerEXT(m_Instance);
+            GetvkSetDebugUtilsObjectNameEXT(m_Instance);
+
             if (validationSupport)
             {
                 s_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger);
@@ -322,7 +328,7 @@ namespace Nano::Graphics::Internal
         #if defined(NG_PLATFORM_DESKTOP)
             VK_VERIFY(glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(window), nullptr, &surface));
         #endif
-
+        
         std::set<const char*> extensionSet(extensions.begin(), extensions.end());
         extensionSet.insert(DeviceExtensions.begin(), DeviceExtensions.end());
         std::vector<const char*> fullExtensions(extensionSet.begin(), extensionSet.end());
