@@ -9,9 +9,6 @@
 
 #include <Nano/Nano.hpp>
 
-#include <tuple>
-#include <array>
-
 namespace Nano::Graphics
 {
     class Swapchain;

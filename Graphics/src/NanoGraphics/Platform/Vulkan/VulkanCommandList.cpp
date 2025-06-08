@@ -117,15 +117,13 @@ namespace Nano::Graphics::Internal
         VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
     }
 
-    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const
+    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
     {
         NG_PROFILE("VulkanCommandBuffer::Submit()");
 
-        const VulkanLogicalDevice& logicalDevice = m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice();
-
-        //std::vector<VkSemaphore> semaphores;
+#if OLD
         std::vector<VkSemaphore> semaphores = { };
-        std::vector<VkPipelineStageFlags> waitStages(semaphores.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        std::vector<VkPipelineStageFlags> waitStages(semaphores.size(), PipelineStageToVkPipelineStage(args.WaitStage));
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -140,28 +138,39 @@ namespace Nano::Graphics::Internal
 
         {
             NG_PROFILE("VulkanCommandBuffer::Submit::Queue");
-
-            VkResult result = VK_SUCCESS;
-
-            switch (args.Queue)
-            {
-            case CommandQueue::Graphics:
-                result = vkQueueSubmit(logicalDevice.GetGraphicsQueue(), 1, &submitInfo, nullptr);
-                break;
-            case CommandQueue::Compute:
-                result = vkQueueSubmit(logicalDevice.GetComputeQueue(), 1, &submitInfo, nullptr);
-                break;
-            case CommandQueue::Present:
-                result = vkQueueSubmit(logicalDevice.GetPresentQueue(), 1, &submitInfo, nullptr);
-                break;
-
-            default:
-                NG_UNREACHABLE();
-                break;
-            }
-
-            VK_VERIFY(result);
+            VK_VERIFY(vkQueueSubmit(m_Pool.GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
         }
+#else
+        VkSemaphoreSubmitInfo waitInfo1 = {};
+        waitInfo1.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        waitInfo1.semaphore = nullptr;
+        waitInfo1.stageMask = PipelineStageToVkPipelineStage(args.WaitStage);
+        waitInfo1.value = 0;
+        //semaphoreInfo.deviceIndex = 0;
+
+        VkSemaphoreSubmitInfo signalInfo = {};
+        waitInfo1.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        waitInfo1.semaphore = nullptr;
+        waitInfo1.value = 0;
+        //semaphoreInfo.deviceIndex = 0;
+
+        VkCommandBufferSubmitInfo commandInfo = {};
+        commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandInfo.commandBuffer = m_CommandBuffer;
+
+        VkSubmitInfo2 submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pCommandBufferInfos = &commandInfo;
+
+        {
+            NG_PROFILE("VulkanCommandBuffer::Submit::Queue");
+            VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
+        }
+#endif
+
+        // TODO: Use VulkanQueues method
     }
 
 }

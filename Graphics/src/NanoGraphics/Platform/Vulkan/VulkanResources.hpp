@@ -5,6 +5,7 @@
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
+#include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
@@ -30,7 +31,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // ResourceStateMapping array
     ////////////////////////////////////////////////////////////////////////////////////
-    inline constexpr const auto g_ResourceStateMappings = std::to_array<ResourceStateMapping>({
+    inline constexpr const auto g_ResourceStateMapping = std::to_array<ResourceStateMapping>({
         // State                            StageFlags                                          AccessMask                                      ImageLayout
         { ResourceState::Unknown,           VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,                VK_ACCESS_2_NONE,                               VK_IMAGE_LAYOUT_UNDEFINED },
         { ResourceState::Common,            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,                VK_ACCESS_2_NONE,                               VK_IMAGE_LAYOUT_UNDEFINED },
@@ -243,8 +244,91 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // PipelineStageMapping 
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PipelineStageMapping
+    {
+    public:
+        PipelineStage Stage;
+
+        VkPipelineStageFlags2 VulkanPipelineStage;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PipelineStageMapping array // TODO: Use resourcestate???
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr auto g_PipelineStageMapping = std::to_array<PipelineStageMapping>({
+        // PipelineStage                                VulkanPipelineStage
+        { PipelineStage::None,                          VK_PIPELINE_STAGE_2_NONE },
+        { PipelineStage::TopOfPipe,                     VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT },
+        { PipelineStage::DrawIndirect,                  VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT },
+        { PipelineStage::VertexInput,                   VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT },
+        { PipelineStage::VertexShader,                  VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT },
+        { PipelineStage::TessellationControlShader,     VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT },
+        { PipelineStage::TessellationEvaluationShader,  VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT },
+        { PipelineStage::GeometryShader,                VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT },
+        { PipelineStage::FragmentShader,                VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT },
+        { PipelineStage::EarlyFragmentTests,            VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT },
+        { PipelineStage::LateFragmentTests,             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT },
+        { PipelineStage::ColourAttachmentOutput,        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT },
+        { PipelineStage::ComputeShader,                 VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT },
+        { PipelineStage::Transfer,                      VK_PIPELINE_STAGE_2_TRANSFER_BIT },
+        { PipelineStage::BottomOfPipe,                  VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT },
+        { PipelineStage::Host,                          VK_PIPELINE_STAGE_2_HOST_BIT },
+        { PipelineStage::AllGraphics,                   VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT },
+        { PipelineStage::AllCommands,                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT },
+
+        { PipelineStage::CommandPreprocess,             VK_PIPELINE_STAGE_2_COMMAND_PREPROCESS_BIT_NV },
+        { PipelineStage::ConditionalRendering,          VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT },
+        { PipelineStage::TaskShader,                    VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT },
+        { PipelineStage::MeshShader,                    VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT },
+        { PipelineStage::RayTracingShader,              VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR },
+        { PipelineStage::FragmentShadingRateAttachment, VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR },
+        { PipelineStage::FragmentDensityProcess,        VK_PIPELINE_STAGE_2_FRAGMENT_DENSITY_PROCESS_BIT_EXT },
+        { PipelineStage::AccelerationStructureBuild,    VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR },
+        { PipelineStage::TransformFeedback,             VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Helper methods
     ////////////////////////////////////////////////////////////////////////////////////
+    inline VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state) 
+    {
+        VkPipelineStageFlags2 result = 0;
+        std::underlying_type_t<ResourceState> value = std::to_underlying(state);
+
+        while (value) 
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ResourceStateMapping[index].StageFlags;
+        }
+
+        return result;
+    }
+
+    inline VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
+    {
+        VkAccessFlags2 result = 0;
+        std::underlying_type_t<ResourceState> value = std::to_underlying(state);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ResourceStateMapping[index].AccessMask;
+        }
+
+        return result;
+    }
+
+    inline VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
+    {
+        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].ImageLayout;
+    }
+
     inline constexpr VkImageType ImageDimensionToVkImageType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageType; }
     inline constexpr VkImageViewType ImageDimensionToVkImageViewType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageViewType; }
 
@@ -449,6 +533,22 @@ namespace Nano::Graphics::Internal
 
         NG_UNREACHABLE();
         return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    }
+
+    inline VkPipelineStageFlags2 PipelineStageToVkPipelineStage(PipelineStage stage)
+    {
+        VkPipelineStageFlags2 result = 0;
+        std::underlying_type_t<PipelineStage> value = std::to_underlying(stage);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_PipelineStageMapping[index].VulkanPipelineStage;
+        }
+
+        return result;
     }
 
 }

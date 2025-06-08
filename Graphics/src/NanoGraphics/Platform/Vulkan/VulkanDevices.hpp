@@ -29,6 +29,8 @@ namespace Nano::Graphics::Internal
         Present = 1 << 8
     };
 
+    NANO_DEFINE_BITWISE(QueueFamilyFlags)
+
     struct QueueFamilyInfo
     {
     public:
@@ -104,6 +106,7 @@ namespace Nano::Graphics::Internal
         bool FeaturesSupported(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& found);
         bool FeaturesSupported(const VkPhysicalDeviceDescriptorIndexingFeatures& requested, const VkPhysicalDeviceDescriptorIndexingFeatures& found);
         bool FeaturesSupported(const VkPhysicalDeviceTimelineSemaphoreFeatures& requested, const VkPhysicalDeviceTimelineSemaphoreFeatures& found);
+        bool FeaturesSupported(const VkPhysicalDeviceSynchronization2Features& requested, const VkPhysicalDeviceSynchronization2Features& found);
 
     private:
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -128,26 +131,11 @@ namespace Nano::Graphics::Internal
         // Getters
         inline VkDevice GetVkDevice() const { return m_LogicalDevice; }
 
-        inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
-        inline VkQueue GetComputeQueue() const { return m_ComputeQueue; }
-        inline VkQueue GetPresentQueue() const { return m_PresentQueue; }
-
         inline VulkanPhysicalDevice& GetPhysicalDevice() const { return m_PhysicalDevice; }
 
     private:
         VulkanPhysicalDevice& m_PhysicalDevice;
         VkDevice m_LogicalDevice = VK_NULL_HANDLE;
-
-        VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
-        VkQueue m_ComputeQueue = VK_NULL_HANDLE;
-        VkQueue m_PresentQueue = VK_NULL_HANDLE;
     };
 
 }
-
-template<>
-struct Nano::Enum::Bitwise<Nano::Graphics::Internal::QueueFamilyFlags>
-{
-public:
-    inline static constexpr bool Enabled = true;
-};

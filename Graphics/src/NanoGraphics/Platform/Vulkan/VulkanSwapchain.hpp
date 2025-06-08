@@ -59,8 +59,6 @@ namespace Nano::Graphics::Internal
 		std::array<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferCount> m_Images = { };
 
 		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
-		VkSemaphore m_SynchronizeSemaphore = VK_NULL_HANDLE;
-		// TODO: Current value and wait on per frame
 
 		uint32_t m_CurrentFrame = 0;
 		uint32_t m_AcquiredImage = 0;

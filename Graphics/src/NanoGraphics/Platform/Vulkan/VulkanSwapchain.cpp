@@ -39,15 +39,6 @@ namespace Nano::Graphics::Internal
             VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
         }
 
-        // Create timeline semaphore
-        VkSemaphoreTypeCreateInfo timelineInfo = {};
-        timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-        timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-        timelineInfo.initialValue = 0;
-        
-        semaphoreInfo.pNext = &timelineInfo;
-        VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SynchronizeSemaphore));
-
         Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y, m_Specification.VSync, m_Specification.RequestedFormat, m_Specification.RequestedColourSpace);
     }
 
@@ -231,8 +222,8 @@ namespace Nano::Graphics::Internal
             VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
-            vkQueueSubmit(m_Device.GetContext().GetVulkanLogicalDevice().GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetGraphicsQueue());
+            vkQueueSubmit(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Graphics));
 
             // Cleanup
             vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
@@ -276,7 +267,7 @@ namespace Nano::Graphics::Internal
         VkResult result = VK_SUCCESS;
         {
             NG_PROFILE("VkSwapchain::Present::QueuePresent");
-            result = vkQueuePresentKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetPresentQueue(), &presentInfo);
+            result = vkQueuePresentKHR(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Present), &presentInfo);
         }
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)

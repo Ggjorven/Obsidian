@@ -105,6 +105,13 @@ namespace
         .timelineSemaphore = VK_TRUE
     };
 
+    inline constexpr static VkPhysicalDeviceSynchronization2Features s_RequestedSynchronization2Features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+        .pNext = nullptr,
+
+        .synchronization2 = VK_TRUE
+    };
+
 }
 
 namespace Nano::Graphics::Internal
@@ -300,9 +307,13 @@ namespace Nano::Graphics::Internal
 		indexFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 		indexFeatures.pNext = nullptr;
 
+        VkPhysicalDeviceSynchronization2Features synchronization2Features = {};
+        synchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+        synchronization2Features.pNext = &indexFeatures;
+
         VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures = {};
         timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-        timelineFeatures.pNext = &indexFeatures;
+        timelineFeatures.pNext = &synchronization2Features;
 
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
 		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -313,7 +324,8 @@ namespace Nano::Graphics::Internal
 		return m_QueueIndices.IsComplete() && extensionsSupported && swapChainAdequate && 
             FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && 
             FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures) &&
-            FeaturesSupported(s_RequestedTimelineSemaphoreFeatures,  timelineFeatures);
+            FeaturesSupported(s_RequestedTimelineSemaphoreFeatures,  timelineFeatures) &&
+            FeaturesSupported(s_RequestedSynchronization2Features, synchronization2Features);
 	}
 
 	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions)
@@ -444,6 +456,18 @@ namespace Nano::Graphics::Internal
         return !failed;
     }
 
+    bool VulkanPhysicalDevice::FeaturesSupported(const VkPhysicalDeviceSynchronization2Features& requested, const VkPhysicalDeviceSynchronization2Features& found)
+    {
+        constexpr auto features = std::tuple{
+            &VkPhysicalDeviceSynchronization2Features::synchronization2
+        };
+
+        bool failed = false;
+        std::apply([&](auto... featurePtr) { ((failed |= (requested.*featurePtr && !(found.*featurePtr))), ...); }, features);
+
+        return !failed;
+    }
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
@@ -469,8 +493,11 @@ namespace Nano::Graphics::Internal
 		VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures = s_RequestedDescriptorIndexingFeatures;
         indexingFeatures.pNext = nullptr; //&dynamicRenderingFeature;
 
+        VkPhysicalDeviceSynchronization2Features synchronization2Features = s_RequestedSynchronization2Features;
+        synchronization2Features.pNext = &indexingFeatures;
+
         VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures = s_RequestedTimelineSemaphoreFeatures;
-        timelineFeatures.pNext = &indexingFeatures;
+        timelineFeatures.pNext = &synchronization2Features;
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -492,23 +519,6 @@ namespace Nano::Graphics::Internal
 		}
 
 		VK_VERIFY(vkCreateDevice(m_PhysicalDevice.GetVkPhysicalDevice(), &createInfo, nullptr, &m_LogicalDevice));
-
-		// Retrieve the graphics/compute/present queue handle
-        {
-            VkDeviceQueueInfo2 queueInfo = {};
-            queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
-            queueInfo.queueFamilyIndex = indices.QueueFamily;
-            queueInfo.flags = 0; // Note: Should always be 0
-
-            queueInfo.queueIndex = indices.GraphicsQueue;
-            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_GraphicsQueue);
-
-            queueInfo.queueIndex = indices.ComputeQueue;
-            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_ComputeQueue);
-
-            queueInfo.queueIndex = indices.PresentQueue;
-            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_PresentQueue);
-        }
 	}
 
     VulkanLogicalDevice::~VulkanLogicalDevice()
