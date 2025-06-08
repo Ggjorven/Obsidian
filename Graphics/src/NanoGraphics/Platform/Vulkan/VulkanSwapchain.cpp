@@ -234,9 +234,8 @@ namespace Nano::Graphics::Internal
     void VulkanSwapchain::AcquireNextImage()
     {
         NG_PROFILE("VkSwapchain::AcquireImage()");
-        uint32_t imageIndex = 0;
 
-        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y);
@@ -245,8 +244,6 @@ namespace Nano::Graphics::Internal
         {
             m_Device.GetContext().Error("[VulkanSwapChain] Failed to acquire Swapchain image!");
         }
-
-        m_AcquiredImage = imageIndex;
     }
 
     void VulkanSwapchain::Present()

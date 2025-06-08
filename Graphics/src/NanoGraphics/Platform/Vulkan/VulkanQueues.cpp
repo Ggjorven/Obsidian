@@ -35,6 +35,7 @@ namespace Nano::Graphics::Internal
             vkGetDeviceQueue2(vkDevice, &queueInfo, &m_Queues[static_cast<size_t>(CommandQueue::Present)]);
         }
 
+        /*
         // Create timeline semaphore
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -46,14 +47,32 @@ namespace Nano::Graphics::Internal
 
         semaphoreInfo.pNext = &timelineInfo;
         VK_VERIFY(vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &m_Timeline));
+        */
 
     }
 
     VulkanQueues::~VulkanQueues()
     {
-        vkDestroySemaphore(m_Context.GetVulkanLogicalDevice().GetVkDevice(), m_Timeline, nullptr);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    /*
+    void VulkanQueues::Submit(CommandQueue queue, VkCommandBuffer cmdBuf) const
+    {
+        NG_PROFILE("VulkanQueues::Submit()");
 
+        VkCommandBufferSubmitInfo cmdInfo = {};
+        cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        cmdInfo.commandBuffer = cmdBuf;
+
+        VkSubmitInfo2 submitInfo = {};
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pCommandBufferInfos = &cmdInfo;
+
+        VK_VERIFY(vkQueueSubmit2(GetQueue(queue), 1, &submitInfo, VK_NULL_HANDLE));
+    }
+    */
 
 }

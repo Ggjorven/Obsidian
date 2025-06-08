@@ -146,13 +146,11 @@ namespace Nano::Graphics::Internal
         waitInfo1.semaphore = nullptr;
         waitInfo1.stageMask = PipelineStageToVkPipelineStage(args.WaitStage);
         waitInfo1.value = 0;
-        //semaphoreInfo.deviceIndex = 0;
 
         VkSemaphoreSubmitInfo signalInfo = {};
         waitInfo1.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
         waitInfo1.semaphore = nullptr;
         waitInfo1.value = 0;
-        //semaphoreInfo.deviceIndex = 0;
 
         VkCommandBufferSubmitInfo commandInfo = {};
         commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
@@ -163,14 +161,9 @@ namespace Nano::Graphics::Internal
 
         submitInfo.commandBufferInfoCount = 1;
         submitInfo.pCommandBufferInfos = &commandInfo;
-
-        {
-            NG_PROFILE("VulkanCommandBuffer::Submit::Queue");
-            VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
-        }
+        
+        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
 #endif
-
-        // TODO: Use VulkanQueues method
     }
 
 }

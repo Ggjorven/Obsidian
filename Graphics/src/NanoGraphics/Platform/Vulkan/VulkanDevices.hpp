@@ -81,7 +81,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Vulkan Physical Device
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanPhysicalDevice
+    class VulkanPhysicalDevice : public Traits::NoCopy, public Traits::NoMove
     {
     public:
         // Constructor & Destructor
@@ -118,7 +118,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Vulkan Logical Device
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanLogicalDevice
+    class VulkanLogicalDevice : public Traits::NoCopy, public Traits::NoMove
     {
     public:
         // Constructor & Destructor

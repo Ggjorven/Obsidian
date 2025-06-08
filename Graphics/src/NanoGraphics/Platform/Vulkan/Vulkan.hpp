@@ -52,7 +52,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
 	// VulkanAllocator
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanAllocator : public Traits::NoCopy // TODO: Update methods
+    class VulkanAllocator : public Traits::NoCopy
     {
     public:
         // Constructor & Destructor
