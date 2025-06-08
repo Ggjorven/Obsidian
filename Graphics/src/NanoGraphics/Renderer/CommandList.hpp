@@ -28,6 +28,9 @@ namespace Nano::Graphics
         ~CommandList() = default;
 
         // Methods
+        inline void Begin(bool reset = true) const { return m_CommandList.Begin(reset); }
+        inline void End() const { return m_CommandList.End(); }
+        inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList.Submit(args); }
 
     private:
         // Constructor

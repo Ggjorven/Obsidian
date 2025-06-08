@@ -95,4 +95,73 @@ namespace Nano::Graphics::Internal
     {
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::Begin(bool reset) const
+    {
+        if (reset)
+            vkResetCommandBuffer(m_CommandBuffer, 0);
+
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        {
+            NG_PROFILE("VulkanCommandList::Begin::Begin");
+            VK_VERIFY(vkBeginCommandBuffer(m_CommandBuffer, &beginInfo));
+        }
+    }
+
+    void VulkanCommandList::End() const
+    {
+        NG_PROFILE("VulkanCommandList::End()");
+        VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
+    }
+
+    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const
+    {
+        NG_PROFILE("VulkanCommandBuffer::Submit()");
+
+        const VulkanLogicalDevice& logicalDevice = m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice();
+
+        //std::vector<VkSemaphore> semaphores;
+        std::vector<VkSemaphore> semaphores = { };
+        std::vector<VkPipelineStageFlags> waitStages(semaphores.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount = 0ul; // TODO: Add semaphore waiting (timeline)
+        submitInfo.pWaitSemaphores = nullptr;
+        submitInfo.pWaitDstStageMask = nullptr;
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_CommandBuffer;
+        submitInfo.signalSemaphoreCount = 0; // TODO: Add semaphore signaling (timeline)
+        submitInfo.pSignalSemaphores = nullptr;
+
+        {
+            NG_PROFILE("VulkanCommandBuffer::Submit::Queue");
+
+            VkResult result = VK_SUCCESS;
+
+            switch (args.Queue)
+            {
+            case CommandQueue::Graphics:
+                result = vkQueueSubmit(logicalDevice.GetGraphicsQueue(), 1, &submitInfo, nullptr);
+                break;
+            case CommandQueue::Compute:
+                result = vkQueueSubmit(logicalDevice.GetComputeQueue(), 1, &submitInfo, nullptr);
+                break;
+            case CommandQueue::Present:
+                result = vkQueueSubmit(logicalDevice.GetPresentQueue(), 1, &submitInfo, nullptr);
+                break;
+
+            default:
+                NG_UNREACHABLE();
+                break;
+            }
+
+            VK_VERIFY(result);
+        }
+    }
+
 }

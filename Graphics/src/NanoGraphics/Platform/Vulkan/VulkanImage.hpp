@@ -87,6 +87,9 @@ namespace Nano::Graphics::Internal
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
+		// Internal methods
+		void SetInternalData(const ImageSpecification& specs, VkImage image);
+
 		// Internal getters
 		inline VkImage GetVkImage() const { return m_Image; }
 		inline VmaAllocation GetVmaAllocation() const { return m_Allocation; }

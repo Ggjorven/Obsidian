@@ -60,6 +60,11 @@ namespace Nano::Graphics::Internal
 		VulkanCommandList(const CommandListPool& pool, const CommandListSpecification& specs);
 		~VulkanCommandList();
 
+		// Methods
+		void Begin(bool reset) const;
+		void End() const;
+		void Submit(const CommandListSubmitArgs& args) const;
+
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
 

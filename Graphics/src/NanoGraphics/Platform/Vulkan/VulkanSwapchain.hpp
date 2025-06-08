@@ -37,10 +37,17 @@ namespace Nano::Graphics::Internal
 		void Resize(uint32_t width, uint32_t height);
 		void Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace);
 
+		void AcquireNextImage();
+		void Present();
+
 		// Getters
 		inline const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 		
 		// Internal getters
+
+	private:
+		// Private methods
+		void ResolveFormatAndColourSpace(Format format, ColourSpace space);
 
 	private:
 		const VulkanDevice& m_Device;
@@ -51,6 +58,7 @@ namespace Nano::Graphics::Internal
 
 		std::array<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferCount> m_Images = { };
 
+		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
 		VkSemaphore m_SynchronizeSemaphore = VK_NULL_HANDLE;
 		// TODO: Current value and wait on per frame
 

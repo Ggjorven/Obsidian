@@ -98,6 +98,13 @@ namespace
         .runtimeDescriptorArray = VK_FALSE, // Needed for bindless
     };
 
+    inline constexpr static VkPhysicalDeviceTimelineSemaphoreFeatures s_RequestedTimelineSemaphoreFeatures = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        .pNext = nullptr,
+
+        .timelineSemaphore = VK_TRUE
+    };
+
 }
 
 namespace Nano::Graphics::Internal
@@ -293,13 +300,20 @@ namespace Nano::Graphics::Internal
 		indexFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 		indexFeatures.pNext = nullptr;
 
+        VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures = {};
+        timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+        timelineFeatures.pNext = &indexFeatures;
+
         VkPhysicalDeviceFeatures2 deviceFeatures = {};
 		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		deviceFeatures.pNext = &indexFeatures;
+		deviceFeatures.pNext = &timelineFeatures;
 
 		vkGetPhysicalDeviceFeatures2(device, &deviceFeatures);
 
-		return m_QueueIndices.IsComplete() && extensionsSupported && swapChainAdequate && FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures);
+		return m_QueueIndices.IsComplete() && extensionsSupported && swapChainAdequate && 
+            FeaturesSupported(s_RequestedDeviceFeatures, supportedFeatures) && 
+            FeaturesSupported(s_RequestedDescriptorIndexingFeatures, indexFeatures) &&
+            FeaturesSupported(s_RequestedTimelineSemaphoreFeatures,  timelineFeatures);
 	}
 
 	bool VulkanPhysicalDevice::ExtensionsSupported(VkPhysicalDevice device, std::span<const char*> extensions)
@@ -418,6 +432,18 @@ namespace Nano::Graphics::Internal
         return !failed;
     }
 
+    bool VulkanPhysicalDevice::FeaturesSupported(const VkPhysicalDeviceTimelineSemaphoreFeatures& requested, const VkPhysicalDeviceTimelineSemaphoreFeatures& found)
+    {
+        constexpr auto features = std::tuple{
+            &VkPhysicalDeviceTimelineSemaphoreFeatures::timelineSemaphore
+        };
+
+        bool failed = false;
+        std::apply([&](auto... featurePtr) { ((failed |= (requested.*featurePtr && !(found.*featurePtr))), ...); }, features);
+
+        return !failed;
+    }
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
@@ -443,9 +469,12 @@ namespace Nano::Graphics::Internal
 		VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures = s_RequestedDescriptorIndexingFeatures;
         indexingFeatures.pNext = nullptr; //&dynamicRenderingFeature;
 
+        VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures = s_RequestedTimelineSemaphoreFeatures;
+        timelineFeatures.pNext = &indexingFeatures;
+
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.pNext = &indexingFeatures; // Chain indexing
+        createInfo.pNext = &timelineFeatures; // Chain indexing
 		createInfo.queueCreateInfoCount = 1;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;
 		createInfo.pEnabledFeatures = &s_RequestedDeviceFeatures;

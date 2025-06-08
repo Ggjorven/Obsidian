@@ -103,6 +103,7 @@ namespace Nano::Graphics::Internal
 
         bool FeaturesSupported(const VkPhysicalDeviceFeatures& requested, const VkPhysicalDeviceFeatures& found);
         bool FeaturesSupported(const VkPhysicalDeviceDescriptorIndexingFeatures& requested, const VkPhysicalDeviceDescriptorIndexingFeatures& found);
+        bool FeaturesSupported(const VkPhysicalDeviceTimelineSemaphoreFeatures& requested, const VkPhysicalDeviceTimelineSemaphoreFeatures& found);
 
     private:
         VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;

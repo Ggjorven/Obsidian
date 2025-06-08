@@ -61,12 +61,23 @@ int Main(int argc, char* argv[])
 			.SetVSync(false);
 		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
 
+		// Commandlists & Commandpool
+		CommandListPool pool = device.AllocateCommandListPool({});
+		CommandList list = pool.AllocateList({});
+
 		// Main Loop
 		while (window.IsOpen())
 		{
-			emptyQueue();
-
 			window.PollEvents();
+
+			emptyQueue();
+			swapchain.AcquireNextImage();
+
+			list.Begin(true);
+			list.End();
+			list.Submit({ CommandQueue::Graphics });
+
+			swapchain.Present();
 		}
 
 		device.DestroySwapchain(swapchain);

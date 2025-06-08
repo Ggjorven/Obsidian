@@ -27,6 +27,8 @@ namespace Nano::Graphics
         ~Swapchain() = default;
 
         // Methods
+        inline void AcquireNextImage() { m_Swapchain.AcquireNextImage(); }
+        inline void Present() { m_Swapchain.Present(); }
 
         // Getters
         inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain.GetSpecification(); }

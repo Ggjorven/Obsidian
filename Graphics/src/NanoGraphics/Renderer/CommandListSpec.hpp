@@ -47,4 +47,17 @@ namespace Nano::Graphics
         inline constexpr CommandListPoolSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // CommandListSubmitArgs
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct CommandListSubmitArgs
+    {
+    public:
+        CommandQueue Queue = CommandQueue::Graphics;
+
+    public:
+        // Setters
+        inline constexpr CommandListSubmitArgs& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
+    };
+
 }
