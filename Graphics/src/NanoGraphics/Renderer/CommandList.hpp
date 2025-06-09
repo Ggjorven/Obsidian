@@ -11,7 +11,7 @@
 namespace Nano::Graphics
 {
 
-    class Device;
+    class ExecutionRegion;
     class CommandListPool;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -63,16 +63,17 @@ namespace Nano::Graphics
 
         // Helper methods
         inline void ResetList(CommandList& list) const { m_Pool.ResetList(list); }
+        inline void ResetAll() const { m_Pool.ResetAll(); }
 
     private:
         // Constructor
-        inline CommandListPool(const Device& device, const CommandListPoolSpecification& specs)
-            : m_Pool(device, specs) {}
+        inline CommandListPool(const ExecutionRegion& execRegion, const CommandListPoolSpecification& specs)
+            : m_Pool(execRegion, specs) {}
 
     private:
         Type m_Pool;
 
-        friend class Device;
+        friend class ExecutionRegion;
     };
 
 }

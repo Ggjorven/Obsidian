@@ -3,6 +3,7 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
+#include "NanoGraphics/Renderer/CommandList.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanSwapchain.hpp"
 
@@ -12,6 +13,35 @@ namespace Nano::Graphics
 {
 
     class Device;
+    class Swapchain;
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ExecutionRegion
+    ////////////////////////////////////////////////////////////////////////////////////
+    class ExecutionRegion
+    {
+    public:
+        using Type = Types::SelectorType<Information::RenderingAPI,
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanExecutionRegion>
+        >;
+    public:
+        // Destructor
+        ~ExecutionRegion() = default;
+
+        // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
+        inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) const { return CommandListPool(*this, specs); }
+        inline void FreePool(CommandListPool& pool) { m_Region.FreePool(pool); }
+
+    private:
+        // Constructor
+        ExecutionRegion(const Swapchain& swapchain)
+            : m_Region(swapchain) {}
+
+    private:
+        Type m_Region;
+
+        friend class Swapchain;
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Swapchain
@@ -32,6 +62,8 @@ namespace Nano::Graphics
 
         // Getters
         inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain.GetSpecification(); }
+
+        const ExecutionRegion& GetExecutionRegion() const { return m_Swapchain.GetExecutionRegion(); }
 
     private:
         // Constructor

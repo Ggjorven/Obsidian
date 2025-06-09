@@ -40,16 +40,6 @@ namespace Nano::Graphics::Internal
         // TODO: ...
     }
 
-    void VulkanDevice::FreePool(CommandListPool& pool) const
-    {
-        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
-        VkCommandPool commandPool = (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
-        m_Context.Destroy([device, commandPool]() mutable 
-        {
-            vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
-        });
-    }
-
     void VulkanDevice::DestroyImage(Image& image) const
     {
         DestroySubresourceViews(image);
@@ -91,11 +81,6 @@ namespace Nano::Graphics::Internal
             vkDestroySampler(device, vkSampler, VulkanAllocator::GetCallbacks());
         });
 
-    }
-
-    void VulkanDevice::ResetPool(CommandListPool& pool) const
-    {
-        vkResetCommandPool(m_Context.GetVulkanLogicalDevice().GetVkDevice(), (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool(), 0);
     }
 
 }

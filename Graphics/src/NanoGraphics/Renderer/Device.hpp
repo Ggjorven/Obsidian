@@ -36,17 +36,11 @@ namespace Nano::Graphics
         inline Swapchain CreateSwapchain(const SwapchainSpecification& specs) const { return Swapchain(*this, specs); }
         inline void DestroySwapchain(Swapchain& swapchain) const { return m_Device.DestroySwapchain(swapchain); }
 
-        inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) const { return CommandListPool(*this, specs); }
-        inline void FreePool(CommandListPool& pool) const { m_Device.FreePool(pool); }
-
         inline Image CreateImage(const ImageSpecification& specs) const { return Image(*this, specs); }
         inline void DestroyImage(Image& image) const { m_Device.DestroyImage(image); }
 
         inline Sampler CreateSampler(const SamplerSpecification& specs) const { return Sampler(*this, specs); }
         inline void DestroySampler(Sampler& sampler) const { m_Device.DestroySampler(sampler); }
-
-        // Helper methods
-        inline void ResetPool(CommandListPool& pool) const { m_Device.ResetPool(pool); }
 
     private:
         Type m_Device;

@@ -20,24 +20,49 @@ namespace Nano::Graphics::Internal
 {
 
     static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<ExecutionRegion::Type, VulkanExecutionRegion>, "ExecutionRegion Image::Type is not VulkanExecutionRegion and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Swapchain Image::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+    VulkanExecutionRegion::VulkanExecutionRegion(const Swapchain& swapchain)
+        : m_Device(reinterpret_cast<const VulkanSwapchain*>(&swapchain)->GetVulkanDevice())
     {
-        #if defined(NG_PLATFORM_DESKTOP)
-            VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
-        #endif
-
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++)
         {
             VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
         }
+    }
+
+    VulkanExecutionRegion::~VulkanExecutionRegion()
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Destruction methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanExecutionRegion::FreePool(CommandListPool& pool) const
+    {
+        VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
+        VkCommandPool commandPool = (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
+        m_Device.GetContext().Destroy([device, commandPool]() mutable
+        {
+            vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
+        });
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Constructor & Destructor
+    ////////////////////////////////////////////////////////////////////////////////////
+    VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
+        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_ExecutionRegion(*reinterpret_cast<const Swapchain*>(this))
+    {
+        #if defined(NG_PLATFORM_DESKTOP)
+            VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
+        #endif
 
         Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y, m_Specification.VSync, m_Specification.RequestedFormat, m_Specification.RequestedColourSpace);
     }
@@ -235,7 +260,7 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VkSwapchain::AcquireImage()");
 
-        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
+        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ExecutionRegion.GetImageAvailableSemaphore(m_CurrentFrame), VK_NULL_HANDLE, &m_AcquiredImage);
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y);
@@ -250,7 +275,7 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VkSwapchain::Present()");
 
-        // TODO: Wait on semaphore
+        // TODO: Wait on semaphores from ExecutionRegion
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

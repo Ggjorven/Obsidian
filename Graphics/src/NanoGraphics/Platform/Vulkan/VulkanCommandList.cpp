@@ -6,6 +6,7 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 #include "NanoGraphics/Renderer/CommandList.hpp"
+#include "NanoGraphics/Renderer/Swapchain.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
@@ -13,23 +14,24 @@ namespace Nano::Graphics::Internal
 {
 
     static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<ExecutionRegion::Type, VulkanExecutionRegion>, "Current ExecutionRegion::Type is not VulkanExecutionRegion and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<CommandList::Type, VulkanCommandList>, "Current CommandList::Type is not VulkanCommandList and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<CommandListPool::Type, VulkanCommandListPool>, "Current CommandListPool::Type is not VulkanImage and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanCommandListPool::VulkanCommandListPool(const Device& device, const CommandListPoolSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+    VulkanCommandListPool::VulkanCommandListPool(const ExecutionRegion& execRegion, const CommandListPoolSpecification& specs)
+        : m_ExecutionRegion(*reinterpret_cast<const VulkanExecutionRegion*>(&execRegion)), m_Specification(specs)
     {
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Note: Allows us to reset the command buffer and reuse it.
-        poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
+        poolInfo.queueFamilyIndex = m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
         
-        VK_VERIFY(vkCreateCommandPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
+        VK_VERIFY(vkCreateCommandPool(m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        m_Device.GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
+        m_ExecutionRegion.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
     }
 
     VulkanCommandListPool::~VulkanCommandListPool()
@@ -41,11 +43,11 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandListPool::FreeList(CommandList& list) const
     {
-        const VulkanContext& context = m_Device.GetContext();
+        const VulkanContext& context = m_ExecutionRegion.GetVulkanDevice().GetContext();
 
         VkDevice device = context.GetVulkanLogicalDevice().GetVkDevice();
         VkCommandBuffer commandBuffer = (*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
-        m_Device.GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
+        m_ExecutionRegion.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
         { 
             vkFreeCommandBuffers(device, commandPool, 1ul, &commandBuffer);
         });
@@ -62,8 +64,8 @@ namespace Nano::Graphics::Internal
             commandBuffers.push_back(commandBuffer);
         }
 
-        VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
-        m_Device.GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffers = std::move(commandBuffers)]() mutable
+        VkDevice device = m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice();
+        m_ExecutionRegion.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffers = std::move(commandBuffers)]() mutable
         {
             vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
         });
@@ -72,6 +74,11 @@ namespace Nano::Graphics::Internal
     void VulkanCommandListPool::ResetList(CommandList& list) const
     {
         vkResetCommandBuffer((*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer(), 0);
+    }
+
+    void VulkanCommandListPool::ResetAll() const
+    {
+        vkResetCommandPool(m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -86,9 +93,9 @@ namespace Nano::Graphics::Internal
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = 1;
 
-        VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
+        VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanExecutionRegion().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
 
-        m_Pool.GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::string(specs.DebugName));
+        m_Pool.GetVulkanExecutionRegion().GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::string(specs.DebugName));
     }
 
     VulkanCommandList::~VulkanCommandList()
@@ -162,7 +169,7 @@ namespace Nano::Graphics::Internal
         submitInfo.commandBufferInfoCount = 1;
         submitInfo.pCommandBufferInfos = &commandInfo;
         
-        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
+        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanExecutionRegion().GetVulkanDevice().GetContext().GetVulkanQueues().GetQueue(args.Queue), 1, &submitInfo, nullptr));
 #endif
     }
 

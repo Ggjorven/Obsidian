@@ -36,15 +36,10 @@ namespace Nano::Graphics::Internal
         // Destruction methods
         void DestroySwapchain(Swapchain& swapchain) const;
 
-        void FreePool(CommandListPool& pool) const;
-
         void DestroyImage(Image& image) const;
         void DestroySubresourceViews(Image& image) const;
 
         void DestroySampler(Sampler& sampler) const;
-
-        // Helper methods
-        void ResetPool(CommandListPool& pool) const;
 
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }

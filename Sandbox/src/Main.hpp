@@ -62,7 +62,7 @@ int Main(int argc, char* argv[])
 		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
 
 		// Commandlists & Commandpool
-		CommandListPool pool = device.AllocateCommandListPool({});
+		CommandListPool pool = swapchain.GetExecutionRegion().AllocateCommandListPool({});
 		CommandList list = pool.AllocateList({});
 
 		// Main Loop
@@ -73,7 +73,7 @@ int Main(int argc, char* argv[])
 			emptyQueue();
 			swapchain.AcquireNextImage();
 
-			list.Begin(true);
+			list.Begin();
 			list.End();
 			list.Submit({ CommandQueue::Graphics });
 
