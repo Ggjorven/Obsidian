@@ -519,6 +519,22 @@ namespace Nano::Graphics::Internal
 		}
 
 		VK_VERIFY(vkCreateDevice(m_PhysicalDevice.GetVkPhysicalDevice(), &createInfo, nullptr, &m_LogicalDevice));
+
+        {
+            VkDeviceQueueInfo2 queueInfo = {};
+            queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
+            queueInfo.queueFamilyIndex = indices.QueueFamily;
+            queueInfo.flags = 0; // Note: Should always be 0
+
+            queueInfo.queueIndex = indices.GraphicsQueue;
+            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_Queues[static_cast<size_t>(CommandQueue::Graphics)]);
+
+            queueInfo.queueIndex = indices.ComputeQueue;
+            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_Queues[static_cast<size_t>(CommandQueue::Compute)]);
+
+            queueInfo.queueIndex = indices.PresentQueue;
+            vkGetDeviceQueue2(m_LogicalDevice, &queueInfo, &m_Queues[static_cast<size_t>(CommandQueue::Present)]);
+        }
 	}
 
     VulkanLogicalDevice::~VulkanLogicalDevice()

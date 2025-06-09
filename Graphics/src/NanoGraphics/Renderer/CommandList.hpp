@@ -11,7 +11,7 @@
 namespace Nano::Graphics
 {
 
-    class ExecutionRegion;
+    class Swapchain;
     class CommandListPool;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -28,8 +28,12 @@ namespace Nano::Graphics
         ~CommandList() = default;
 
         // Methods
-        inline void Begin(bool reset = true) const { return m_CommandList.Begin(reset); }
-        inline void End() const { return m_CommandList.End(); }
+        inline void Reset() const { m_CommandList.Reset(); }
+
+        inline void ResetAndOpen() { m_CommandList.ResetAndOpen(); }
+        inline void Open() { m_CommandList.Open(); }
+        inline void Close() const { m_CommandList.Close(); }
+
         inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList.Submit(args); }
 
     private:
@@ -67,13 +71,13 @@ namespace Nano::Graphics
 
     private:
         // Constructor
-        inline CommandListPool(const ExecutionRegion& execRegion, const CommandListPoolSpecification& specs)
-            : m_Pool(execRegion, specs) {}
+        inline CommandListPool(const Swapchain& swapchain, const CommandListPoolSpecification& specs)
+            : m_Pool(swapchain, specs) {}
 
     private:
         Type m_Pool;
 
-        friend class ExecutionRegion;
+        friend class Swapchain;
     };
 
 }

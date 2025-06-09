@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
@@ -130,12 +131,15 @@ namespace Nano::Graphics::Internal
 
         // Getters
         inline VkDevice GetVkDevice() const { return m_LogicalDevice; }
+        inline VkQueue GetVkQueue(CommandQueue queue) const { return m_Queues[static_cast<size_t>(queue)]; }
 
         inline VulkanPhysicalDevice& GetPhysicalDevice() const { return m_PhysicalDevice; }
 
     private:
         VulkanPhysicalDevice& m_PhysicalDevice;
         VkDevice m_LogicalDevice = VK_NULL_HANDLE;
+
+        std::array<VkQueue, static_cast<size_t>(CommandQueue::Count)> m_Queues = { };
     };
 
 }

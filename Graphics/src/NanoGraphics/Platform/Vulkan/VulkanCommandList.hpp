@@ -9,7 +9,7 @@
 
 namespace Nano::Graphics
 {
-	class ExecutionRegion;
+	class Swapchain;
 	class CommandList;
 	class CommandListPool;
 }
@@ -18,7 +18,7 @@ namespace Nano::Graphics::Internal
 {
 
 	class VulkanDevice;
-	class VulkanExecutionRegion;
+	class VulkanSwapchain;
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandListPool
@@ -27,7 +27,7 @@ namespace Nano::Graphics::Internal
 	{
 	public:
 		// Constructor & Destructor
-		VulkanCommandListPool(const ExecutionRegion& execRegion, const CommandListPoolSpecification& specs);
+		VulkanCommandListPool(const Swapchain& swapchain, const CommandListPoolSpecification& specs);
 		~VulkanCommandListPool();
 
 		// Methods
@@ -41,12 +41,12 @@ namespace Nano::Graphics::Internal
 		inline const CommandListPoolSpecification& GetSpecification() const { return m_Specification; }
 
 		// Internal Getters
-		inline const VulkanExecutionRegion& GetVulkanExecutionRegion() const { return m_ExecutionRegion; }
+		inline const VulkanSwapchain& GetVulkanSwapchain() const { return m_ExecutionRegion; }
 
 		inline VkCommandPool GetVkCommandPool() const { return m_CommandPool; }
 
 	private:
-		const VulkanExecutionRegion& m_ExecutionRegion;
+		const VulkanSwapchain& m_ExecutionRegion;
 		CommandListPoolSpecification m_Specification;
 
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
@@ -63,8 +63,12 @@ namespace Nano::Graphics::Internal
 		~VulkanCommandList();
 
 		// Methods
-		void Begin(bool reset) const;
-		void End() const;
+		void Reset() const;
+
+		void ResetAndOpen();
+		void Open();
+		void Close() const;
+
 		void Submit(const CommandListSubmitArgs& args) const;
 
 		// Getters
@@ -78,6 +82,7 @@ namespace Nano::Graphics::Internal
 		CommandListSpecification m_Specification;
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 	};
 
 }

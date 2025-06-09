@@ -6,9 +6,13 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
+#include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanSwapchain.hpp"
+
 namespace Nano::Graphics::Internal
 {
 
+    static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Sampler::Type, VulkanSampler>, "Current Sampler::Type is not VulkanSampler and Vulkan source code is being compiled.");
 
@@ -37,7 +41,22 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanDevice::DestroySwapchain(Swapchain& swapchain) const
     {
-        // TODO: ...
+        VulkanSwapchain& vulkanSwapchain = *reinterpret_cast<VulkanSwapchain*>(&swapchain);
+
+        for (auto& image : vulkanSwapchain.m_Images)
+            DestroySubresourceViews(*reinterpret_cast<Image*>(&image.Get()));
+
+        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore]() mutable
+        {
+            vkDestroySwapchainKHR(device, swapchain, VulkanAllocator::GetCallbacks());
+            vkDestroySurfaceKHR(instance, surface, VulkanAllocator::GetCallbacks());
+
+            for (auto& semaphore : imageSemaphores)
+                vkDestroySemaphore(device, semaphore, VulkanAllocator::GetCallbacks());
+
+            vkDestroySemaphore(device, timelineSemaphore, VulkanAllocator::GetCallbacks());
+        });
+
     }
 
     void VulkanDevice::DestroyImage(Image& image) const

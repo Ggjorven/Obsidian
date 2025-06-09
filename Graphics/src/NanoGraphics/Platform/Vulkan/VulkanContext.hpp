@@ -6,7 +6,6 @@
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanDevices.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanQueues.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -57,8 +56,6 @@ namespace Nano::Graphics::Internal
         inline const VulkanPhysicalDevice& GetVulkanPhysicalDevice() const { return m_PhysicalDevice.Get(); }
         inline VulkanLogicalDevice& GetVulkanLogicalDevice() { return m_LogicalDevice.Get(); }
         inline const VulkanLogicalDevice& GetVulkanLogicalDevice() const { return m_LogicalDevice.Get(); }
-        inline VulkanQueues& GetVulkanQueues() { return m_Queues.Get(); }
-        inline const VulkanQueues& GetVulkanQueues() const { return m_Queues.Get(); }
 
         inline VkInstance GetVkInstance() const { return m_Instance; }
         inline VkDebugUtilsMessengerEXT GetVkDebugger() const { return m_DebugMessenger; }
@@ -74,7 +71,6 @@ namespace Nano::Graphics::Internal
 
         Memory::DeferredConstruct<VulkanPhysicalDevice> m_PhysicalDevice = {};
         Memory::DeferredConstruct<VulkanLogicalDevice, true> m_LogicalDevice = {};
-        Memory::DeferredConstruct<VulkanQueues, true> m_Queues = {};
 
         DeviceDestroyCallback m_DestroyCallback = nullptr;
     };

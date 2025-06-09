@@ -20,31 +20,48 @@ namespace Nano::Graphics::Internal
 {
 
     static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<ExecutionRegion::Type, VulkanExecutionRegion>, "ExecutionRegion Image::Type is not VulkanExecutionRegion and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Swapchain Image::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanExecutionRegion::VulkanExecutionRegion(const Swapchain& swapchain)
-        : m_Device(reinterpret_cast<const VulkanSwapchain*>(&swapchain)->GetVulkanDevice())
+    VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
+        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
-        VkSemaphoreCreateInfo semaphoreInfo = {};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++)
+        #if defined(NG_PLATFORM_DESKTOP)
+            VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
+        #endif
+
+        Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y, m_Specification.VSync, m_Specification.RequestedFormat, m_Specification.RequestedColourSpace);
+    
+        // Semaphores
         {
-            VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
+            VkSemaphoreCreateInfo semaphoreInfo = {};
+            semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            for (auto& semaphore : m_ImageAvailableSemaphores)
+            {
+                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &semaphore));
+            }
+
+           VkSemaphoreTypeCreateInfo timelineInfo = {};
+           timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+           timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+           timelineInfo.initialValue = 0;
+
+           semaphoreInfo.pNext = &timelineInfo;
+
+           VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_TimelineSemaphore));
         }
     }
 
-    VulkanExecutionRegion::~VulkanExecutionRegion()
+    VulkanSwapchain::~VulkanSwapchain()
     {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Destruction methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanExecutionRegion::FreePool(CommandListPool& pool) const
+    void VulkanSwapchain::FreePool(CommandListPool& pool) const
     {
         VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
         VkCommandPool commandPool = (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
@@ -52,23 +69,6 @@ namespace Nano::Graphics::Internal
         {
             vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
         });
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // Constructor & Destructor
-    ////////////////////////////////////////////////////////////////////////////////////
-    VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_ExecutionRegion(*reinterpret_cast<const Swapchain*>(this))
-    {
-        #if defined(NG_PLATFORM_DESKTOP)
-            VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
-        #endif
-
-        Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y, m_Specification.VSync, m_Specification.RequestedFormat, m_Specification.RequestedColourSpace);
-    }
-
-    VulkanSwapchain::~VulkanSwapchain()
-    {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -155,13 +155,13 @@ namespace Nano::Graphics::Internal
         swapchainCI.queueFamilyIndexCount = 0;
         swapchainCI.pQueueFamilyIndices = nullptr;
         swapchainCI.presentMode = swapchainPresentMode;
-        swapchainCI.oldSwapchain = m_SwapChain;
+        swapchainCI.oldSwapchain = m_Swapchain;
         swapchainCI.clipped = VK_TRUE; // Note: Setting clipped to VK_TRUE allows the implementation to discard rendering outside of the surface area
         swapchainCI.compositeAlpha = compositeAlpha; 
 
         VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
-        VkSwapchainKHR oldSwapchain = m_SwapChain;
-        VK_VERIFY(vkCreateSwapchainKHR(device, &swapchainCI, VulkanAllocator::GetCallbacks(), &m_SwapChain));
+        VkSwapchainKHR oldSwapchain = m_Swapchain;
+        VK_VERIFY(vkCreateSwapchainKHR(device, &swapchainCI, VulkanAllocator::GetCallbacks(), &m_Swapchain));
 
         if (oldSwapchain)
             vkDestroySwapchainKHR(device, oldSwapchain, VulkanAllocator::GetCallbacks()); // Destroys old swapchain images
@@ -169,9 +169,9 @@ namespace Nano::Graphics::Internal
         uint32_t imageCount = 0;
         std::array<VkImage, Information::BackBufferCount> swapchainImages = { };
 
-        VK_VERIFY(vkGetSwapchainImagesKHR(device, m_SwapChain, &imageCount, nullptr));
+        VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, nullptr));
         NG_ASSERT((imageCount == Information::BackBufferCount), "[VkSwapchain] Swapchain image count doesn't match requested BackBufferCount");
-        VK_VERIFY(vkGetSwapchainImagesKHR(device, m_SwapChain, &imageCount, swapchainImages.data()));
+        VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, swapchainImages.data()));
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
@@ -247,8 +247,8 @@ namespace Nano::Graphics::Internal
             VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
-            vkQueueSubmit(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Graphics));
+            vkQueueSubmit(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics));
 
             // Cleanup
             vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
@@ -260,7 +260,7 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VkSwapchain::AcquireImage()");
 
-        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ExecutionRegion.GetImageAvailableSemaphore(m_CurrentFrame), VK_NULL_HANDLE, &m_AcquiredImage);
+        VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_Swapchain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y);
@@ -282,14 +282,14 @@ namespace Nano::Graphics::Internal
         presentInfo.waitSemaphoreCount = 0;
         presentInfo.pWaitSemaphores = nullptr;
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &m_SwapChain;
+        presentInfo.pSwapchains = &m_Swapchain;
         presentInfo.pImageIndices = &m_AcquiredImage;
         presentInfo.pResults = nullptr; // Optional
 
         VkResult result = VK_SUCCESS;
         {
             NG_PROFILE("VkSwapchain::Present::QueuePresent");
-            result = vkQueuePresentKHR(m_Device.GetContext().GetVulkanQueues().GetQueue(CommandQueue::Present), &presentInfo);
+            result = vkQueuePresentKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Present), &presentInfo);
         }
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
@@ -302,6 +302,22 @@ namespace Nano::Graphics::Internal
         }
 
         m_CurrentFrame = (m_CurrentFrame + 1) % Information::BackBufferCount;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Internal methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    uint64_t VulkanSwapchain::GetPreviousCommandListWaitValue(CommandList& commandList) const
+    {
+        NG_ASSERT(m_CommandListSemaphoreValues.contains(&commandList), "[VkSwapchain] Commandlist is not known in current Swapchain.");
+        return m_CommandListSemaphoreValues.at(&commandList);
+    }
+
+    uint64_t VulkanSwapchain::RetrieveCommandListWaitValue(CommandList& commandList)
+    {
+        uint64_t value = ++m_CurrentTimelineValue;
+        m_CommandListSemaphoreValues[&commandList] = value;
+        return value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
