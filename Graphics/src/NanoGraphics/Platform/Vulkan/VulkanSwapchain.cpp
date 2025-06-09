@@ -38,19 +38,20 @@ namespace Nano::Graphics::Internal
         {
             VkSemaphoreCreateInfo semaphoreInfo = {};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            for (auto& semaphore : m_ImageAvailableSemaphores)
+            for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++)
             {
-                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &semaphore));
+                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
+                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
             }
 
-           VkSemaphoreTypeCreateInfo timelineInfo = {};
-           timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-           timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-           timelineInfo.initialValue = 0;
+            VkSemaphoreTypeCreateInfo timelineInfo = {};
+            timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+            timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            timelineInfo.initialValue = 0;
 
-           semaphoreInfo.pNext = &timelineInfo;
+            semaphoreInfo.pNext = &timelineInfo;
 
-           VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_TimelineSemaphore));
+            VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_TimelineSemaphore));
         }
     }
 
@@ -260,6 +261,18 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VkSwapchain::AcquireImage()");
 
+        // Wait for this frame's previous last value
+        {
+            VkSemaphoreWaitInfo waitInfo = {};
+            waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+            waitInfo.semaphoreCount = 1;
+            waitInfo.pSemaphores = &m_TimelineSemaphore;
+            waitInfo.pValues = &m_WaitTimelineValues[m_CurrentFrame];
+
+            vkWaitSemaphores(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &waitInfo, std::numeric_limits<uint64_t>::max());
+        }
+
+        // Acquire image
         VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_Swapchain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -275,12 +288,10 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VkSwapchain::Present()");
 
-        // TODO: Wait on semaphores from ExecutionRegion
-
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 0;
-        presentInfo.pWaitSemaphores = nullptr;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &m_SwapchainPresentableSemaphores[m_CurrentFrame];
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &m_Swapchain;
         presentInfo.pImageIndices = &m_AcquiredImage;
@@ -301,19 +312,20 @@ namespace Nano::Graphics::Internal
             m_Device.GetContext().Error("[VkSwapchain] Failed to present Swapchain image.");
         }
 
+        m_WaitTimelineValues[m_CurrentFrame] = m_CurrentTimelineValue;
         m_CurrentFrame = (m_CurrentFrame + 1) % Information::BackBufferCount;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal methods
     ////////////////////////////////////////////////////////////////////////////////////
-    uint64_t VulkanSwapchain::GetPreviousCommandListWaitValue(CommandList& commandList) const
+    uint64_t VulkanSwapchain::GetPreviousCommandListWaitValue(const VulkanCommandList& commandList) const
     {
         NG_ASSERT(m_CommandListSemaphoreValues.contains(&commandList), "[VkSwapchain] Commandlist is not known in current Swapchain.");
         return m_CommandListSemaphoreValues.at(&commandList);
     }
 
-    uint64_t VulkanSwapchain::RetrieveCommandListWaitValue(CommandList& commandList)
+    uint64_t VulkanSwapchain::RetrieveCommandListWaitValue(const VulkanCommandList& commandList)
     {
         uint64_t value = ++m_CurrentTimelineValue;
         m_CommandListSemaphoreValues[&commandList] = value;

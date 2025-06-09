@@ -63,7 +63,11 @@ int Main(int argc, char* argv[])
 
 		// Commandlists & Commandpool
 		CommandListPool pool = swapchain.AllocateCommandListPool({ "First pool" });
-		CommandList list = pool.AllocateList({ "First list" });
+		std::array<CommandList, Information::BackBufferCount> lists = {
+			pool.AllocateList({ "First List" }),
+			pool.AllocateList({ "Second List" }),
+			pool.AllocateList({ "Third List" }),
+		};
 
 		// Main Loop
 		while (window.IsOpen())
@@ -72,6 +76,9 @@ int Main(int argc, char* argv[])
 
 			emptyQueue();
 			swapchain.AcquireNextImage();
+
+			CommandList& list = lists[swapchain.GetCurrentFrame()];
+			
 			{
 				list.ResetAndOpen();
 				{
@@ -79,13 +86,19 @@ int Main(int argc, char* argv[])
 				}
 				list.Close();
 
-				list.Submit({ CommandQueue::Graphics });
+				CommandListSubmitArgs args = CommandListSubmitArgs()
+					.SetQueue(CommandQueue::Graphics)
+					.SetWaitForSwapchainImage(true)
+					.SetOnFinishMakeSwapchainPresentable(true);
+				list.Submit(args);
 			}
 			swapchain.Present();
 		}
 
 		swapchain.FreePool(pool);
 		device.DestroySwapchain(swapchain);
+
+		device.Wait();
 		emptyQueue();
 	}
 

@@ -28,7 +28,7 @@ namespace Nano::Graphics
         ~Swapchain() = default;
 
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
-        inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) const { return CommandListPool(*this, specs); }
+        inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) { return CommandListPool(*this, specs); }
         inline void FreePool(CommandListPool& pool) { m_Swapchain.FreePool(pool); }
 
         // Methods
@@ -37,6 +37,8 @@ namespace Nano::Graphics
 
         // Getters
         inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain.GetSpecification(); }
+
+        inline uint32_t GetCurrentFrame() const { return m_Swapchain.GetCurrentFrame(); }
 
     private:
         // Constructor

@@ -38,7 +38,7 @@ namespace Nano::Graphics
 
     private:
         // Constructor
-        inline CommandList(const CommandListPool& pool, const CommandListSpecification& specs)
+        inline CommandList(CommandListPool& pool, const CommandListSpecification& specs)
             : m_CommandList(pool, specs) {}
 
     private:
@@ -61,7 +61,7 @@ namespace Nano::Graphics
         ~CommandListPool() = default;
 
         // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
-        inline CommandList AllocateList(const CommandListSpecification& specs) const { return CommandList(*this, specs); }
+        inline CommandList AllocateList(const CommandListSpecification& specs) { return CommandList(*this, specs); }
         inline void FreeList(CommandList& list) const { m_Pool.FreeList(list); }
         inline void FreeLists(std::span<CommandList*> lists) const { m_Pool.FreeLists(lists); }
 
@@ -71,7 +71,7 @@ namespace Nano::Graphics
 
     private:
         // Constructor
-        inline CommandListPool(const Swapchain& swapchain, const CommandListPoolSpecification& specs)
+        inline CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs)
             : m_Pool(swapchain, specs) {}
 
     private:

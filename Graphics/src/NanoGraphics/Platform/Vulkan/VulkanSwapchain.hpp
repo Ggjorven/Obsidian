@@ -18,13 +18,13 @@ namespace Nano::Graphics
 	class Device;
 	class Swapchain;
 	class CommandListPool;
-	class CommandList;
 }
 
 namespace Nano::Graphics::Internal
 {
 
 	class VulkanDevice;
+	class VulkanCommandList;
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanSwapchain
@@ -47,16 +47,23 @@ namespace Nano::Graphics::Internal
 		void Present();
 
 		// Internal methods
-		uint64_t GetPreviousCommandListWaitValue(CommandList& commandList) const;
-		uint64_t RetrieveCommandListWaitValue(CommandList& commandList);
-		inline uint64_t GetImageAvaibleSemaphoreValue() const { return m_ImageAvailableValue; }
+		uint64_t GetPreviousCommandListWaitValue(const VulkanCommandList& commandList) const;
+		uint64_t RetrieveCommandListWaitValue(const VulkanCommandList& commandList);
 
 		// Getters
 		inline const SwapchainSpecification& GetSpecification() const { return m_Specification; }
+
+		inline uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
 		
 		// Internal getters
 		inline VkSwapchainKHR GetVkSwapchain() const { return m_Swapchain; }
 		inline VkSurfaceKHR GetVkSurface() const { return m_Surface; }
+		inline VkSemaphore GetVkTimelineSemaphore() const { return m_TimelineSemaphore; }
+
+		inline VkSemaphore GetVkImageAvailableSemaphore(uint32_t frame) const { return m_ImageAvailableSemaphores[frame]; }
+		inline VkSemaphore GetVkSwapchainPresentableSemaphore(uint32_t frame) const { return m_SwapchainPresentableSemaphores[frame]; }
+
+		inline uint32_t GetAcquiredImage() const { return m_AcquiredImage; }
 
 		inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
 
@@ -73,12 +80,13 @@ namespace Nano::Graphics::Internal
 
 		std::array<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferCount> m_Images = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
+		std::array<VkSemaphore, Information::BackBufferCount> m_SwapchainPresentableSemaphores = { };
 
 		VkSemaphore m_TimelineSemaphore = VK_NULL_HANDLE;
 		uint64_t m_CurrentTimelineValue = 0;
-		uint64_t m_ImageAvailableValue = 0;
+
 		std::array<uint64_t, Information::BackBufferCount> m_WaitTimelineValues = { };
-		std::unordered_map<CommandList*, uint64_t> m_CommandListSemaphoreValues = { };
+		std::unordered_map<const VulkanCommandList*, uint64_t> m_CommandListSemaphoreValues = { };
 
 		uint32_t m_CurrentFrame = 0;
 		uint32_t m_AcquiredImage = 0;

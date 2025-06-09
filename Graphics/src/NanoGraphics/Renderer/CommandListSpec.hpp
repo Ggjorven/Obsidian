@@ -64,17 +64,21 @@ namespace Nano::Graphics
     {
     public:
         CommandQueue Queue = CommandQueue::Graphics;
-        std::variant<std::vector<CommandList*>, std::span<CommandList*>> WaitOnLists = {};
-        bool WaitForImage = false;
+        
+        std::variant<std::vector<const CommandList*>, std::span<const CommandList*>> WaitOnLists = {};
+        
+        bool WaitForSwapchainImage = false;
+        bool OnFinishMakeSwapchainPresentable = false;
 
     public:
         // Setters
         inline constexpr CommandListSubmitArgs& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
-        inline CommandListSubmitArgs& SetWaitOnLists(std::vector<CommandList*>&& ownedLists) { WaitOnLists = std::move(ownedLists); return *this; }
-        inline CommandListSubmitArgs& SetWaitOnLists(const std::vector<CommandList*>& ownedLists) { WaitOnLists = ownedLists; return *this; }
-        inline CommandListSubmitArgs& SetWaitOnLists(std::initializer_list<CommandList*> ownedLists) { WaitOnLists = ownedLists; return *this; }
-        inline CommandListSubmitArgs& SetWaitOnLists(std::span<CommandList*> viewedLists) { WaitOnLists = viewedLists; return *this; }
-        inline constexpr CommandListSubmitArgs& SetWaitForImage(bool enabled) { WaitForImage = enabled; return *this; }
+        inline CommandListSubmitArgs& SetWaitOnLists(std::vector<const CommandList*>&& ownedLists) { WaitOnLists = std::move(ownedLists); return *this; }
+        inline CommandListSubmitArgs& SetWaitOnLists(const std::vector<const CommandList*>& ownedLists) { WaitOnLists = ownedLists; return *this; }
+        inline CommandListSubmitArgs& SetWaitOnLists(std::initializer_list<const CommandList*> ownedLists) { WaitOnLists = ownedLists; return *this; }
+        inline CommandListSubmitArgs& SetWaitOnLists(std::span<const CommandList*> viewedLists) { WaitOnLists = viewedLists; return *this; }
+        inline constexpr CommandListSubmitArgs& SetWaitForSwapchainImage(bool enabled) { WaitForSwapchainImage = enabled; return *this; }
+        inline constexpr CommandListSubmitArgs& SetOnFinishMakeSwapchainPresentable(bool enabled) { OnFinishMakeSwapchainPresentable = enabled; return *this; }
     };
 
 }

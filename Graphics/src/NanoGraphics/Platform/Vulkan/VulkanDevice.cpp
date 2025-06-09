@@ -46,13 +46,16 @@ namespace Nano::Graphics::Internal
         for (auto& image : vulkanSwapchain.m_Images)
             DestroySubresourceViews(*reinterpret_cast<Image*>(&image.Get()));
 
-        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore]() mutable
+        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore]() mutable
         {
             vkDestroySwapchainKHR(device, swapchain, VulkanAllocator::GetCallbacks());
             vkDestroySurfaceKHR(instance, surface, VulkanAllocator::GetCallbacks());
 
-            for (auto& semaphore : imageSemaphores)
-                vkDestroySemaphore(device, semaphore, VulkanAllocator::GetCallbacks());
+            for (size_t i = 0; i < imageSemaphores.size(); i++)
+            {
+                vkDestroySemaphore(device, imageSemaphores[i], VulkanAllocator::GetCallbacks());
+                vkDestroySemaphore(device, swapchainPresentableSemaphores[i], VulkanAllocator::GetCallbacks());
+            }
 
             vkDestroySemaphore(device, timelineSemaphore, VulkanAllocator::GetCallbacks());
         });

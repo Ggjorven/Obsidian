@@ -21,17 +21,17 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanCommandListPool::VulkanCommandListPool(const Swapchain& swapchain, const CommandListPoolSpecification& specs)
-        : m_ExecutionRegion(*reinterpret_cast<const VulkanSwapchain*>(&swapchain)), m_Specification(specs)
+    VulkanCommandListPool::VulkanCommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs)
+        : m_Swapchain(*reinterpret_cast<VulkanSwapchain*>(&swapchain)), m_Specification(specs)
     {
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Note: Allows us to reset the command buffer and reuse it.
-        poolInfo.queueFamilyIndex = m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
+        poolInfo.queueFamilyIndex = m_Swapchain.GetVulkanDevice().GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
         
-        VK_VERIFY(vkCreateCommandPool(m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
+        VK_VERIFY(vkCreateCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        m_ExecutionRegion.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
+        m_Swapchain.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
     }
 
     VulkanCommandListPool::~VulkanCommandListPool()
@@ -43,11 +43,11 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandListPool::FreeList(CommandList& list) const
     {
-        const VulkanContext& context = m_ExecutionRegion.GetVulkanDevice().GetContext();
+        const VulkanContext& context = m_Swapchain.GetVulkanDevice().GetContext();
 
         VkDevice device = context.GetVulkanLogicalDevice().GetVkDevice();
         VkCommandBuffer commandBuffer = (*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
-        m_ExecutionRegion.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
+        m_Swapchain.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
         { 
             vkFreeCommandBuffers(device, commandPool, 1ul, &commandBuffer);
         });
@@ -64,8 +64,8 @@ namespace Nano::Graphics::Internal
             commandBuffers.push_back(commandBuffer);
         }
 
-        VkDevice device = m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice();
-        m_ExecutionRegion.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffers = std::move(commandBuffers)]() mutable
+        VkDevice device = m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice();
+        m_Swapchain.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffers = std::move(commandBuffers)]() mutable
         {
             vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
         });
@@ -78,14 +78,14 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandListPool::ResetAll() const
     {
-        vkResetCommandPool(m_ExecutionRegion.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 0);
+        vkResetCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanCommandList::VulkanCommandList(const CommandListPool& pool, const CommandListSpecification& specs)
-        : m_Pool(*reinterpret_cast<const VulkanCommandListPool*>(&pool)), m_Specification(specs)
+    VulkanCommandList::VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs)
+        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs)
     {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -138,26 +138,78 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandBuffer::Submit()");
 
-        VkSemaphoreSubmitInfo waitInfo1 = {};
-        waitInfo1.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        waitInfo1.semaphore = nullptr;
-        waitInfo1.stageMask = m_WaitStage;
-        waitInfo1.value = 0;
+        VulkanSwapchain& swapchain = m_Pool.GetVulkanSwapchain();
 
-        VkSemaphoreSubmitInfo signalInfo = {};
-        waitInfo1.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        waitInfo1.semaphore = nullptr;
-        waitInfo1.value = 0;
+        std::vector<const CommandList*> owningWaitOn;
+        std::span<const CommandList*> waitOn;
+        std::visit([&](const auto& arg)
+        {
+            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<const CommandList*>>)
+            {
+                owningWaitOn = std::move(arg);
+                waitOn = owningWaitOn;
+            }
+            else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const CommandList*>>)
+                waitOn = arg;
+        }, args.WaitOnLists);
 
+
+        std::vector<VkSemaphoreSubmitInfo> waitInfos;
+        waitInfos.reserve(waitOn.size() + (args.WaitForSwapchainImage ? 1 : 0));
+
+        // Wait semaphores
+        if (args.WaitForSwapchainImage)
+        {
+            VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
+            info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
+            info.stageMask = m_WaitStage;
+            info.value = 0;
+        }
+        for (const CommandList* list : waitOn)
+        {
+            VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
+            info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            info.semaphore = swapchain.GetVkTimelineSemaphore();
+            info.stageMask = m_WaitStage;
+            info.value = swapchain.GetPreviousCommandListWaitValue(*reinterpret_cast<const VulkanCommandList*>(list));
+        }
+
+        // Signal semaphores
+        std::vector<VkSemaphoreSubmitInfo> signalInfos;
+        signalInfos.reserve(1ull + (args.OnFinishMakeSwapchainPresentable ? 1ull : 0ull));
+
+        VkSemaphoreSubmitInfo& timelineInfo = signalInfos.emplace_back();
+        timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        timelineInfo.semaphore = swapchain.GetVkTimelineSemaphore();
+        timelineInfo.value = swapchain.RetrieveCommandListWaitValue(*this);
+
+        if (args.OnFinishMakeSwapchainPresentable)
+        {
+            VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
+            info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetCurrentFrame());
+            info.stageMask = m_WaitStage;
+            info.value = 0;
+        }
+
+        // Command info
         VkCommandBufferSubmitInfo commandInfo = {};
         commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
         commandInfo.commandBuffer = m_CommandBuffer;
 
+        // Submit info
         VkSubmitInfo2 submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
 
+        submitInfo.waitSemaphoreInfoCount = static_cast<uint32_t>(waitInfos.size());
+        submitInfo.pWaitSemaphoreInfos = waitInfos.data();
+
         submitInfo.commandBufferInfoCount = 1;
         submitInfo.pCommandBufferInfos = &commandInfo;
+
+        submitInfo.signalSemaphoreInfoCount = static_cast<uint32_t>(signalInfos.size());
+        submitInfo.pSignalSemaphoreInfos = signalInfos.data();
         
         VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
     }

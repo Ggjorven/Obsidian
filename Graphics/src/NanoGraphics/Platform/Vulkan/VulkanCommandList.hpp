@@ -27,7 +27,7 @@ namespace Nano::Graphics::Internal
 	{
 	public:
 		// Constructor & Destructor
-		VulkanCommandListPool(const Swapchain& swapchain, const CommandListPoolSpecification& specs);
+		VulkanCommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs);
 		~VulkanCommandListPool();
 
 		// Methods
@@ -41,12 +41,13 @@ namespace Nano::Graphics::Internal
 		inline const CommandListPoolSpecification& GetSpecification() const { return m_Specification; }
 
 		// Internal Getters
-		inline const VulkanSwapchain& GetVulkanSwapchain() const { return m_ExecutionRegion; }
+		inline VulkanSwapchain& GetVulkanSwapchain() { return m_Swapchain; }
+		inline const VulkanSwapchain& GetVulkanSwapchain() const { return m_Swapchain; }
 
 		inline VkCommandPool GetVkCommandPool() const { return m_CommandPool; }
 
 	private:
-		const VulkanSwapchain& m_ExecutionRegion;
+		VulkanSwapchain& m_Swapchain;
 		CommandListPoolSpecification m_Specification;
 
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
@@ -59,7 +60,7 @@ namespace Nano::Graphics::Internal
 	{
 	public:
 		// Constructor & Destructor
-		VulkanCommandList(const CommandListPool& pool, const CommandListSpecification& specs);
+		VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs);
 		~VulkanCommandList();
 
 		// Methods
@@ -78,7 +79,7 @@ namespace Nano::Graphics::Internal
 		inline VkCommandBuffer GetVkCommandBuffer() const { return m_CommandBuffer; }
 
 	private:
-		const VulkanCommandListPool& m_Pool;
+		VulkanCommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
