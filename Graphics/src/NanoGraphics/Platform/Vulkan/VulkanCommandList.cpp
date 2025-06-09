@@ -142,17 +142,13 @@ namespace Nano::Graphics::Internal
 
         std::vector<const CommandList*> owningWaitOn;
         std::span<const CommandList*> waitOn;
-        std::visit([&](const auto& arg)
+        std::visit([&](auto&& arg)
         {
             if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<const CommandList*>>)
-            {
-                owningWaitOn = std::move(arg);
-                waitOn = owningWaitOn;
-            }
+                waitOn = const_cast<std::vector<const CommandList*>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
             else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const CommandList*>>)
                 waitOn = arg;
         }, args.WaitOnLists);
-
 
         std::vector<VkSemaphoreSubmitInfo> waitInfos;
         waitInfos.reserve(waitOn.size() + (args.WaitForSwapchainImage ? 1 : 0));
