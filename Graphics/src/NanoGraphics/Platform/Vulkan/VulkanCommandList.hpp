@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
@@ -72,6 +73,11 @@ namespace Nano::Graphics::Internal
 
 		void Submit(const CommandListSubmitArgs& args) const;
 
+		void CommitBarriers();
+
+		// Object methods
+		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
+
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
 
@@ -79,11 +85,19 @@ namespace Nano::Graphics::Internal
 		inline VkCommandBuffer GetVkCommandBuffer() const { return m_CommandBuffer; }
 
 	private:
+		// Private methods
+		void SetWaitStage(VkPipelineStageFlags2 waitStage);
+
+		void RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state);
+
+	private:
 		VulkanCommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
+
+		std::vector<ImageBarrier> m_ImageBarriers = { };
 	};
 
 }

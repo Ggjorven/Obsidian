@@ -3,6 +3,8 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
+#include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp" // TODO: Remove
+
 #include <Nano/Nano.hpp>
 
 using namespace Nano;

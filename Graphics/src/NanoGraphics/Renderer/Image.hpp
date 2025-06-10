@@ -27,8 +27,13 @@ namespace Nano::Graphics
         // Destructor
         ~Image() = default;
 
+        // Setters
+        inline void SetCurrentState(ResourceState state) { m_Image.SetCurrentState(state); }
+
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
+
+        inline ResourceState GetCurrentState() const { return m_Image.GetCurrentState(); }
 
     private:
         // Constructor 

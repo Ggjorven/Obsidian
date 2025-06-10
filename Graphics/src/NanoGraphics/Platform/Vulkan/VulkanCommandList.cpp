@@ -159,7 +159,7 @@ namespace Nano::Graphics::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
-            info.stageMask = m_WaitStage;
+            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT : m_WaitStage);
             info.value = 0;
         }
         for (const CommandList* list : waitOn)
@@ -209,5 +209,175 @@ namespace Nano::Graphics::Internal
         
         VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
     }
+
+    void VulkanCommandList::CommitBarriers()
+    {
+        std::vector<VkImageMemoryBarrier2> imageBarriers;
+        imageBarriers.reserve(m_ImageBarriers.size());
+
+        for (const ImageBarrier& imageBarrier : m_ImageBarriers)
+        {
+            const ResourceStateMapping& before = ResourceStateToMapping(imageBarrier.StateBefore);
+            const ResourceStateMapping& after = ResourceStateToMapping(imageBarrier.StateAfter);
+
+            NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
+
+            Image& image = *imageBarrier.ImagePtr;
+            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(imageBarrier.ImagePtr);
+
+            VkImageMemoryBarrier2 barrier2 = {};
+            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = before.StageFlags;
+            barrier2.dstStageMask = after.StageFlags;
+            barrier2.srcAccessMask = before.AccessMask;
+            barrier2.dstAccessMask = after.AccessMask;
+            barrier2.oldLayout = before.ImageLayout;
+            barrier2.newLayout = after.ImageLayout;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.image = vulkanImage.GetVkImage();
+
+            barrier2.subresourceRange.aspectMask = VkFormatToImageAspect(FormatToVkFormat(image.GetSpecification().ImageFormat));
+            barrier2.subresourceRange.baseMipLevel = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageMipLevel);
+            barrier2.subresourceRange.levelCount = (imageBarrier.EntireTexture ? image.GetSpecification().MipLevels : 1);
+            barrier2.subresourceRange.baseArrayLayer = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageArraySlice);
+            barrier2.subresourceRange.layerCount = (imageBarrier.EntireTexture ? image.GetSpecification().ArraySize : 1);
+
+            imageBarriers.push_back(barrier2);
+        }
+
+        if (!imageBarriers.empty())
+        {
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size());
+            dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
+
+            vkCmdPipelineBarrier2(m_CommandBuffer, &dependencyInfo);
+        }
+
+        m_ImageBarriers.clear();
+        
+        // TODO: Buffer barriers
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Object methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
+    {
+        SetWaitStage(VK_PIPELINE_STAGE_2_TRANSFER_BIT);
+
+        VulkanImage& vulkanDst = *reinterpret_cast<VulkanImage*>(&dst);
+        VulkanImage& vulkanSrc = *reinterpret_cast<VulkanImage*>(&src);
+
+        ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
+        ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
+
+        ImageSubresourceSpecification srcSubresource = ImageSubresourceSpecification(
+            resSrcSlice.ImageMipLevel, 1,
+            resSrcSlice.ImageArraySlice, 1
+        );
+
+        VkFormat srcFormat = FormatToVkFormat(src.GetSpecification().ImageFormat);
+        VkImageAspectFlags srcAspectFlags = GuessSubresourceImageAspectFlags(srcFormat, ImageSubresourceViewType::AllAspects);
+
+        ImageSubresourceSpecification dstSubresource = ImageSubresourceSpecification(
+            resDstSlice.ImageMipLevel, 1,
+            resDstSlice.ImageArraySlice, 1
+        );
+
+        VkFormat dstFormat = FormatToVkFormat(dst.GetSpecification().ImageFormat);
+        VkImageAspectFlags dstAspectFlags = GuessSubresourceImageAspectFlags(dstFormat, ImageSubresourceViewType::AllAspects);
+
+        VkExtent3D extent = VkExtent3D(
+            std::min(resSrcSlice.Width, resDstSlice.Width),
+            std::min(resSrcSlice.Height, resDstSlice.Height),
+            std::min(resSrcSlice.Depth, resDstSlice.Depth)
+        );
+
+        RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        CommitBarriers();
+
+        VkCopyImageInfo2 copyInfo = {};
+        copyInfo.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2;
+        copyInfo.srcImage = vulkanSrc.GetVkImage();
+        copyInfo.srcImageLayout = ResourceStateToImageLayout(ResourceState::CopySrc);
+        copyInfo.dstImage = vulkanDst.GetVkImage();
+        copyInfo.dstImageLayout = ResourceStateToImageLayout(ResourceState::CopyDst);
+        copyInfo.regionCount = 1;
+
+        VkImageCopy2 region = {};
+        region.sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2;
+        region.srcSubresource.aspectMask = srcAspectFlags;
+        region.srcSubresource.mipLevel = srcSubresource.BaseMipLevel;
+        region.srcSubresource.baseArrayLayer = srcSubresource.BaseArraySlice;
+        region.srcSubresource.layerCount = srcSubresource.NumArraySlices;
+        region.srcOffset = { resSrcSlice.X, resSrcSlice.Y, resSrcSlice.Z };
+
+        region.dstSubresource.aspectMask = dstAspectFlags;
+        region.dstSubresource.mipLevel = dstSubresource.BaseMipLevel;
+        region.dstSubresource.baseArrayLayer = dstSubresource.BaseArraySlice;
+        region.dstSubresource.layerCount = dstSubresource.NumArraySlices;
+        region.dstOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
+
+        region.extent = extent;
+
+        copyInfo.pRegions = &region;
+
+        vkCmdCopyImage2(m_CommandBuffer, &copyInfo);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::SetWaitStage(VkPipelineStageFlags2 waitStage)
+    {
+        VkPipelineStageFlags2 firstStage = GetFirstPipelineStage(waitStage);
+        if (GetFirstPipelineStage(firstStage) < GetFirstPipelineStage(m_WaitStage))
+            m_WaitStage = firstStage;
+    }
+
+    void VulkanCommandList::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state)
+    {
+        // TODO: Permanent state checking
+
+        subresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+
+        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
+
+        if (subresources.IsEntireTexture(image.GetSpecification()))
+        {
+            // TODO: Implement after implementing external state tracking
+            /*
+            bool transitionNecessary = (image.GetCurrentState() != state);
+            bool uavNecessary = ((state & ResourceState::UnorderedAccess) != 0)
+                && (tracking->enableUavBarriers || !tracking->firstUavBarrierPlaced);
+
+            if (transitionNecessary || uavNecessary)
+            {
+                TextureBarrier barrier;
+                barrier.texture = texture;
+                barrier.entireTexture = true;
+                barrier.stateBefore = tracking->state;
+                barrier.stateAfter = state;
+                m_TextureBarriers.push_back(barrier);
+            }
+
+            tracking->state = state;
+
+            if (uavNecessary && !transitionNecessary)
+            {
+                tracking->firstUavBarrierPlaced = true;
+            }
+            */
+        }
+        else
+        {
+            // TODO: Convert all subresources
+        }
+    }
+
 
 }

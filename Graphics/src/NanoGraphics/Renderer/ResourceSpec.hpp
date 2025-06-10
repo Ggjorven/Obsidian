@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Nano/Nano.hpp>
+
 #include <cstdint>
 
 namespace Nano::Graphics
@@ -23,8 +25,8 @@ namespace Nano::Graphics
         DepthWrite = 1 << 8,
         DepthRead = 1 << 9,
         StreamOut = 1 << 10,
-        CopyDest = 1 << 11,
-        CopySource = 1 << 12,
+        CopyDst = 1 << 11,
+        CopySrc = 1 << 12,
         Present = 1 << 13,
         //AccelStructRead = 1 << 14,
         //AccelStructWrite = 1 << 15,
@@ -32,16 +34,6 @@ namespace Nano::Graphics
         //AccelStructBuildBlas = 1 << 17,
     };
 
-    ////////////////////////////////////////////////////////////////////////////////////
-    // ResourceType
-    ////////////////////////////////////////////////////////////////////////////////////
-    enum class ResourceType : uint8_t
-    {
-        Unknown = 0,
-
-        Image,
-        ImageView,
-        Sampler
-    };
+    NANO_DEFINE_BITWISE(ResourceState)
 
 }

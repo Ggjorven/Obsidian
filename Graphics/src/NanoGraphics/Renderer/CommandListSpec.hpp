@@ -3,6 +3,7 @@
 #include "NanoGraphics/Maths/Structs.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -17,6 +18,7 @@
 namespace Nano::Graphics
 {
 
+    class Image;
     class CommandList;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +81,22 @@ namespace Nano::Graphics
         inline CommandListSubmitArgs& SetWaitOnLists(std::span<const CommandList*> viewedLists) { WaitOnLists = viewedLists; return *this; }
         inline constexpr CommandListSubmitArgs& SetWaitForSwapchainImage(bool enabled) { WaitForSwapchainImage = enabled; return *this; }
         inline constexpr CommandListSubmitArgs& SetOnFinishMakeSwapchainPresentable(bool enabled) { OnFinishMakeSwapchainPresentable = enabled; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Barriers
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ImageBarrier
+    {
+    public:
+        Image* ImagePtr = nullptr;
+
+        MipLevel ImageMipLevel = 0;
+        ArraySlice ImageArraySlice = 0;
+        bool EntireTexture = false;
+
+        ResourceState StateBefore = ResourceState::Unknown;
+        ResourceState StateAfter = ResourceState::Unknown;
     };
 
 }

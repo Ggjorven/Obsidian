@@ -84,8 +84,13 @@ namespace Nano::Graphics::Internal
 		// Methods
 		const VulkanImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, ImageSubresourceViewType viewType = ImageSubresourceViewType::AllAspects);
 
+		// Setters
+		inline void SetCurrentState(ResourceState state) { m_CurrentState = state; }
+
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
+
+		inline ResourceState GetCurrentState() const { return m_CurrentState; }
 
 		// Internal methods
 		void SetInternalData(const ImageSpecification& specs, VkImage image);

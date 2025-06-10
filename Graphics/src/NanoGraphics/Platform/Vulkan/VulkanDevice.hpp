@@ -12,7 +12,6 @@
 namespace Nano::Graphics
 {
     class Swapchain;
-    class CommandListPool;
     class Image;
     class Sampler;
 }

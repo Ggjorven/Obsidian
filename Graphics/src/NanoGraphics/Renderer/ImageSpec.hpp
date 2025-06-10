@@ -221,6 +221,31 @@ namespace Nano::Graphics
         inline constexpr ImageSubresourceSpecification& SetBaseArraySlice(ArraySlice base) { BaseArraySlice = base; return *this; }
         inline constexpr ImageSubresourceSpecification& SetNumArraySlices(ArraySlice num) { NumArraySlices = num; return *this; }
 
+        // Getters
+        inline bool IsEntireTexture(const ImageSpecification& imageSpecs) const
+        {
+            if (BaseMipLevel > 0u || BaseMipLevel + NumMipLevels < imageSpecs.MipLevels)
+                return false;
+
+            switch (imageSpecs.Dimension)
+            {
+            case ImageDimension::Image1DArray:
+            case ImageDimension::Image2DArray:
+            case ImageDimension::ImageCube:
+            case ImageDimension::ImageCubeArray:
+            case ImageDimension::Image2DMSArray:
+            {
+                if (BaseArraySlice > 0u || BaseArraySlice + NumArraySlices < imageSpecs.ArraySize)
+                    return false;
+            }
+
+            default:
+                break;
+            }
+
+            return true;
+        }
+
         // Operators
         inline constexpr bool operator == (const ImageSubresourceSpecification& other) const { return ((BaseMipLevel == other.BaseMipLevel) && (NumMipLevels == other.NumMipLevels) && (BaseArraySlice == other.BaseArraySlice) && (NumArraySlices == other.NumArraySlices)); }
         inline constexpr bool operator != (const ImageSubresourceSpecification& other) const { return !(*this == other); }
@@ -232,10 +257,11 @@ namespace Nano::Graphics
     struct ImageSliceSpecification
     {
     public:
-        uint32_t X = 0;
-        uint32_t Y = 0;
-        uint32_t Z = 0;
+        int32_t X = 0;
+        int32_t Y = 0;
+        int32_t Z = 0;
 
+        // Note: std::numeric_limits<uint32_t>::max() is equal to the full image.
         uint32_t Width = std::numeric_limits<uint32_t>::max();
         uint32_t Height = std::numeric_limits<uint32_t>::max();
         uint32_t Depth = std::numeric_limits<uint32_t>::max();
@@ -245,7 +271,7 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr ImageSliceSpecification& setOrigin(uint32_t x, uint32_t y, uint32_t z = 0) { X = x; Y = y; Z = z; return *this; }
+        inline constexpr ImageSliceSpecification& SetOffset(int32_t x, int32_t y, int32_t z = 0) { X = x; Y = y; Z = z; return *this; }
         inline constexpr ImageSliceSpecification& setWidth(uint32_t width) { Width = width; return *this; }
         inline constexpr ImageSliceSpecification& setHeight(uint32_t height) { Height = height; return *this; }
         inline constexpr ImageSliceSpecification& setDepth(uint32_t depth) { Depth = depth; return *this; }
@@ -403,8 +429,9 @@ namespace Nano::Graphics
         ////////////////////////////////////////////////////////////////////////////////////
         // Helper methods
         ////////////////////////////////////////////////////////////////////////////////////
-        inline constexpr bool FormatHasDepth(Format format) { return Internal::g_FormatInfo[static_cast<size_t>(format)].HasDepth; }
-        inline constexpr bool FormatHasStencil(Format format) { return Internal::g_FormatInfo[static_cast<size_t>(format)].HasStencil; }
+        inline constexpr bool FormatHasDepth(Format format) { return g_FormatInfo[static_cast<size_t>(format)].HasDepth; }
+        inline constexpr bool FormatHasStencil(Format format) { return g_FormatInfo[static_cast<size_t>(format)].HasStencil; }
+        inline constexpr const FormatInfo& FormatToFormatInfo(Format format) { return g_FormatInfo[static_cast<size_t>(format)]; }
 
     }
 

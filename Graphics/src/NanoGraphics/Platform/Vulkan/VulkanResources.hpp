@@ -12,6 +12,11 @@
 #include <cstdint>
 #include <type_traits>
 
+namespace Nano::Graphics
+{
+    class Image;
+}
+
 namespace Nano::Graphics::Internal
 {
 
@@ -50,8 +55,8 @@ namespace Nano::Graphics::Internal
         { ResourceState::DepthRead,         VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | 
                                             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
         { ResourceState::StreamOut,         VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,     VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,   VK_IMAGE_LAYOUT_UNDEFINED },
-        { ResourceState::CopyDest,          VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_WRITE_BIT,                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL },
-        { ResourceState::CopySource,        VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_READ_BIT,                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
+        { ResourceState::CopyDst,           VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_WRITE_BIT,                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL },
+        { ResourceState::CopySrc,           VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_READ_BIT,                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
         { ResourceState::Present,           VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_MEMORY_READ_BIT,                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR },
         //{ ResourceState::AccelStructRead,   VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR | 
         //                                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,             VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,VK_IMAGE_LAYOUT_UNDEFINED },
@@ -244,9 +249,14 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Helper methods
+    // Conversion helper methods
     ////////////////////////////////////////////////////////////////////////////////////
-    inline VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state) 
+    inline constexpr VkPipelineStageFlags2 ResourceStateToFirstVkPipelineStage(ResourceState state)
+    {
+        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].StageFlags;
+    }
+
+    inline constexpr VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state)
     {
         VkPipelineStageFlags2 result = 0;
         std::underlying_type_t<ResourceState> value = std::to_underlying(state);
@@ -262,7 +272,12 @@ namespace Nano::Graphics::Internal
         return result;
     }
 
-    inline VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
+    inline constexpr VkAccessFlags2 ResourceStateToFirstVkAccessMask(ResourceState state)
+    {
+        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].AccessMask;
+    }
+
+    inline constexpr VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
     {
         VkAccessFlags2 result = 0;
         std::underlying_type_t<ResourceState> value = std::to_underlying(state);
@@ -278,10 +293,12 @@ namespace Nano::Graphics::Internal
         return result;
     }
 
-    inline VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
+    inline constexpr VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
     {
         return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].ImageLayout;
     }
+
+    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))]; }
 
     inline constexpr VkImageType ImageDimensionToVkImageType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageType; }
     inline constexpr VkImageViewType ImageDimensionToVkImageViewType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageViewType; }
@@ -488,5 +505,45 @@ namespace Nano::Graphics::Internal
         NG_UNREACHABLE();
         return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
     }
+
+    inline constexpr VkPipelineStageFlags2 GetFirstPipelineStage(VkPipelineStageFlags2 stage)
+    {
+        return stage & -stage;
+    }
+
+    constexpr uint8_t GetVkPipelineStageOrder(VkPipelineStageFlags2 stage) 
+    {
+        switch (stage) 
+        {
+        case VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT:                       return 0;
+        case VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT:                     return 1;
+        case VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT:                      return 2;
+        case VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT:                     return 3;
+        case VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT:       return 4;
+        case VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT:    return 5;
+        case VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT:                   return 6;
+        case VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT:                   return 7;
+        case VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT:              return 8;
+        case VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT:               return 9;
+        case VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT:           return 10;
+        case VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT:                    return 11;
+        case VK_PIPELINE_STAGE_2_TRANSFER_BIT:                          return 12;
+        case VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT:                    return 13;
+        case VK_PIPELINE_STAGE_2_HOST_BIT:                              return 14;
+        case VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT:                      return 15;
+        case VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT:                      return 16;
+        
+        default: 
+            break;
+        }
+
+        return std::numeric_limits<uint8_t>::max();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Resolving methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
+    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
 
 }

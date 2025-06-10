@@ -1,5 +1,6 @@
 #pragma once
 #include "NanoGraphics/Core/Information.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanCommandList.hpp"
@@ -12,6 +13,7 @@ namespace Nano::Graphics
 {
 
     class Swapchain;
+    class Image;
     class CommandListPool;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +37,9 @@ namespace Nano::Graphics
         inline void Close() const { m_CommandList.Close(); }
 
         inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList.Submit(args); }
+
+        // Object methods
+        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
 
     private:
         // Constructor
