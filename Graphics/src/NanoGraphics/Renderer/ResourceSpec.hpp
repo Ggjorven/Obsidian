@@ -36,4 +36,11 @@ namespace Nano::Graphics
 
     NANO_DEFINE_BITWISE(ResourceState)
 
+    enum class CpuAccessMode : uint8_t
+    {
+        None = 0,
+        Read,
+        Write
+    };
+
 }

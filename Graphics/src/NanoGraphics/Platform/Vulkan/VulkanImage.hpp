@@ -82,15 +82,9 @@ namespace Nano::Graphics::Internal
 		~VulkanImage();
 
 		// Methods
-		const VulkanImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, ImageSubresourceViewType viewType = ImageSubresourceViewType::AllAspects);
-
-		// Setters
-		inline void SetCurrentState(ResourceState state) { m_CurrentState = state; }
 
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
-
-		inline ResourceState GetCurrentState() const { return m_CurrentState; }
 
 		// Internal methods
 		void SetInternalData(const ImageSpecification& specs, VkImage image);
@@ -99,13 +93,12 @@ namespace Nano::Graphics::Internal
 		inline VkImage GetVkImage() const { return m_Image; }
 		inline VmaAllocation GetVmaAllocation() const { return m_Allocation; }
 
+		const VulkanImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, ImageSubresourceViewType viewType = ImageSubresourceViewType::AllAspects);
 		inline std::unordered_map<VulkanImageSubresourceView::Key, VulkanImageSubresourceView, VulkanImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
 	private:
 		const VulkanDevice& m_Device;
 		ImageSpecification m_Specification;
-
-		ResourceState m_CurrentState = ResourceState::Unknown;
 
 		VkImage m_Image = VK_NULL_HANDLE;
 		VmaAllocation m_Allocation = VK_NULL_HANDLE;

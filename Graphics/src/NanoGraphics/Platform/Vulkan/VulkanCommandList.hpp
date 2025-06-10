@@ -5,8 +5,7 @@
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
-
-#include <type_traits>
+#include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
 
 namespace Nano::Graphics
 {
@@ -76,6 +75,8 @@ namespace Nano::Graphics::Internal
 		void CommitBarriers();
 
 		// Object methods
+		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
+
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 
 		// Getters
@@ -88,8 +89,6 @@ namespace Nano::Graphics::Internal
 		// Private methods
 		void SetWaitStage(VkPipelineStageFlags2 waitStage);
 
-		void RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state);
-
 	private:
 		VulkanCommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
@@ -97,7 +96,7 @@ namespace Nano::Graphics::Internal
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 
-		std::vector<ImageBarrier> m_ImageBarriers = { };
+		VulkanStateTracker m_StateTracker;
 	};
 
 }

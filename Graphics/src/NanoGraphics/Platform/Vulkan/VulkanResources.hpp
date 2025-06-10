@@ -508,7 +508,7 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkPipelineStageFlags2 GetFirstPipelineStage(VkPipelineStageFlags2 stage)
     {
-        return stage & -stage;
+        return stage & (~stage + 1);
     }
 
     constexpr uint8_t GetVkPipelineStageOrder(VkPipelineStageFlags2 stage) 

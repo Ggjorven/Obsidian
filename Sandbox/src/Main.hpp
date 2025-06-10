@@ -3,8 +3,6 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp" // TODO: Remove
-
 #include <Nano/Nano.hpp>
 
 using namespace Nano;
@@ -12,6 +10,8 @@ using namespace Nano::Graphics;
 
 int Main(int argc, char* argv[])
 {
+	(void)argc; (void)argv;
+
 	{
 		// Window Creation
 		Window* windowPtr;

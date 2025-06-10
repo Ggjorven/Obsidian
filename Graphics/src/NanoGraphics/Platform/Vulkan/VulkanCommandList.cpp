@@ -85,7 +85,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanCommandList::VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs)
-        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs)
+        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs), m_StateTracker(m_Pool.GetVulkanSwapchain().GetVulkanDevice())
     {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -151,7 +151,7 @@ namespace Nano::Graphics::Internal
         }, args.WaitOnLists);
 
         std::vector<VkSemaphoreSubmitInfo> waitInfos;
-        waitInfos.reserve(waitOn.size() + (args.WaitForSwapchainImage ? 1 : 0));
+        waitInfos.reserve(waitOn.size() + (args.WaitForSwapchainImage ? 1ull : 0ull));
 
         // Wait semaphores
         if (args.WaitForSwapchainImage)
@@ -160,7 +160,7 @@ namespace Nano::Graphics::Internal
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
             info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT : m_WaitStage);
-            info.value = 0;
+            info.value = 0ull;
         }
         for (const CommandList* list : waitOn)
         {
@@ -186,7 +186,7 @@ namespace Nano::Graphics::Internal
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetCurrentFrame());
             info.stageMask = m_WaitStage;
-            info.value = 0;
+            info.value = 0ull;
         }
 
         // Command info
@@ -201,7 +201,7 @@ namespace Nano::Graphics::Internal
         submitInfo.waitSemaphoreInfoCount = static_cast<uint32_t>(waitInfos.size());
         submitInfo.pWaitSemaphoreInfos = waitInfos.data();
 
-        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.commandBufferInfoCount = 1ul;
         submitInfo.pCommandBufferInfos = &commandInfo;
 
         submitInfo.signalSemaphoreInfoCount = static_cast<uint32_t>(signalInfos.size());
@@ -212,60 +212,22 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::CommitBarriers()
     {
-        std::vector<VkImageMemoryBarrier2> imageBarriers;
-        imageBarriers.reserve(m_ImageBarriers.size());
-
-        for (const ImageBarrier& imageBarrier : m_ImageBarriers)
-        {
-            const ResourceStateMapping& before = ResourceStateToMapping(imageBarrier.StateBefore);
-            const ResourceStateMapping& after = ResourceStateToMapping(imageBarrier.StateAfter);
-
-            NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
-
-            Image& image = *imageBarrier.ImagePtr;
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(imageBarrier.ImagePtr);
-
-            VkImageMemoryBarrier2 barrier2 = {};
-            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-            barrier2.srcStageMask = before.StageFlags;
-            barrier2.dstStageMask = after.StageFlags;
-            barrier2.srcAccessMask = before.AccessMask;
-            barrier2.dstAccessMask = after.AccessMask;
-            barrier2.oldLayout = before.ImageLayout;
-            barrier2.newLayout = after.ImageLayout;
-            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.image = vulkanImage.GetVkImage();
-
-            barrier2.subresourceRange.aspectMask = VkFormatToImageAspect(FormatToVkFormat(image.GetSpecification().ImageFormat));
-            barrier2.subresourceRange.baseMipLevel = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageMipLevel);
-            barrier2.subresourceRange.levelCount = (imageBarrier.EntireTexture ? image.GetSpecification().MipLevels : 1);
-            barrier2.subresourceRange.baseArrayLayer = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageArraySlice);
-            barrier2.subresourceRange.layerCount = (imageBarrier.EntireTexture ? image.GetSpecification().ArraySize : 1);
-
-            imageBarriers.push_back(barrier2);
-        }
-
-        if (!imageBarriers.empty())
-        {
-            VkDependencyInfo dependencyInfo = {};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size());
-            dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
-
-            vkCmdPipelineBarrier2(m_CommandBuffer, &dependencyInfo);
-        }
-
-        m_ImageBarriers.clear();
-        
-        // TODO: Buffer barriers
+        m_StateTracker.CommitBarriers(m_CommandBuffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Object methods
     ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
+    {
+        m_StateTracker.StartTracking(image, subresources, currentState);
+    }
+
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
     {
+        NG_ASSERT(m_StateTracker.Contains(dst), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on dst image.");
+        NG_ASSERT(m_StateTracker.Contains(src), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on src image.");
+
         SetWaitStage(VK_PIPELINE_STAGE_2_TRANSFER_BIT);
 
         VulkanImage& vulkanDst = *reinterpret_cast<VulkanImage*>(&dst);
@@ -296,8 +258,8 @@ namespace Nano::Graphics::Internal
             std::min(resSrcSlice.Depth, resDstSlice.Depth)
         );
 
-        RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
-        RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        m_StateTracker.RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        m_StateTracker.RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyImageInfo2 copyInfo = {};
@@ -338,46 +300,5 @@ namespace Nano::Graphics::Internal
         if (GetFirstPipelineStage(firstStage) < GetFirstPipelineStage(m_WaitStage))
             m_WaitStage = firstStage;
     }
-
-    void VulkanCommandList::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state)
-    {
-        // TODO: Permanent state checking
-
-        subresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
-
-        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
-
-        if (subresources.IsEntireTexture(image.GetSpecification()))
-        {
-            // TODO: Implement after implementing external state tracking
-            /*
-            bool transitionNecessary = (image.GetCurrentState() != state);
-            bool uavNecessary = ((state & ResourceState::UnorderedAccess) != 0)
-                && (tracking->enableUavBarriers || !tracking->firstUavBarrierPlaced);
-
-            if (transitionNecessary || uavNecessary)
-            {
-                TextureBarrier barrier;
-                barrier.texture = texture;
-                barrier.entireTexture = true;
-                barrier.stateBefore = tracking->state;
-                barrier.stateAfter = state;
-                m_TextureBarriers.push_back(barrier);
-            }
-
-            tracking->state = state;
-
-            if (uavNecessary && !transitionNecessary)
-            {
-                tracking->firstUavBarrierPlaced = true;
-            }
-            */
-        }
-        else
-        {
-            // TODO: Convert all subresources
-        }
-    }
-
 
 }

@@ -27,13 +27,8 @@ namespace Nano::Graphics
         // Destructor
         ~Image() = default;
 
-        // Setters
-        inline void SetCurrentState(ResourceState state) { m_Image.SetCurrentState(state); }
-
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
-
-        inline ResourceState GetCurrentState() const { return m_Image.GetCurrentState(); }
 
     private:
         // Constructor 
@@ -42,6 +37,34 @@ namespace Nano::Graphics
 
     private:
         Type m_Image;
+
+        friend class Device;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StagingImage // TODO: Implement after implementing buffers
+    ////////////////////////////////////////////////////////////////////////////////////
+    class StagingImage : public Traits::NoCopy
+    {
+    public:
+        using Type = Types::SelectorType<Information::RenderingAPI,
+            //Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanStagingImage>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, int> // TEMP
+        >;
+    public:
+        // Destructor
+        ~StagingImage() = default;
+
+        // Getters
+        //inline const StagingImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
+
+    private:
+        // Constructor 
+        //StagingImage(const Device& device, const StagingImageSpecification& specs)
+        //    : m_Image(device, specs) {}
+
+    private:
+        Type m_StagingImage;
 
         friend class Device;
     };

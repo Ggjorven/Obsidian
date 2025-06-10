@@ -229,11 +229,11 @@ namespace Nano::Graphics
 
             switch (imageSpecs.Dimension)
             {
-            case ImageDimension::Image1DArray:
-            case ImageDimension::Image2DArray:
-            case ImageDimension::ImageCube:
-            case ImageDimension::ImageCubeArray:
-            case ImageDimension::Image2DMSArray:
+            case ImageDimension::Image1DArray:      //[[falthrough]];
+            case ImageDimension::Image2DArray:      //[[falthrough]];
+            case ImageDimension::ImageCube:         //[[falthrough]];
+            case ImageDimension::ImageCubeArray:    //[[falthrough]];
+            case ImageDimension::Image2DMSArray:    //[[falthrough]];
             {
                 if (BaseArraySlice > 0u || BaseArraySlice + NumArraySlices < imageSpecs.ArraySize)
                     return false;
@@ -244,6 +244,11 @@ namespace Nano::Graphics
             }
 
             return true;
+        }
+
+        inline static size_t SubresourceIndex(MipLevel mipLevel, ArraySlice arraySlice, const ImageSpecification& specs)
+        {
+            return static_cast<size_t>(mipLevel) + arraySlice * static_cast<size_t>(specs.MipLevels);
         }
 
         // Operators
