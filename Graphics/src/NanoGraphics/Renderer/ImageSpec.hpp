@@ -198,6 +198,13 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
         inline constexpr ImageSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }
         inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+
+        // Operators
+        inline constexpr bool operator == (const ImageSpecification& other) const 
+        { 
+            return ((ImageFormat == other.ImageFormat) && (Dimension == other.Dimension) && (Width == other.Width) && (Height == other.Height) && (Depth == other.Depth) && (ArraySize == other.ArraySize) && (MipLevels == other.MipLevels) && (SampleCount == other.SampleCount) && (IsShaderResource == other.IsShaderResource) && (IsUnorderedAccessed == other.IsUnorderedAccessed) && (IsRenderTarget == other.IsRenderTarget) && (State == other.State) && (KeepResourceState == other.KeepResourceState)); 
+        }
+        inline constexpr bool operator != (const ImageSpecification& other) const { return !(*this == other); }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -252,7 +259,10 @@ namespace Nano::Graphics
         }
 
         // Operators
-        inline constexpr bool operator == (const ImageSubresourceSpecification& other) const { return ((BaseMipLevel == other.BaseMipLevel) && (NumMipLevels == other.NumMipLevels) && (BaseArraySlice == other.BaseArraySlice) && (NumArraySlices == other.NumArraySlices)); }
+        inline constexpr bool operator == (const ImageSubresourceSpecification& other) const 
+        { 
+            return ((BaseMipLevel == other.BaseMipLevel) && (NumMipLevels == other.NumMipLevels) && (BaseArraySlice == other.BaseArraySlice) && (NumArraySlices == other.NumArraySlices)); 
+        }
         inline constexpr bool operator != (const ImageSubresourceSpecification& other) const { return !(*this == other); }
     };
 

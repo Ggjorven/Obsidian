@@ -6,6 +6,7 @@
 #include "NanoGraphics/Renderer/Image.hpp"
 #include "NanoGraphics/Renderer/Swapchain.hpp"
 #include "NanoGraphics/Renderer/CommandList.hpp"
+#include "NanoGraphics/Renderer/Renderpass.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
@@ -41,6 +42,9 @@ namespace Nano::Graphics
 
         inline Sampler CreateSampler(const SamplerSpecification& specs) const { return Sampler(*this, specs); }
         inline void DestroySampler(Sampler& sampler) const { m_Device.DestroySampler(sampler); }
+
+        inline Renderpass CreateRenderpass(const RenderpassSpecification& specs) const { return Renderpass(*this, specs); }
+        inline void DestroyRenderpass(Renderpass& renderpass) const { m_Device.DestroyRenderpass(renderpass); }
 
     private:
         Type m_Device;

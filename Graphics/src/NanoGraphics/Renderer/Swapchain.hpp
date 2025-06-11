@@ -13,6 +13,7 @@ namespace Nano::Graphics
 {
 
     class Device;
+    class Image;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Swapchain
@@ -39,6 +40,8 @@ namespace Nano::Graphics
         inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain.GetSpecification(); }
 
         inline uint32_t GetCurrentFrame() const { return m_Swapchain.GetCurrentFrame(); }
+        inline Image& GetImage(uint8_t frame) { return m_Swapchain.GetImage(frame); }
+        inline const Image& GetImage(uint8_t frame) const { return m_Swapchain.GetImage(frame); }
 
     private:
         // Constructor

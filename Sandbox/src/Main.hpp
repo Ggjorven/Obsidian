@@ -71,6 +71,27 @@ int Main(int argc, char* argv[])
 			pool.AllocateList({ "Third List" }),
 		};
 
+		// Renderpass & Framebuffers
+		RenderpassSpecification renderpassSpecs = RenderpassSpecification()
+			.SetBindpoint(PipelineBindpoint::Graphics)
+			
+			.SetColourImageSpecification(swapchain.GetImage(0).GetSpecification())
+			.SetColourLoadOperation(LoadOperation::Clear)
+			.SetColourStoreOperation(StoreOperation::Store)
+			.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+			.SetColourStartState(ResourceState::Unknown)
+			.SetColourEndState(ResourceState::Present);
+		Renderpass renderpass = device.CreateRenderpass(renderpassSpecs);
+
+		for (uint8_t i = 0; i < Information::BackBufferCount; i++)
+		{
+			FramebufferSpecification framebufferSpecs = FramebufferSpecification()
+				.SetColourAttachment(FramebufferAttachment()
+					.SetImage(swapchain.GetImage(i)));
+
+			(void)renderpass.CreateFramebuffer(framebufferSpecs);
+		}
+
 		// Main Loop
 		while (window.IsOpen())
 		{
@@ -96,6 +117,8 @@ int Main(int argc, char* argv[])
 			}
 			swapchain.Present();
 		}
+
+		device.DestroyRenderpass(renderpass);
 
 		swapchain.FreePool(pool);
 		device.DestroySwapchain(swapchain);

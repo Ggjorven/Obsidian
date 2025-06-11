@@ -6,10 +6,13 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
+#include "NanoGraphics/Renderer/FramebufferSpec.hpp"
+#include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
 #include <cstdint>
+#include <bit>
 #include <type_traits>
 
 namespace Nano::Graphics
@@ -249,11 +252,73 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // LoadOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct LoadOperationMapping
+    {
+    public:
+        LoadOperation Operation;
+
+        VkAttachmentLoadOp VulkanOperation;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // LoadOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_LoadOperationMapping = std::to_array<LoadOperationMapping>({
+        // LoadOperation            VulkanOperation
+        { LoadOperation::None,      VK_ATTACHMENT_LOAD_OP_DONT_CARE },
+        { LoadOperation::Clear,     VK_ATTACHMENT_LOAD_OP_CLEAR },
+        { LoadOperation::Load,      VK_ATTACHMENT_LOAD_OP_LOAD },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StoreOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct StoreOperationMapping
+    {
+    public:
+        StoreOperation Operation;
+
+        VkAttachmentStoreOp VulkanOperation;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // LoadOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_StoreOperationMapping = std::to_array<StoreOperationMapping>({
+        // LoadOperation            VulkanOperation
+        { StoreOperation::None,     VK_ATTACHMENT_STORE_OP_DONT_CARE },
+        { StoreOperation::Store,    VK_ATTACHMENT_STORE_OP_STORE },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PipelineBindpointMapping 
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PipelineBindpointMapping
+    {
+    public:
+        PipelineBindpoint Bindpoint;
+
+        VkPipelineBindPoint VulkanBindpoint;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PipelineBindPointMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_PipelineBindpointMapping = std::to_array<PipelineBindpointMapping>({
+        // PipelineBindpoint                VulkanBindpoint
+        { PipelineBindpoint::Graphics,      VK_PIPELINE_BIND_POINT_GRAPHICS },
+        { PipelineBindpoint::Compute,       VK_PIPELINE_BIND_POINT_COMPUTE },
+        { PipelineBindpoint::RayTracing,    VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Conversion helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr VkPipelineStageFlags2 ResourceStateToFirstVkPipelineStage(ResourceState state)
     {
-        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].StageFlags;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].StageFlags;
     }
 
     inline constexpr VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state)
@@ -274,7 +339,7 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkAccessFlags2 ResourceStateToFirstVkAccessMask(ResourceState state)
     {
-        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].AccessMask;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].AccessMask;
     }
 
     inline constexpr VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
@@ -295,10 +360,10 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
     {
-        return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))].ImageLayout;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].ImageLayout;
     }
 
-    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[std::countr_zero(std::to_underlying(state))]; }
+    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)]; }
 
     inline constexpr VkImageType ImageDimensionToVkImageType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageType; }
     inline constexpr VkImageViewType ImageDimensionToVkImageViewType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageViewType; }
@@ -405,6 +470,11 @@ namespace Nano::Graphics::Internal
         NG_UNREACHABLE();
         return ColourSpace::SRGB;
     }
+
+    inline constexpr VkAttachmentLoadOp LoadOperationToVkLoadOperation(LoadOperation operation) { return g_LoadOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
+    inline constexpr VkAttachmentStoreOp StoreOperationToVkStoreOperation(StoreOperation operation) { return g_StoreOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
+
+    inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
 
     inline constexpr VkImageUsageFlags ImageSpecificationToVkImageUsageFlags(const ImageSpecification& specs)
     {

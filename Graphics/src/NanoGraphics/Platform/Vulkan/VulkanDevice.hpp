@@ -14,6 +14,8 @@ namespace Nano::Graphics
     class Swapchain;
     class Image;
     class Sampler;
+    class Framebuffer;
+    class Renderpass;
 }
 
 namespace Nano::Graphics::Internal
@@ -39,6 +41,10 @@ namespace Nano::Graphics::Internal
         void DestroySubresourceViews(Image& image) const;
 
         void DestroySampler(Sampler& sampler) const;
+
+        void DestroyFramebuffer(Framebuffer& framebuffer) const;
+
+        void DestroyRenderpass(Renderpass& renderpass) const;
 
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }

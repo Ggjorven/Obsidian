@@ -5,9 +5,13 @@
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Renderer/Device.hpp"
+#include "NanoGraphics/Renderer/Swapchain.hpp"
+#include "NanoGraphics/Renderer/Image.hpp"
+#include "NanoGraphics/Renderer/Renderpass.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanSwapchain.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanRenderpass.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -102,7 +106,34 @@ namespace Nano::Graphics::Internal
         {
             vkDestroySampler(device, vkSampler, VulkanAllocator::GetCallbacks());
         });
+    }
 
+    void VulkanDevice::DestroyFramebuffer(Framebuffer& framebuffer) const
+    {
+        VulkanFramebuffer& vulkanFramebuffer = *reinterpret_cast<VulkanFramebuffer*>(&framebuffer);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkFramebuffer vkFramebuffer = vulkanFramebuffer.GetVkFramebuffer();
+        m_Context.Destroy([device, vkFramebuffer]() mutable
+        {
+            vkDestroyFramebuffer(device, vkFramebuffer, VulkanAllocator::GetCallbacks());
+        });
+    }
+
+    void VulkanDevice::DestroyRenderpass(Renderpass& renderpass) const
+    {
+        VulkanRenderpass& vulkanRenderpass = *reinterpret_cast<VulkanRenderpass*>(&renderpass);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkRenderPass vkRenderpass = vulkanRenderpass.GetVkRenderPass();
+
+        for (auto& framebuffer : vulkanRenderpass.GetVulkanFramebuffers())
+            DestroyFramebuffer(*reinterpret_cast<Framebuffer*>(&framebuffer));
+
+        m_Context.Destroy([device, vkRenderpass]() mutable
+        {
+            vkDestroyRenderPass(device, vkRenderpass, VulkanAllocator::GetCallbacks());
+        });
     }
 
 }
