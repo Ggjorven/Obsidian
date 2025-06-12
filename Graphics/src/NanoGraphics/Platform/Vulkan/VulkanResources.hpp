@@ -8,17 +8,14 @@
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 #include "NanoGraphics/Renderer/FramebufferSpec.hpp"
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
+#include "NanoGraphics/Renderer/ShaderSpec.hpp"
+#include "NanoGraphics/Renderer/PipelineSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
 #include <cstdint>
 #include <bit>
 #include <type_traits>
-
-namespace Nano::Graphics
-{
-    class Image;
-}
 
 namespace Nano::Graphics::Internal
 {
@@ -293,6 +290,40 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // ShaderStageMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ShaderStageMapping
+    {
+    public:
+        ShaderStage Stage;
+
+        VkShaderStageFlags VulkanStage;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ShaderStageMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ShaderStageMapping = std::to_array<ShaderStageMapping>({
+        // Stage                                VulkanStage
+        { ShaderStage::None,                    static_cast<VkShaderStageFlags>(0) },
+        { ShaderStage::Vertex,                  VK_SHADER_STAGE_VERTEX_BIT },
+        { ShaderStage::Fragment,                VK_SHADER_STAGE_FRAGMENT_BIT },
+        { ShaderStage::Compute,                 VK_SHADER_STAGE_COMPUTE_BIT },
+        { ShaderStage::Geometry,                VK_SHADER_STAGE_GEOMETRY_BIT },
+        { ShaderStage::TesselationControl,      VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT },
+        { ShaderStage::TesselationEvaluation,   VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT },
+        { ShaderStage::Task,                    VK_SHADER_STAGE_TASK_BIT_EXT },
+        { ShaderStage::Mesh,                    VK_SHADER_STAGE_MESH_BIT_EXT },
+        { ShaderStage::AllGraphics,             VK_SHADER_STAGE_ALL_GRAPHICS },
+        { ShaderStage::RayGeneration,           VK_SHADER_STAGE_RAYGEN_BIT_KHR },
+        { ShaderStage::AnyHit,                  VK_SHADER_STAGE_ANY_HIT_BIT_KHR },
+        { ShaderStage::ClosestHit,              VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR },
+        { ShaderStage::Miss,                    VK_SHADER_STAGE_MISS_BIT_KHR },
+        { ShaderStage::Intersection,            VK_SHADER_STAGE_INTERSECTION_BIT_KHR },
+        { ShaderStage::Callable,                VK_SHADER_STAGE_CALLABLE_BIT_KHR },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // PipelineBindpointMapping 
     ////////////////////////////////////////////////////////////////////////////////////
     struct PipelineBindpointMapping
@@ -311,6 +342,33 @@ namespace Nano::Graphics::Internal
         { PipelineBindpoint::Graphics,      VK_PIPELINE_BIND_POINT_GRAPHICS },
         { PipelineBindpoint::Compute,       VK_PIPELINE_BIND_POINT_COMPUTE },
         { PipelineBindpoint::RayTracing,    VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimitiveTypeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PrimitiveTypeMapping
+    {
+    public:
+        PrimitiveType Type;
+
+        VkPrimitiveTopology VulkanPrimitiveType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimitiveTypeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_PrimitiveTypeMapping = std::to_array<PrimitiveTypeMapping>({
+        // PrimitiveType                                VulkanPrimitiveType
+        { PrimitiveType::PointList,                     VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
+        { PrimitiveType::LineList,                      VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
+        { PrimitiveType::LineStrip,                     VK_PRIMITIVE_TOPOLOGY_LINE_STRIP },
+        { PrimitiveType::TriangleList,                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST },
+        { PrimitiveType::TriangleStrip,                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
+        { PrimitiveType::TriangleFan,                   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
+        { PrimitiveType::TriangleListWithAdjacency,     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY },
+        { PrimitiveType::TriangleStripWithAdjacency,    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY },
+        { PrimitiveType::PatchList,                     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST },
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -474,7 +532,24 @@ namespace Nano::Graphics::Internal
     inline constexpr VkAttachmentLoadOp LoadOperationToVkLoadOperation(LoadOperation operation) { return g_LoadOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
     inline constexpr VkAttachmentStoreOp StoreOperationToVkStoreOperation(StoreOperation operation) { return g_StoreOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
 
+    inline constexpr VkShaderStageFlags ShaderStageToVkShaderStageFlags(ShaderStage stage) 
+    { 
+        VkShaderStageFlags result = 0;
+        std::underlying_type_t<ShaderStage> value = std::to_underlying(stage);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ShaderStageMapping[index].VulkanStage;
+        }
+
+        return result;
+    }
+
     inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
+    inline constexpr VkPrimitiveTopology PrimitiveTypeToVkPrimitiveTopology(PrimitiveType type) { return g_PrimitiveTypeMapping[static_cast<size_t>(type)].VulkanPrimitiveType; }
 
     inline constexpr VkImageUsageFlags ImageSpecificationToVkImageUsageFlags(const ImageSpecification& specs)
     {

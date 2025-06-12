@@ -170,6 +170,16 @@ namespace Nano::Graphics::Internal
         glfwPollEvents();
     }
 
+    void DesktopWindow::WaitEvents()
+    {
+        glfwWaitEvents();
+    }
+
+    void DesktopWindow::WaitEvents(double timeout)
+    {
+        glfwWaitEventsTimeout(timeout);
+    }
+
     void DesktopWindow::SwapBuffers()
     {
         NG_ASSERT(false, "[DesktopWindow] Unimplemented, maybe needs to be removed.");

@@ -34,11 +34,13 @@ namespace Nano::Graphics
 
         inline void ResetAndOpen() { m_CommandList.ResetAndOpen(); }
         inline void Open() { m_CommandList.Open(); }
-        inline void Close() const { m_CommandList.Close(); }
+        inline void Close() { m_CommandList.Close(); }
 
         inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList.Submit(args); }
 
         // Object methods
+        inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
+
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
 
     private:

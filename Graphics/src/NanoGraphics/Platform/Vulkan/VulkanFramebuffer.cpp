@@ -63,6 +63,12 @@ namespace Nano::Graphics::Internal
         framebufferInfo.layers = layers;
 
         VK_VERIFY(vkCreateFramebuffer(m_Renderpass->GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &framebufferInfo, VulkanAllocator::GetCallbacks(), &m_Framebuffer));
+    
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Renderpass->GetVulkanDevice().GetContext().SetDebugName(m_Framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, std::string(m_Specification.DebugName));
+        }
     }
 
     VulkanFramebuffer::~VulkanFramebuffer()

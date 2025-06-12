@@ -3,6 +3,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include <cstdint>
+#include <string_view>
 
 namespace Nano::Graphics
 {
@@ -42,6 +43,8 @@ namespace Nano::Graphics
         FramebufferAttachment ColourAttachment = {};
         FramebufferAttachment DepthAttachment = {};
 
+        std::string_view DebugName = {};
+
     public:
         // Setters
         inline constexpr FramebufferSpecification& SetColourAttachment(Image& image) { ColourAttachment.ImagePtr = &image; return *this; }
@@ -50,6 +53,7 @@ namespace Nano::Graphics
         inline constexpr FramebufferSpecification& SetDepthAttachment(Image& image) { DepthAttachment.ImagePtr = &image; return *this; }
         inline constexpr FramebufferSpecification& SetDepthAttachment(Image& image, const ImageSubresourceSpecification& specs) { DepthAttachment.ImagePtr = &image; DepthAttachment.Subresources = specs; return *this; }
         inline constexpr FramebufferSpecification& SetDepthAttachment(const FramebufferAttachment& attachment) { DepthAttachment = attachment; return *this; }
+        inline constexpr FramebufferSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
 }

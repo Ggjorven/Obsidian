@@ -31,6 +31,8 @@ namespace Nano::Graphics
 
 		// Methods
 		inline void PollEvents() { m_Window.PollEvents(); }
+		inline void WaitEvents() { m_Window.WaitEvents(); }
+		inline void WaitEvents(double timeout) { m_Window.WaitEvents(timeout); } // Note: Timeout is in seconds
 		inline void SwapBuffers() { m_Window.SwapBuffers(); }
 
 		inline void Show() { m_Window.Show(); }

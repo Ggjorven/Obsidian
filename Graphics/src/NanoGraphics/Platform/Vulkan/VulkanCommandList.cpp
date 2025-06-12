@@ -31,7 +31,11 @@ namespace Nano::Graphics::Internal
         
         VK_VERIFY(vkCreateCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        m_Swapchain.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(specs.DebugName));
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Swapchain.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(m_Specification.DebugName));
+        }
     }
 
     VulkanCommandListPool::~VulkanCommandListPool()
@@ -95,7 +99,11 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::string(specs.DebugName));
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::format("CommandList \"{0}\" from: {1}", m_Specification.DebugName, m_Pool.GetSpecification().DebugName));
+        }
     }
 
     VulkanCommandList::~VulkanCommandList()
@@ -118,20 +126,27 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::Open()
     {
+        NG_PROFILE("VulkanCommandList::Open()");
         m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         {
             NG_PROFILE("VulkanCommandList::Open::Begin");
+            VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             VK_VERIFY(vkBeginCommandBuffer(m_CommandBuffer, &beginInfo));
         }
     }
 
-    void VulkanCommandList::Close() const
+    void VulkanCommandList::Close()
     {
         NG_PROFILE("VulkanCommandList::Close()");
-        VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
+
+        m_GraphicsState = GraphicsState();
+
+        {
+            NG_PROFILE("VulkanCommandList::Close::End");
+            VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
+        }
     }
 
     void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
@@ -140,7 +155,6 @@ namespace Nano::Graphics::Internal
 
         VulkanSwapchain& swapchain = m_Pool.GetVulkanSwapchain();
 
-        std::vector<const CommandList*> owningWaitOn;
         std::span<const CommandList*> waitOn;
         std::visit([&](auto&& arg)
         {
@@ -221,6 +235,11 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
     {
         m_StateTracker.StartTracking(image, subresources, currentState);
+    }
+
+    void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
+    {
+        m_GraphicsState = state;
     }
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)

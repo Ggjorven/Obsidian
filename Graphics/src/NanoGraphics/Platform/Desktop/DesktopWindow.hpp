@@ -31,6 +31,8 @@ namespace Nano::Graphics::Internal
 
 		// Methods
 		void PollEvents();
+		void WaitEvents();
+		void WaitEvents(double timeout);
 		void SwapBuffers();
 
 		void Show();

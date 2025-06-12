@@ -10,6 +10,7 @@
 namespace Nano::Graphics
 {
 	class Swapchain;
+	class Renderpass;
 	class CommandList;
 	class CommandListPool;
 }
@@ -68,7 +69,7 @@ namespace Nano::Graphics::Internal
 
 		void ResetAndOpen();
 		void Open();
-		void Close() const;
+		void Close();
 
 		void Submit(const CommandListSubmitArgs& args) const;
 
@@ -76,6 +77,8 @@ namespace Nano::Graphics::Internal
 
 		// Object methods
 		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
+
+		void SetGraphicsState(const GraphicsState& state);
 
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 
@@ -97,6 +100,8 @@ namespace Nano::Graphics::Internal
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 
 		VulkanStateTracker m_StateTracker;
+
+		GraphicsState m_GraphicsState = {};
 	};
 
 }

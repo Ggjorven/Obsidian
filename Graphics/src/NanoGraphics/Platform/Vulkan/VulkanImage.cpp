@@ -57,7 +57,11 @@ namespace Nano::Graphics::Internal
             SampleCountToVkSampleCountFlags(m_Specification.SampleCount)
         );
 
-        m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
+        }
     }
 
     VulkanImage::VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image)
@@ -132,10 +136,10 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateImageView(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, VulkanAllocator::GetCallbacks(), &imageView.m_ImageView));
 
-        if (!m_Specification.DebugName.empty())
+        if constexpr (VulkanContext::Validation)
         {
-            std::string debugName = std::string("ImageView for: ") + std::string(m_Specification.DebugName);
-            m_Device.GetContext().SetDebugName(imageView.m_ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, debugName.c_str());
+            if (!m_Specification.DebugName.empty())
+                m_Device.GetContext().SetDebugName(imageView.m_ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, std::format("ImageView for: {0}", m_Specification.DebugName));
         }
 
         return imageView;
@@ -181,6 +185,12 @@ namespace Nano::Graphics::Internal
         samplerInfo.mipLodBias = m_Specification.MipBias;
 
         VK_VERIFY(vkCreateSampler(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &samplerInfo, VulkanAllocator::GetCallbacks(), &m_Sampler));
+
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Device.GetContext().SetDebugName(m_Sampler, VK_OBJECT_TYPE_SAMPLER, std::string(m_Specification.DebugName));
+        }
     }
 
     VulkanSampler::~VulkanSampler()

@@ -60,7 +60,8 @@ int Main(int argc, char* argv[])
 			.SetWindow(window)
 			.SetFormat(Format::BGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
-			.SetVSync(false);
+			.SetVSync(false)
+			.SetDebugName("Swapchain");
 		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
 
 		// Commandlists & Commandpool
@@ -95,7 +96,10 @@ int Main(int argc, char* argv[])
 		// Main Loop
 		while (window.IsOpen())
 		{
-			window.PollEvents();
+			if (window.IsFocused()) [[likely]]
+				window.PollEvents();
+			else
+				window.WaitEvents();
 
 			emptyQueue();
 			swapchain.AcquireNextImage();

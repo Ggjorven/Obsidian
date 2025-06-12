@@ -42,6 +42,15 @@ namespace Nano::Graphics::Internal
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
+            
+                if constexpr (VulkanContext::Validation)
+                {
+                    if (!m_Specification.DebugName.empty())
+                    {
+                        m_Device.GetContext().SetDebugName(m_ImageAvailableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("ImageAvailable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
+                        m_Device.GetContext().SetDebugName(m_SwapchainPresentableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("Presentable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
+                    }
+                }
             }
 
             VkSemaphoreTypeCreateInfo timelineInfo = {};
@@ -52,6 +61,12 @@ namespace Nano::Graphics::Internal
             semaphoreInfo.pNext = &timelineInfo;
 
             VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_TimelineSemaphore));
+        
+            if constexpr (VulkanContext::Validation)
+            {
+                if (!m_Specification.DebugName.empty())
+                    m_Device.GetContext().SetDebugName(m_TimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Timeline Semaphore for: {0}", m_Specification.DebugName));
+            }
         }
     }
 
@@ -167,6 +182,12 @@ namespace Nano::Graphics::Internal
         if (oldSwapchain)
             vkDestroySwapchainKHR(device, oldSwapchain, VulkanAllocator::GetCallbacks()); // Destroys old swapchain images
 
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Device.GetContext().SetDebugName(m_Swapchain, VK_OBJECT_TYPE_SWAPCHAIN_KHR, std::string(m_Specification.DebugName));
+        }
+
         uint32_t imageCount = 0;
         std::array<VkImage, Information::BackBufferCount> swapchainImages = { };
 
@@ -197,9 +218,15 @@ namespace Nano::Graphics::Internal
 
             ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
             (void)m_Images[i]->GetSubresourceView(imageViewSpec, ImageDimension::Image2D, colourFormat, 0, ImageSubresourceViewType::AllAspects); // Note: Makes sure to already lazy initialize the image view
+        
+            if constexpr (VulkanContext::Validation)
+            {
+                if (!m_Specification.DebugName.empty())
+                    m_Device.GetContext().SetDebugName(swapchainImages[i], VK_OBJECT_TYPE_IMAGE, std::format("Image({0}) for: {1}", i, m_Specification.DebugName));
+            }
         }
 
-        // Temporary transition
+        // Temporary transition // TODO: Remove
         {
             // Create command pool
             VkCommandPool commandPool;

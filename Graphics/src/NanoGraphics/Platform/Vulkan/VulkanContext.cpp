@@ -179,7 +179,7 @@ namespace Nano::Graphics::Internal
             nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
             nameInfo.pObjectName = name.c_str();
 
-            s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo);
+            VK_VERIFY(s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo));
         #endif
     }
 
@@ -316,7 +316,7 @@ namespace Nano::Graphics::Internal
 
             if (validationSupport)
             {
-                s_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger);
+                VK_VERIFY(s_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger));
             }
         }
     }
@@ -335,6 +335,44 @@ namespace Nano::Graphics::Internal
 
         m_PhysicalDevice.Construct(m_Instance, surface, std::span<const char*>(fullExtensions));
         m_LogicalDevice.Construct(m_PhysicalDevice, std::span<const char*>(fullExtensions));
+
+        if constexpr (Validation)
+        {
+            SetDebugName(m_Instance, VK_OBJECT_TYPE_INSTANCE, "Instance");
+            SetDebugName(m_PhysicalDevice.Get().GetVkPhysicalDevice(), VK_OBJECT_TYPE_PHYSICAL_DEVICE, "PhysicalDevice");
+            SetDebugName(m_LogicalDevice.Get().GetVkDevice(), VK_OBJECT_TYPE_DEVICE, "Device");
+
+            const QueueFamilyIndices indices = m_PhysicalDevice.Get().GetQueueFamilyIndices();
+            if (indices.SameQueue())
+            {
+                SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics), VK_OBJECT_TYPE_QUEUE, "Queue");
+            }
+            else
+            {
+                if (m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics) == m_LogicalDevice.Get().GetVkQueue(CommandQueue::Compute))
+                {
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Present), VK_OBJECT_TYPE_QUEUE, "Present Queue");
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics), VK_OBJECT_TYPE_QUEUE, "Graphics/Compute Queue");
+                }
+                else if (m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics) == m_LogicalDevice.Get().GetVkQueue(CommandQueue::Present))
+                {
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Compute), VK_OBJECT_TYPE_QUEUE, "Compute Queue");
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics), VK_OBJECT_TYPE_QUEUE, "Graphics/Present Queue");
+
+                }
+                else if (m_LogicalDevice.Get().GetVkQueue(CommandQueue::Compute) == m_LogicalDevice.Get().GetVkQueue(CommandQueue::Present))
+                {
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics), VK_OBJECT_TYPE_QUEUE, "Graphics Queue");
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Compute), VK_OBJECT_TYPE_QUEUE, "Compute/Present Queue");
+                }
+                else
+                {
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Graphics), VK_OBJECT_TYPE_QUEUE, "Graphics Queue");
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Compute), VK_OBJECT_TYPE_QUEUE, "Compute Queue");
+                    SetDebugName(m_LogicalDevice.Get().GetVkQueue(CommandQueue::Present), VK_OBJECT_TYPE_QUEUE, "Present Queue");
+                }
+            }
+        }
 
         vkDestroySurfaceKHR(m_Instance, surface, nullptr);
     }

@@ -4,6 +4,7 @@
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -19,6 +20,8 @@ namespace Nano::Graphics
 {
 
     class Image;
+    class Renderpass;
+    class GraphicsPipeline;
     class CommandList;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -78,9 +81,30 @@ namespace Nano::Graphics
         inline CommandListSubmitArgs& SetWaitOnLists(std::vector<const CommandList*>&& ownedLists) { WaitOnLists = std::move(ownedLists); return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(const std::vector<const CommandList*>& ownedLists) { WaitOnLists = ownedLists; return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(std::initializer_list<const CommandList*> ownedLists) { WaitOnLists = ownedLists; return *this; }
-        inline CommandListSubmitArgs& SetWaitOnLists(std::span<const CommandList*> viewedLists) { WaitOnLists = viewedLists; return *this; }
+        inline constexpr CommandListSubmitArgs& SetWaitOnLists(std::span<const CommandList*> viewedLists) { WaitOnLists = viewedLists; return *this; }
         inline constexpr CommandListSubmitArgs& SetWaitForSwapchainImage(bool enabled) { WaitForSwapchainImage = enabled; return *this; }
         inline constexpr CommandListSubmitArgs& SetOnFinishMakeSwapchainPresentable(bool enabled) { OnFinishMakeSwapchainPresentable = enabled; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // GraphicsState
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct GraphicsState
+    {
+    public:
+        GraphicsPipeline* Pipeline = nullptr;
+        Renderpass* Pass = nullptr;
+
+        Viewport ViewportState = {};
+        ScissorRect Scissor = {};
+
+    public:
+        // Setters
+        inline constexpr GraphicsState& SetPipeline(GraphicsPipeline* pipeline) { Pipeline = pipeline; return *this; }
+        inline constexpr GraphicsState& SetRenderpass(Renderpass* renderpass) { Pass = renderpass; return *this; }
+    
+        inline constexpr GraphicsState& SetViewport(const Viewport& viewport) { ViewportState = viewport; return *this; }
+        inline constexpr GraphicsState& SetScissor(const ScissorRect& scissor) { Scissor = scissor; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
