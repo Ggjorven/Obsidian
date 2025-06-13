@@ -33,6 +33,9 @@ namespace Nano::Graphics
         inline void FreePool(CommandListPool& pool) { m_Swapchain.FreePool(pool); }
 
         // Methods
+        inline void Resize(uint32_t width, uint32_t height) { m_Swapchain.Resize(width, height); }
+        inline void Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace) { m_Swapchain.Resize(width, height, vsync, colourFormat, colourSpace); }
+
         inline void AcquireNextImage() { m_Swapchain.AcquireNextImage(); }
         inline void Present() { m_Swapchain.Present(); }
 

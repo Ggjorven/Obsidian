@@ -21,6 +21,7 @@ namespace Nano::Graphics
 
     class Image;
     class Renderpass;
+    class Framebuffer;
     class GraphicsPipeline;
     class CommandList;
 
@@ -94,17 +95,25 @@ namespace Nano::Graphics
     public:
         GraphicsPipeline* Pipeline = nullptr;
         Renderpass* Pass = nullptr;
+        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[CurrentFrame] from pass.
 
         Viewport ViewportState = {};
         ScissorRect Scissor = {};
 
+        Maths::Vec4<float> ColourClear = { 0.0f, 0.0f, 0.0f, 1.0f };
+        float DepthClear = 1.0f;
+
     public:
         // Setters
-        inline constexpr GraphicsState& SetPipeline(GraphicsPipeline* pipeline) { Pipeline = pipeline; return *this; }
-        inline constexpr GraphicsState& SetRenderpass(Renderpass* renderpass) { Pass = renderpass; return *this; }
+        inline constexpr GraphicsState& SetPipeline(GraphicsPipeline& pipeline) { Pipeline = &pipeline; return *this; }
+        inline constexpr GraphicsState& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
+        inline constexpr GraphicsState& SetFramebuffer(Framebuffer& framebuffer) { Frame = &framebuffer; return *this; }
     
         inline constexpr GraphicsState& SetViewport(const Viewport& viewport) { ViewportState = viewport; return *this; }
         inline constexpr GraphicsState& SetScissor(const ScissorRect& scissor) { Scissor = scissor; return *this; }
+
+        inline constexpr GraphicsState& SetColourClear(const Maths::Vec4<float>& colour) { ColourClear = colour; return *this; }
+        inline constexpr GraphicsState& SetDepthClear(float depth) { DepthClear = depth; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

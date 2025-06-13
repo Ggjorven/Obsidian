@@ -289,14 +289,14 @@ namespace Nano::Graphics::Internal
 	bool VulkanPhysicalDevice::PhysicalDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device, std::span<const char*> extensions)
 	{
 		m_QueueIndices = QueueFamilyIndices::Find(surface, device);
-        m_SwapchainSupportDetails = SwapchainSupportDetails::Query(surface, device);
+        SwapchainSupportDetails swapchainSupportDetails = SwapchainSupportDetails::Query(surface, device);
 
 		bool extensionsSupported = ExtensionsSupported(device, extensions);
 		bool swapChainAdequate = false;
 
 		if (extensionsSupported)
 		{
-			swapChainAdequate = !m_SwapchainSupportDetails.Formats.empty() && !m_SwapchainSupportDetails.PresentModes.empty();
+			swapChainAdequate = !swapchainSupportDetails.Formats.empty() && !swapchainSupportDetails.PresentModes.empty();
 		}
 
         VkPhysicalDeviceFeatures supportedFeatures = {};

@@ -79,6 +79,9 @@ namespace Nano::Graphics::Internal
 		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
 
 		void SetGraphicsState(const GraphicsState& state);
+		
+		void SetViewport(const Viewport& viewport) const;
+		void SetScissor(const ScissorRect& scissor) const;
 
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 

@@ -4,6 +4,8 @@
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
+#include <Nano/Nano.hpp>
+
 #if defined(NG_PLATFORM_DESKTOP)
 	#include <GLFW/glfw3.h>
 #endif
@@ -42,6 +44,8 @@ namespace Nano::Graphics::Internal
 		// Getters
 		Graphics::Maths::Vec2<uint32_t> GetSize() const;
 		Graphics::Maths::Vec2<int32_t> GetPosition() const;
+
+		double GetWindowTime() const;
 
 		// Setters
 		void SetSize(uint32_t width, uint32_t height);

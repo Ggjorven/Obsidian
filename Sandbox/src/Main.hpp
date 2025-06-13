@@ -13,8 +13,12 @@ int Main(int argc, char* argv[])
 	(void)argc; (void)argv;
 
 	{
+		// Global pointers
+		Window* windowPtr = nullptr;
+		Swapchain* swapchainPtr = nullptr;
+		Renderpass* renderpassPtr = nullptr;
+
 		// Window Creation
-		Window* windowPtr;
 		WindowSpecification windowSpecs = WindowSpecification()
 			.SetTitle("First")
 			.SetWidthAndHeight(1280, 720)
@@ -23,6 +27,11 @@ int Main(int argc, char* argv[])
 			{
 				Events::EventHandler handler(e);
 				handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { windowPtr->Close(); });
+				handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable 
+				{ 
+					swapchainPtr->Resize(wre.GetWidth(), wre.GetHeight()); 
+					renderpassPtr->ResizeFramebuffers();
+				});
 			});
 		Window window(windowSpecs);
 		windowPtr = &window;
@@ -63,6 +72,7 @@ int Main(int argc, char* argv[])
 			.SetVSync(false)
 			.SetDebugName("Swapchain");
 		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
+		swapchainPtr = &swapchain;
 
 		// Commandlists & Commandpool
 		CommandListPool pool = swapchain.AllocateCommandListPool({ "First pool" });
@@ -72,6 +82,11 @@ int Main(int argc, char* argv[])
 			pool.AllocateList({ "Third List" }),
 		};
 
+		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Unknown);
+		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Common);
+		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::StorageBuffer);
+		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Present);
+
 		// Renderpass & Framebuffers
 		RenderpassSpecification renderpassSpecs = RenderpassSpecification()
 			.SetBindpoint(PipelineBindpoint::Graphics)
@@ -79,10 +94,10 @@ int Main(int argc, char* argv[])
 			.SetColourImageSpecification(swapchain.GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
 			.SetColourStartState(ResourceState::Unknown)
 			.SetColourEndState(ResourceState::Present);
 		Renderpass renderpass = device.CreateRenderpass(renderpassSpecs);
+		renderpassPtr = &renderpass;
 
 		for (uint8_t i = 0; i < Information::BackBufferCount; i++)
 		{
@@ -109,7 +124,12 @@ int Main(int argc, char* argv[])
 			{
 				list.ResetAndOpen();
 				{
-					// ...
+					GraphicsState state = GraphicsState()
+						.SetRenderpass(renderpass)
+						.SetViewport(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y)))
+						.SetScissor(ScissorRect(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y))))
+						.SetColourClear({ 1.0f, 1.0f, 0.0f, 1.0f });
+					list.SetGraphicsState(state);
 				}
 				list.Close();
 

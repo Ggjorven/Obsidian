@@ -103,9 +103,11 @@ namespace Nano::Graphics::Internal
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         m_Context.Destroy([device, imageViews = std::move(imageViews)]() mutable
         {
-            for (const auto& iview : imageViews)
+            for (auto iview : imageViews)
                 vkDestroyImageView(device, iview, VulkanAllocator::GetCallbacks());
         });
+
+        vkImage.GetImageViews().clear();
     }
 
     void VulkanDevice::DestroyBuffer(Buffer& buffer) const

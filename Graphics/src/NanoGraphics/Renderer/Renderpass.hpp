@@ -29,6 +29,8 @@ namespace Nano::Graphics
         // Methods
         inline Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs) { return m_Renderpass.CreateFramebuffer(specs); } // Note: Framebuffers are stored in the Renderpass and will be destroyed when the renderpass is.
 
+        inline void ResizeFramebuffers() { return m_Renderpass.ResizeFramebuffers(); }
+
         // Getters
         inline const RenderpassSpecification& GetSpecification() const { return m_Renderpass.GetSpecification(); }
 

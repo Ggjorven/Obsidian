@@ -376,7 +376,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr VkPipelineStageFlags2 ResourceStateToFirstVkPipelineStage(ResourceState state)
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].StageFlags;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].StageFlags;
     }
 
     inline constexpr VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state)
@@ -386,7 +386,7 @@ namespace Nano::Graphics::Internal
 
         while (value) 
         {
-            int index = std::countr_zero(value);
+            int index = (std::countr_zero(value) + 1);
             value &= ~(1u << index); // clear bit
 
             result |= g_ResourceStateMapping[index].StageFlags;
@@ -397,7 +397,7 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkAccessFlags2 ResourceStateToFirstVkAccessMask(ResourceState state)
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].AccessMask;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].AccessMask;
     }
 
     inline constexpr VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
@@ -407,7 +407,7 @@ namespace Nano::Graphics::Internal
 
         while (value)
         {
-            int index = std::countr_zero(value);
+            int index = (std::countr_zero(value) + 1);
             value &= ~(1u << index); // clear bit
 
             result |= g_ResourceStateMapping[index].AccessMask;
@@ -418,10 +418,10 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)].ImageLayout;
+        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].ImageLayout;
     }
 
-    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[(std::to_underlying(state) ? std::countr_zero(std::to_underlying(state)) : 0)]; }
+    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)]; }
 
     inline constexpr VkImageType ImageDimensionToVkImageType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageType; }
     inline constexpr VkImageViewType ImageDimensionToVkImageViewType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageViewType; }
@@ -539,7 +539,7 @@ namespace Nano::Graphics::Internal
 
         while (value)
         {
-            int index = std::countr_zero(value);
+            int index = (std::countr_zero(value) + 1);
             value &= ~(1u << index); // clear bit
 
             result |= g_ShaderStageMapping[index].VulkanStage;

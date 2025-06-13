@@ -41,6 +41,9 @@ namespace Nano::Graphics
         // Object methods
         inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
 
+        inline void SetViewport(const Viewport& viewport) const { m_CommandList.SetViewport(viewport); }
+        inline void SetScissor(const ScissorRect& scissor) const { m_CommandList.SetScissor(scissor); }
+
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
 
     private:

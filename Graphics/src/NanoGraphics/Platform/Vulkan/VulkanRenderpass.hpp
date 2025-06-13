@@ -34,6 +34,8 @@ namespace Nano::Graphics::Internal
         // Methods
         Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs);
 
+        void ResizeFramebuffers();
+
         // Getters
         inline const RenderpassSpecification& GetSpecification() const { return m_Specification; }
 

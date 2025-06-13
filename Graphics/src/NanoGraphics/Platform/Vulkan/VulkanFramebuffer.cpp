@@ -22,53 +22,7 @@ namespace Nano::Graphics::Internal
     VulkanFramebuffer::VulkanFramebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
         : m_Renderpass(reinterpret_cast<const VulkanRenderpass*>(&renderpass)), m_Specification(specs)
     {
-        Nano::Memory::StaticVector<VkImageView, 2> attachments; // Colour & Depth
-
-        uint32_t width = 0, height = 0;
-        uint32_t layers = 1;
-
-        if (m_Specification.ColourAttachment.IsValid())
-        {
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.ColourAttachment.ImagePtr);
-            const ImageSpecification& imageSpec = m_Specification.ColourAttachment.ImagePtr->GetSpecification();
-            
-            width = std::max(imageSpec.Width >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
-            height = std::max(imageSpec.Height >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
-            layers = m_Specification.ColourAttachment.Subresources.NumArraySlices;
-            
-            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.ColourAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
-        }
-
-        if (m_Specification.DepthAttachment.IsValid())
-        {
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
-            const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
-
-            // TODO: Add asserts?
-
-            width = std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
-            height = std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
-            layers = m_Specification.DepthAttachment.Subresources.NumArraySlices;
-
-            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.DepthAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
-        }
-
-        VkFramebufferCreateInfo framebufferInfo = {};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = m_Renderpass->GetVkRenderPass();
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = width;
-        framebufferInfo.height = height;
-        framebufferInfo.layers = layers;
-
-        VK_VERIFY(vkCreateFramebuffer(m_Renderpass->GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &framebufferInfo, VulkanAllocator::GetCallbacks(), &m_Framebuffer));
-    
-        if constexpr (VulkanContext::Validation)
-        {
-            if (!m_Specification.DebugName.empty())
-                m_Renderpass->GetVulkanDevice().GetContext().SetDebugName(m_Framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, std::string(m_Specification.DebugName));
-        }
+        Create();
     }
 
     VulkanFramebuffer::~VulkanFramebuffer()
@@ -114,6 +68,69 @@ namespace Nano::Graphics::Internal
         m_Framebuffer = other.m_Framebuffer;
 
         return *this;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanFramebuffer::Resize()
+    {
+        m_Renderpass->GetVulkanDevice().DestroyFramebuffer(*reinterpret_cast<Framebuffer*>(this));
+        Create();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanFramebuffer::Create()
+    {
+        Nano::Memory::StaticVector<VkImageView, 2> attachments; // Colour & Depth
+
+        uint32_t width = 0, height = 0;
+        uint32_t layers = 1;
+
+        if (m_Specification.ColourAttachment.IsValid())
+        {
+            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.ColourAttachment.ImagePtr);
+            const ImageSpecification& imageSpec = m_Specification.ColourAttachment.ImagePtr->GetSpecification();
+
+            width = std::max(imageSpec.Width >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
+            height = std::max(imageSpec.Height >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
+            layers = m_Specification.ColourAttachment.Subresources.NumArraySlices;
+
+            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.ColourAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
+        }
+
+        if (m_Specification.DepthAttachment.IsValid())
+        {
+            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
+            const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
+
+            // TODO: Add asserts?
+
+            width = std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
+            height = std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
+            layers = m_Specification.DepthAttachment.Subresources.NumArraySlices;
+
+            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.DepthAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
+        }
+
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_Renderpass->GetVkRenderPass();
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = width;
+        framebufferInfo.height = height;
+        framebufferInfo.layers = layers;
+
+        VK_VERIFY(vkCreateFramebuffer(m_Renderpass->GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &framebufferInfo, VulkanAllocator::GetCallbacks(), &m_Framebuffer));
+
+        if constexpr (VulkanContext::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                m_Renderpass->GetVulkanDevice().GetContext().SetDebugName(m_Framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, std::string(m_Specification.DebugName));
+        }
     }
 
 }

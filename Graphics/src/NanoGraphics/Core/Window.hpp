@@ -43,6 +43,8 @@ namespace Nano::Graphics
 		inline Graphics::Maths::Vec2<uint32_t> GetSize() const { return m_Window.GetSize(); }
 		inline Graphics::Maths::Vec2<int32_t> GetPosition() const { return m_Window.GetPosition(); }
 
+		inline double GetWindowTime() const { return m_Window.GetWindowTime(); } // Note: Time is in seconds
+
 		// Setters
 		inline void SetSize(uint32_t width, uint32_t height) { m_Window.SetSize(width, height); }
 		inline void SetTitle(std::string_view title) { m_Window.SetTitle(title); }

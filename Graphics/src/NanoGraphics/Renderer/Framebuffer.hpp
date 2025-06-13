@@ -24,6 +24,9 @@ namespace Nano::Graphics
         // Destructor
         ~Framebuffer() = default;
 
+        // Methods
+        inline void Resize() { m_Framebuffer.Resize(); }
+
         // Getters
         inline const FramebufferSpecification& GetSpecification() const { return m_Framebuffer.GetSpecification(); }
 

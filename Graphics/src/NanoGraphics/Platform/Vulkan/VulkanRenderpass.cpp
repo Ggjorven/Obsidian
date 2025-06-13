@@ -111,4 +111,10 @@ namespace Nano::Graphics::Internal
         return *reinterpret_cast<Framebuffer*>(&m_Framebuffers.back());
     }
 
+    void VulkanRenderpass::ResizeFramebuffers()
+    {
+        for (auto& framebuffer : m_Framebuffers)
+            framebuffer.Resize();
+    }
+
 }

@@ -26,6 +26,8 @@ namespace Nano::Graphics::Internal
 	class VulkanDevice;
 	class VulkanCommandList;
 
+	struct SwapchainSupportDetails;
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanSwapchain
 	////////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +73,7 @@ namespace Nano::Graphics::Internal
 
 	private:
 		// Private methods
-		void ResolveFormatAndColourSpace(Format format, ColourSpace space);
+		void ResolveFormatAndColourSpace(const SwapchainSupportDetails& details, Format format, ColourSpace space);
 
 	private:
 		const VulkanDevice& m_Device;

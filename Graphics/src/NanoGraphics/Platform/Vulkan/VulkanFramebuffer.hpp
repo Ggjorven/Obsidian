@@ -37,6 +37,9 @@ namespace Nano::Graphics::Internal
         VulkanFramebuffer(const VulkanFramebuffer& other);
         VulkanFramebuffer& operator = (const VulkanFramebuffer& other);
 
+        // Methods
+        void Resize();
+
         // Getters
         inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 
@@ -44,6 +47,10 @@ namespace Nano::Graphics::Internal
         inline VkFramebuffer GetVkFramebuffer() const { return m_Framebuffer; }
 
         inline const VulkanRenderpass& GetVulkanRenderpass() const { return *m_Renderpass; }
+
+    private:
+        // Private methods
+        void Create();
 
     private:
         const VulkanRenderpass* m_Renderpass; // Note: This is a pointer to allow copying of the object

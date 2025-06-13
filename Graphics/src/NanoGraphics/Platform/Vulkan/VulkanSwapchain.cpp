@@ -101,10 +101,10 @@ namespace Nano::Graphics::Internal
         if (width == 0 || height == 0) [[unlikely]]
             return;
 
+        SwapchainSupportDetails details = SwapchainSupportDetails::Query(m_Surface, m_Device.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice());
+        
         if ((colourFormat != m_Specification.RequestedFormat) || (colourSpace != m_Specification.RequestedColourSpace)) [[unlikely]]
-            ResolveFormatAndColourSpace(colourFormat, colourSpace);
-
-        const SwapchainSupportDetails& details = m_Device.GetContext().GetVulkanPhysicalDevice().GetSwapchainSupportDetails();
+            ResolveFormatAndColourSpace(details, colourFormat, colourSpace);
 
         VkExtent2D swapchainExtent = {};
         if (details.Capabilities.currentExtent.width == 0xFFFFFFFF) // When it's 0xFFFFFFFF we can decide ourselves.
@@ -307,7 +307,7 @@ namespace Nano::Graphics::Internal
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            m_Device.GetContext().Error("[VulkanSwapChain] Failed to acquire Swapchain image!");
+            m_Device.GetContext().Error("[VkSwapchain] Failed to acquire Swapchain image!");
         }
     }
 
@@ -362,9 +362,9 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanSwapchain::ResolveFormatAndColourSpace(Format format, ColourSpace space)
+    void VulkanSwapchain::ResolveFormatAndColourSpace(const SwapchainSupportDetails& details, Format format, ColourSpace space)
     {
-        const std::vector<VkSurfaceFormatKHR>& formats = m_Device.GetContext().GetVulkanPhysicalDevice().GetSwapchainSupportDetails().Formats;
+        const std::vector<VkSurfaceFormatKHR>& formats = details.Formats;
         
         // If the surface format list only includes one entry with VK_FORMAT_UNDEFINED anything is fine, so the requested can stay
         if ((formats.size() == 1ull) && (formats[0].format == VK_FORMAT_UNDEFINED))
@@ -389,7 +389,7 @@ namespace Nano::Graphics::Internal
 
             // If not available, try again
             if (!foundDesiredCombination)
-                ResolveFormatAndColourSpace(format, ColourSpace::SRGB);
+                ResolveFormatAndColourSpace(details, format, ColourSpace::SRGB);
         }
     }
 

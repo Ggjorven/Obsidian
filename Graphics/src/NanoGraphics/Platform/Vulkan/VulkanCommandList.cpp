@@ -141,6 +141,14 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::Close()");
 
+        // Renderpass
+        {
+            VkSubpassEndInfo endInfo = {};
+            endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
+
+            vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
+        }
+
         m_GraphicsState = GraphicsState();
 
         {
@@ -240,6 +248,68 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
     {
         m_GraphicsState = state;
+
+        //NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
+        NG_ASSERT(m_GraphicsState.Pass, "[VkCommandList] No Renderpass passed in.");
+
+        // Renderpass
+        {
+            VulkanRenderpass& renderpass = *reinterpret_cast<VulkanRenderpass*>(state.Pass);
+            VulkanFramebuffer* framebuffer = nullptr;
+            if (state.Frame)
+                framebuffer = reinterpret_cast<VulkanFramebuffer*>(state.Frame);
+            else
+                framebuffer = reinterpret_cast<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetCurrentFrame())));
+        
+            VkRenderPassBeginInfo renderpassInfo = {};
+            renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderpassInfo.renderPass = renderpass.GetVkRenderPass();
+            renderpassInfo.framebuffer = framebuffer->GetVkFramebuffer();
+            renderpassInfo.renderArea.offset = { 0, 0 };
+            renderpassInfo.renderArea.extent = { static_cast<uint32_t>(state.ViewportState.GetWidth()), static_cast<uint32_t>(state.ViewportState.GetHeight()) };
+
+            // Clear values
+            Nano::Memory::StaticVector<VkClearValue, 2> clearValues;
+            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ state.ColourClear.r, state.ColourClear.g, state.ColourClear.b, state.ColourClear.a }));
+            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ state.DepthClear, 0 }));
+
+            renderpassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderpassInfo.pClearValues = clearValues.data();
+
+            VkSubpassBeginInfo subpassInfo = {};
+            subpassInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO;
+            subpassInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
+
+            vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
+        }
+
+        SetViewport(state.ViewportState);
+        SetScissor(state.Scissor);
+    }
+
+    void VulkanCommandList::SetViewport(const Viewport& viewport) const
+    {
+        // Note: For future DX coords?
+        //VkViewport(v.minX, v.maxY, v.maxX - v.minX, -(v.maxY - v.minY), v.minZ, v.maxZ);
+
+        VkViewport vkViewport = {};
+        vkViewport.x = viewport.MinX;
+        vkViewport.y = viewport.MinY;
+        vkViewport.width = viewport.GetWidth();
+        vkViewport.height = viewport.GetHeight();
+        vkViewport.minDepth = viewport.MinZ;
+        vkViewport.maxDepth = viewport.MaxZ;
+        vkCmdSetViewport(m_CommandBuffer, 0, 1, &vkViewport);
+    }
+
+    void VulkanCommandList::SetScissor(const ScissorRect& scissor) const
+    {
+        VkRect2D vkScissor = {};
+        vkScissor.offset = { scissor.MinX, scissor.MinY };
+        vkScissor.extent = { static_cast<uint32_t>(scissor.GetWidth()), static_cast<uint32_t>(scissor.GetHeight()) };
+        vkCmdSetScissor(m_CommandBuffer, 0, 1, &vkScissor);
     }
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
