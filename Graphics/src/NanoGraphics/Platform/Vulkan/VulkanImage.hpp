@@ -7,6 +7,7 @@
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
 
 #include <type_traits>
 
@@ -81,8 +82,6 @@ namespace Nano::Graphics::Internal
 		VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image);
 		~VulkanImage();
 
-		// Methods
-
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
@@ -104,6 +103,48 @@ namespace Nano::Graphics::Internal
 		VmaAllocation m_Allocation = VK_NULL_HANDLE;
 
 		std::unordered_map<VulkanImageSubresourceView::Key, VulkanImageSubresourceView, VulkanImageSubresourceView::Hash> m_ImageViews = {};
+	};
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// VulkanStagingImage
+	////////////////////////////////////////////////////////////////////////////////////
+	class VulkanStagingImage : public Traits::NoCopy
+	{
+	public:
+		struct Region
+		{
+		public:
+			size_t Offset;
+			size_t Size;
+		};
+	public:
+		// Constructor & Destructor
+		VulkanStagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode);
+		~VulkanStagingImage();
+
+		// Getters
+		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
+
+		// Internal getters
+		inline VulkanBuffer& GetVulkanBuffer() { return m_Buffer; }
+		inline const VulkanBuffer& GetVulkanBuffer() const { return m_Buffer; }
+
+		VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
+
+	private:
+		// Private methods
+		std::vector<Region> GetSliceRegions() const;
+		size_t ComputeSliceSize(uint32_t mipLevel) const;
+
+		size_t GetBufferSize() const;
+
+	private:
+		const VulkanDevice& m_Device;
+		ImageSpecification m_Specification;
+
+		std::vector<Region> m_SliceRegions = {};
+
+		VulkanBuffer m_Buffer;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////

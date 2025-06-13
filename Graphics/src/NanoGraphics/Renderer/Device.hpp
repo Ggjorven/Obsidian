@@ -42,7 +42,8 @@ namespace Nano::Graphics
 
         inline Image CreateImage(const ImageSpecification& specs) const { return Image(*this, specs); }
         inline void DestroyImage(Image& image) const { m_Device.DestroyImage(image); }
-
+        inline StagingImage CreateStagingImage(const ImageSpecification& specs, CpuAccessMode cpuAccessMode = CpuAccessMode::None) const { return StagingImage(*this, specs, cpuAccessMode); }
+        inline void DestroyStagingImage(StagingImage& image) const { m_Device.DestroyStagingImage(image); }
         inline Sampler CreateSampler(const SamplerSpecification& specs) const { return Sampler(*this, specs); }
         inline void DestroySampler(Sampler& sampler) const { m_Device.DestroySampler(sampler); }
 

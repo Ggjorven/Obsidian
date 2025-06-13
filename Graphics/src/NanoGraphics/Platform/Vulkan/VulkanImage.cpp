@@ -17,7 +17,7 @@ namespace Nano::Graphics::Internal
     static_assert(std::is_same_v<Sampler::Type, VulkanSampler>, "Current Sampler::Type is not VulkanSampler and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Constructor & Destructor
+    // Constructors & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanImageSubresourceView::VulkanImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
         : m_Image(*reinterpret_cast<const VulkanImage*>(&image)), m_Specification(specs)
@@ -152,6 +152,103 @@ namespace Nano::Graphics::Internal
     {
         m_Specification = specs;
         m_Image = image;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Constructor & Destructor
+    ////////////////////////////////////////////////////////////////////////////////////
+    VulkanStagingImage::VulkanStagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
+        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
+        .SetSize(GetBufferSize())
+        .SetCPUAccess(cpuAccessMode)
+        .SetDebugName(specs.DebugName)) // Note: The buffer is automatically a TransferSrc (& TransferDst), we don't need to set anything special
+    {
+    }
+
+    VulkanStagingImage::~VulkanStagingImage()
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    std::vector<VulkanStagingImage::Region> VulkanStagingImage::GetSliceRegions() const
+    {
+        std::vector<Region> regions;
+        size_t currentOffset = 0;
+
+        for (uint32_t mip = 0; mip < m_Specification.MipLevels; mip++)
+        {
+            auto sliceSize = ComputeSliceSize(mip);
+
+            uint32_t depth = std::max(m_Specification.Depth >> mip, 1u);
+            uint32_t numSlices = m_Specification.ArraySize * depth;
+
+            for (uint32_t slice = 0; slice < numSlices; slice++)
+            {
+                regions.emplace_back(currentOffset, sliceSize);
+                currentOffset = Nano::Memory::AlignOffset(currentOffset + sliceSize, 4);
+            }
+        }
+
+        return regions;
+    }
+
+    size_t VulkanStagingImage::ComputeSliceSize(uint32_t mipLevel) const
+    {
+        const FormatInfo& formatInfo = FormatToFormatInfo(m_Specification.ImageFormat);
+
+        uint32_t wInBlocks = std::max(((m_Specification.Width >> mipLevel) + formatInfo.BlockSize - 1) / formatInfo.BlockSize, 1u);
+        uint32_t hInBlocks = std::max(((m_Specification.Height >> mipLevel) + formatInfo.BlockSize - 1) / formatInfo.BlockSize, 1u);
+
+        size_t blockPitchBytes = static_cast<size_t>(wInBlocks) * formatInfo.BytesPerBlock;
+        return blockPitchBytes * hInBlocks;
+    }
+
+    size_t VulkanStagingImage::GetBufferSize() const
+    {
+        NG_ASSERT(m_SliceRegions.size(), "[VkStagingImage] No slice regions created.");
+        size_t size = m_SliceRegions.back().Offset + m_SliceRegions.back().Size;
+
+        NG_ASSERT(size > 0, "[VkStagingImage] BufferSize is smaller or equal to 0.");
+        return size;
+    }
+
+    VulkanStagingImage::Region VulkanStagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z)
+    {
+        if (m_Specification.Depth != 1)
+        {
+            // Hard case, since each mip level has half the slices as the previous one.
+            NG_ASSERT(arraySlice == 0, "[VkStagingImage] Must be first array slice if depth != 1.");
+            NG_ASSERT(z < m_Specification.Depth, "[VkStagingImage] Depth parameter must be less than the image depth.");
+
+            uint32_t mipDepth = m_Specification.Depth;
+            uint32_t index = 0;
+            while (mipLevel-- > 0)
+            {
+                index += mipDepth;
+                mipDepth = std::max(mipDepth, uint32_t(1));
+            }
+
+            return m_SliceRegions[static_cast<size_t>(index) + z];
+        }
+        else if (m_Specification.ArraySize != 1)
+        {
+            // Easy case, since each mip level has a consistent number of slices.
+            NG_ASSERT(z == 0, "[VkStagingImage] For an image array the depth must be 0.");
+            NG_ASSERT(arraySlice < m_Specification.ArraySize, "[VkStagingImage] ArraySlice exceeds the amount of array slices in image.");
+            NG_ASSERT(m_SliceRegions.size() == m_Specification.MipLevels * m_Specification.ArraySize, "");
+
+            return m_SliceRegions[static_cast<size_t>(mipLevel) * m_Specification.ArraySize + arraySlice];
+        }
+        else
+        {
+            NG_ASSERT(arraySlice == 0, "[VkStagingImage] Must be first array slice.");
+            NG_ASSERT(z == 0, "[VkStagingImage] Depth must be 0.");
+            NG_ASSERT(m_SliceRegions.size() == m_Specification.MipLevels, "");
+
+            return m_SliceRegions[mipLevel];
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

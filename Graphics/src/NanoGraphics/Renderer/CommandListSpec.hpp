@@ -20,6 +20,7 @@ namespace Nano::Graphics
 {
 
     class Image;
+    class Buffer;
     class Renderpass;
     class Framebuffer;
     class GraphicsPipeline;
@@ -127,6 +128,15 @@ namespace Nano::Graphics
         MipLevel ImageMipLevel = 0;
         ArraySlice ImageArraySlice = 0;
         bool EntireTexture = false;
+
+        ResourceState StateBefore = ResourceState::Unknown;
+        ResourceState StateAfter = ResourceState::Unknown;
+    };
+
+    struct BufferBarrier
+    {
+    public:
+        Buffer* BufferPtr = nullptr;
 
         ResourceState StateBefore = ResourceState::Unknown;
         ResourceState StateAfter = ResourceState::Unknown;

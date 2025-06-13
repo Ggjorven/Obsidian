@@ -10,6 +10,9 @@
 namespace Nano::Graphics
 {
 	class Swapchain;
+	class Image;
+	class StagingImage;
+	class Buffer;
 	class Renderpass;
 	class CommandList;
 	class CommandListPool;
@@ -77,6 +80,7 @@ namespace Nano::Graphics::Internal
 
 		// Object methods
 		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
+		void StartTracking(const Buffer& buffer, ResourceState currentState);
 
 		void SetGraphicsState(const GraphicsState& state);
 		
@@ -84,6 +88,10 @@ namespace Nano::Graphics::Internal
 		void SetScissor(const ScissorRect& scissor) const;
 
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
+		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice);
+		void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset);
+
+		void SetBufferData(Buffer& buffer, void* data, size_t size, size_t srcOffset, size_t dstOffset);
 
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }

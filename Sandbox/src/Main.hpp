@@ -82,11 +82,6 @@ int Main(int argc, char* argv[])
 			pool.AllocateList({ "Third List" }),
 		};
 
-		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Unknown);
-		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Common);
-		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::StorageBuffer);
-		Nano::Graphics::Internal::ResourceStateToImageLayout(ResourceState::Present);
-
 		// Renderpass & Framebuffers
 		RenderpassSpecification renderpassSpecs = RenderpassSpecification()
 			.SetBindpoint(PipelineBindpoint::Graphics)

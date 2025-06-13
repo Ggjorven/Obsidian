@@ -45,6 +45,8 @@ namespace Nano::Graphics
         inline void SetScissor(const ScissorRect& scissor) const { m_CommandList.SetScissor(scissor); }
 
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
+        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
+        inline void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_CommandList.CopyBuffer(dst, src, size, srcOffset, dstOffset); }
 
     private:
         // Constructor

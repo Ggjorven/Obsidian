@@ -106,7 +106,15 @@ namespace Nano::Graphics::Internal
             VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
 
-            // TODO: Add asserts?
+            if constexpr (VulkanContext::Validation)
+            {
+                if (width != 0 || height != 0) // Validation checks
+                {
+                    NG_ASSERT((width == std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's width doesn't match the colour attachment's width.");
+                    NG_ASSERT((height == std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's height doesn't match the colour attachment's height.");
+                    NG_ASSERT((layers == m_Specification.DepthAttachment.Subresources.NumArraySlices), "[VkFramebuffer] Depth attachment's arrayslices doesn't match the colour attachment's arrayslices.");
+                }
+            }
 
             width = std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
             height = std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);

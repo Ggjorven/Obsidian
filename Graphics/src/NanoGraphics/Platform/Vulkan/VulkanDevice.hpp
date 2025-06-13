@@ -13,8 +13,9 @@ namespace Nano::Graphics
 {
     class Swapchain;
     class Image;
-    class Buffer;
+    class StagingImage;
     class Sampler;
+    class Buffer;
     class Framebuffer;
     class Renderpass;
     class Shader;
@@ -42,10 +43,10 @@ namespace Nano::Graphics::Internal
 
         void DestroyImage(Image& image) const;
         void DestroySubresourceViews(Image& image) const;
+        void DestroyStagingImage(StagingImage& stagingImage) const;
+        void DestroySampler(Sampler& sampler) const;
 
         void DestroyBuffer(Buffer& buffer) const;
-
-        void DestroySampler(Sampler& sampler) const;
 
         void DestroyFramebuffer(Framebuffer& framebuffer) const;
 

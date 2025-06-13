@@ -245,6 +245,11 @@ namespace Nano::Graphics::Internal
         m_StateTracker.StartTracking(image, subresources, currentState);
     }
 
+    void VulkanCommandList::StartTracking(const Buffer& buffer, ResourceState currentState)
+    {
+        m_StateTracker.StartTracking(buffer, currentState);
+    }
+
     void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
     {
         m_GraphicsState = state;
@@ -378,6 +383,86 @@ namespace Nano::Graphics::Internal
         copyInfo.pRegions = &region;
 
         vkCmdCopyImage2(m_CommandBuffer, &copyInfo);
+
+        // TODO: Reset back to permanent state
+    }
+
+    void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice)
+    {
+        VulkanStagingImage& srcVulkanStagingImage = *reinterpret_cast<VulkanStagingImage*>(&src);
+        VulkanBuffer& srcVulkanBuffer = reinterpret_cast<VulkanStagingImage*>(&src)->GetVulkanBuffer();
+        VulkanImage& dstVulkanImage = *reinterpret_cast<VulkanImage*>(&dst);
+
+        ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
+        ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
+
+        auto srcRegion = srcVulkanStagingImage.GetSliceRegion(resSrcSlice.ImageMipLevel, resSrcSlice.ImageArraySlice, resSrcSlice.Z);
+
+        ImageSubresourceSpecification dstSubresource = ImageSubresourceSpecification(
+            resDstSlice.ImageMipLevel, 1,
+            resDstSlice.ImageArraySlice, 1
+        );
+
+        VkBufferImageCopy2 copyInfo = {};
+        copyInfo.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
+        copyInfo.bufferOffset = srcRegion.Offset;
+        copyInfo.bufferRowLength = resSrcSlice.Width;
+        copyInfo.bufferImageHeight = resSrcSlice.Height;
+
+        copyInfo.imageSubresource.aspectMask = VkFormatToImageAspect(FormatToVkFormat(dst.GetSpecification().ImageFormat));
+        copyInfo.imageSubresource.mipLevel = resDstSlice.ImageMipLevel;
+        copyInfo.imageSubresource.baseArrayLayer = resDstSlice.ImageArraySlice;
+        copyInfo.imageSubresource.layerCount = 1;
+
+        copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
+        copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
+
+        m_StateTracker.RequireBufferState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        m_StateTracker.RequireImageState(dst, dstSubresource, ResourceState::CopyDst);
+        CommitBarriers();
+
+        VkCopyBufferToImageInfo2 copyBufferToImageInfo = {};
+        copyBufferToImageInfo.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2;
+        copyBufferToImageInfo.srcBuffer = srcVulkanBuffer.GetVkBuffer();
+        copyBufferToImageInfo.dstImage = dstVulkanImage.GetVkImage();
+        copyBufferToImageInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        copyBufferToImageInfo.regionCount = 1;
+        copyBufferToImageInfo.pRegions = &copyInfo;
+
+        vkCmdCopyBufferToImage2(m_CommandBuffer, &copyBufferToImageInfo);
+
+        // TODO: Reset back to permanent state
+    }
+
+    void VulkanCommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
+    {
+        VulkanBuffer& dstVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&dst);
+        VulkanBuffer& srcVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&src);
+
+        m_StateTracker.RequireBufferState(src, ResourceState::CopySrc);
+        m_StateTracker.RequireBufferState(dst, ResourceState::CopyDst);
+        CommitBarriers();
+
+        VkBufferCopy copyRegion = {};
+        copyRegion.srcOffset = srcOffset;
+        copyRegion.dstOffset = dstOffset;
+        copyRegion.size = size;
+
+        vkCmdCopyBuffer(m_CommandBuffer, srcVulkanBuffer.GetVkBuffer(), dstVulkanBuffer.GetVkBuffer(), 1, &copyRegion);
+
+        // TODO: Reset back to permanent state
+    }
+
+    void VulkanCommandList::SetBufferData(Buffer& buffer, void* data, size_t size, size_t srcOffset, size_t dstOffset)
+    {
+        //VulkanCommand command = VulkanCommand(true);
+        //
+        //VkBufferCopy copyRegion = {};
+        //copyRegion.size = size;
+        //copyRegion.dstOffset = offset;
+        //vkCmdCopyBuffer(command.GetVkCommandBuffer(), srcBuffer, dstBuffer, 1, &copyRegion);
+        //
+        //command.EndAndSubmit();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

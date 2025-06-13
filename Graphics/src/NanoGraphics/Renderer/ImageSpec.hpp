@@ -194,6 +194,7 @@ namespace Nano::Graphics
         inline ImageSpecification& SetMaxMipLevels() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
+        inline constexpr ImageSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
         inline constexpr ImageSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
         inline constexpr ImageSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }

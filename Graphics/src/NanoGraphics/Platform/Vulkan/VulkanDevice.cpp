@@ -25,6 +25,7 @@ namespace Nano::Graphics::Internal
 
     static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<StagingImage::Type, VulkanStagingImage>, "Current StagingImage::Type is not VulkanStagingImage and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Buffer::Type, VulkanBuffer>, "Current Buffer::Type is not VulkanBuffer and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Sampler::Type, VulkanSampler>, "Current Sampler::Type is not VulkanSampler and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Framebuffer::Type, VulkanFramebuffer>, "Current Framebuffer::Type is not VulkanFramebuffer and Vulkan source code is being compiled.");
@@ -110,18 +111,10 @@ namespace Nano::Graphics::Internal
         vkImage.GetImageViews().clear();
     }
 
-    void VulkanDevice::DestroyBuffer(Buffer& buffer) const
+    void VulkanDevice::DestroyStagingImage(StagingImage& stagingImage) const
     {
-        VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
-
-        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
-        VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
-        VmaAllocation allocation = vulkanBuffer.GetVmaAllocation();
-        m_Context.Destroy([device, vkBuffer, allocation, allocator = &m_Allocator]() mutable
-        {
-            NG_ASSERT(false, "TODO: Uncomment"); // TODO: ...
-            //allocator->DestroyBuffer(vkBuffer, allocation);
-        });
+        VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<VulkanStagingImage*>(&stagingImage);
+        DestroyBuffer(*reinterpret_cast<Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
     }
 
     void VulkanDevice::DestroySampler(Sampler& sampler) const
@@ -133,6 +126,19 @@ namespace Nano::Graphics::Internal
         m_Context.Destroy([device, vkSampler]() mutable
         {
             vkDestroySampler(device, vkSampler, VulkanAllocator::GetCallbacks());
+        });
+    }
+
+    void VulkanDevice::DestroyBuffer(Buffer& buffer) const
+    {
+        VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
+        VmaAllocation allocation = vulkanBuffer.GetVmaAllocation();
+        m_Context.Destroy([device, vkBuffer, allocation, allocator = &m_Allocator]() mutable
+        {
+            allocator->DestroyBuffer(vkBuffer, allocation);
         });
     }
 

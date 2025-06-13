@@ -42,26 +42,25 @@ namespace Nano::Graphics
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // StagingImage // TODO: Implement after implementing buffers
+    // StagingImage
     ////////////////////////////////////////////////////////////////////////////////////
     class StagingImage : public Traits::NoCopy
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            //Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanStagingImage>
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, int> // TEMP
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanStagingImage>
         >;
     public:
         // Destructor
         ~StagingImage() = default;
 
         // Getters
-        //inline const StagingImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
+        inline const ImageSpecification& GetSpecification() const { return m_StagingImage.GetSpecification(); }
 
     private:
         // Constructor 
-        //StagingImage(const Device& device, const StagingImageSpecification& specs)
-        //    : m_Image(device, specs) {}
+        StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccess)
+            : m_StagingImage(device, specs, cpuAccess) {}
 
     private:
         Type m_StagingImage;

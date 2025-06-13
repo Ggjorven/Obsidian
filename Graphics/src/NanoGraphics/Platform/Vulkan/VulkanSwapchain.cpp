@@ -226,7 +226,7 @@ namespace Nano::Graphics::Internal
             }
         }
 
-        // Temporary transition // TODO: Remove
+        // Temporary transition // TODO: Replace
         {
             // Create command pool
             VkCommandPool commandPool;

@@ -116,6 +116,32 @@ namespace Nano::Graphics::Internal
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // Buffer
+    ////////////////////////////////////////////////////////////////////////////////////
+    VmaAllocation VulkanAllocator::AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& buffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags) const
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Change if necessary
+
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = memoryUsage; // VMA_MEMORY_USAGE_GPU_ONLY, VMA_MEMORY_USAGE_CPU_ONLY, etc.
+        allocInfo.requiredFlags = requiredFlags;
+
+        VmaAllocation allocation = VK_NULL_HANDLE;
+        VK_VERIFY(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr));
+
+        return allocation;
+    }
+
+    void VulkanAllocator::DestroyBuffer(VkBuffer buffer, VmaAllocation allocation) const
+    {
+        vmaDestroyBuffer(m_Allocator, buffer, allocation);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Image
     ////////////////////////////////////////////////////////////////////////////////////
     VmaAllocation VulkanAllocator::CreateImage(VmaMemoryUsage memUsage, VkImage& image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkSampleCountFlags samples, VkMemoryPropertyFlags requiredFlags) const

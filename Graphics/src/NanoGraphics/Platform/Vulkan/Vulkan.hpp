@@ -64,6 +64,8 @@ namespace Nano::Graphics::Internal
         VkPipelineCache GetPipelineCache() const;
 
         // Buffers
+        VmaAllocation AllocateBuffer(VmaMemoryUsage memoryUsage, VkBuffer& buffer, size_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags requiredFlags = 0) const;
+        void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation) const;
 
         // Image
         VmaAllocation CreateImage(VmaMemoryUsage memUsage, VkImage& image, VkImageType type, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevels, uint32_t arrayLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkSampleCountFlags samples, VkMemoryPropertyFlags requiredFlags = 0) const;
