@@ -453,18 +453,6 @@ namespace Nano::Graphics::Internal
         // TODO: Reset back to permanent state
     }
 
-    void VulkanCommandList::SetBufferData(Buffer& buffer, void* data, size_t size, size_t srcOffset, size_t dstOffset)
-    {
-        //VulkanCommand command = VulkanCommand(true);
-        //
-        //VkBufferCopy copyRegion = {};
-        //copyRegion.size = size;
-        //copyRegion.dstOffset = offset;
-        //vkCmdCopyBuffer(command.GetVkCommandBuffer(), srcBuffer, dstBuffer, 1, &copyRegion);
-        //
-        //command.EndAndSubmit();
-    }
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////

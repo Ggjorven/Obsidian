@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NanoGraphics/Core/WindowSpec.hpp"
+#include "NanoGraphics/Core/Input/Input.hpp"
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
@@ -59,10 +60,13 @@ namespace Nano::Graphics::Internal
 		inline void* GetNativeWindow() { return static_cast<void*>(m_Window); }
 		inline WindowSpecification& GetSpecification() { return m_Specification; }
 
+		inline const Input& GetInput() const { return m_Input; }
+
 	private:
 		WindowSpecification m_Specification;
 
 		GLFWwindow* m_Window = nullptr;
+		Input m_Input = {};
 
 		bool m_Closed = false;
 	};

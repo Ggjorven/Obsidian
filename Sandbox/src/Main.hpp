@@ -68,6 +68,7 @@ int Main(int argc, char* argv[])
 		SwapchainSpecification swapchainSpecs = SwapchainSpecification()
 			.SetWindow(window)
 			.SetFormat(Format::BGRA8Unorm)
+			//.SetFormat(Format::SBGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
 			.SetVSync(false)
 			.SetDebugName("Swapchain");
@@ -123,7 +124,7 @@ int Main(int argc, char* argv[])
 						.SetRenderpass(renderpass)
 						.SetViewport(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y))))
-						.SetColourClear({ 1.0f, 1.0f, 0.0f, 1.0f });
+						.SetColourClear({ (static_cast<float>(window.GetInput().GetCursorPosition().x) / static_cast<float>(window.GetSize().x)), (static_cast<float>(window.GetInput().GetCursorPosition().y) / static_cast<float>(window.GetSize().y)), 0.0f, 1.0f});
 					list.SetGraphicsState(state);
 				}
 				list.Close();

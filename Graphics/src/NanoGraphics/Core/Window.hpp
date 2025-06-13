@@ -57,6 +57,8 @@ namespace Nano::Graphics
 		inline void* GetNativeWindow() { return m_Window.GetNativeWindow(); }
 		inline WindowSpecification& GetSpecification() { return m_Window.GetSpecification(); }
 
+		inline const Input& GetInput() const { return m_Window.GetInput(); }
+
 	private:
 		Type m_Window;
 	};

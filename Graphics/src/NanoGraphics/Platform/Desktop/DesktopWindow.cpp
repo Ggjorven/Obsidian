@@ -54,6 +54,8 @@ namespace Nano::Graphics::Internal
         m_Window = glfwCreateWindow(static_cast<int>(specs.Width), static_cast<int>(specs.Height), specs.Title.c_str(), nullptr, nullptr);
         NG_ASSERT(m_Window, "[DesktopWindow] Failed to create a window.");
 
+        m_Input.SetWindow(m_Window); // Init Input
+
         glfwSetWindowAttrib(m_Window, GLFW_DECORATED, static_cast<bool>(specs.Flags & WindowFlags::Decorated));
 
         // Making sure we can access the data in the callbacks
