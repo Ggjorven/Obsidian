@@ -5,8 +5,50 @@
 
 #include <Nano/Nano.hpp>
 
+#include <string_view>
+
 using namespace Nano;
 using namespace Nano::Graphics;
+
+inline constexpr std::string_view g_VertexShader = R"(
+#version 460 core
+
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+layout(location = 0) out vec3 v_Position;
+layout(location = 1) out vec2 v_TexCoord;
+
+layout(std140, set = 0, binding = 0) uniform CameraSettings
+{
+    mat4 View;
+    mat4 Projection;
+} u_Camera;
+
+void main()
+{
+    v_Position = a_Position;
+    v_TexCoord = a_TexCoord;
+
+    gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
+}
+)";
+
+inline constexpr std::string_view g_FragmentShader = R"(
+#version 460 core
+
+layout(location = 0) out vec4 o_Colour;
+
+layout(location = 0) in vec3 v_Position;
+layout(location = 1) in vec2 v_TexCoord;
+
+layout (set = 0, binding = 1) uniform sampler2D u_Texture;
+
+void main()
+{
+    o_Colour = texture(u_Texture, v_TexCoord);
+}
+)";
 
 int Main(int argc, char* argv[])
 {
@@ -91,18 +133,51 @@ int Main(int argc, char* argv[])
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
 			.SetColourStartState(ResourceState::Unknown)
-			.SetColourEndState(ResourceState::Present);
+			.SetColourEndState(ResourceState::Present)
+
+			.SetDebugName("Renderpass");
 		Renderpass renderpass = device.CreateRenderpass(renderpassSpecs);
 		renderpassPtr = &renderpass;
 
 		for (uint8_t i = 0; i < Information::BackBufferCount; i++)
 		{
+			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, renderpassSpecs.DebugName);
 			FramebufferSpecification framebufferSpecs = FramebufferSpecification()
 				.SetColourAttachment(FramebufferAttachment()
-					.SetImage(swapchain.GetImage(i)));
+					.SetImage(swapchain.GetImage(i)))
+				.SetDebugName(debugName);
 
 			(void)renderpass.CreateFramebuffer(framebufferSpecs);
 		}
+
+		// ShaderCompiler & Shader
+		ShaderCompiler compiler;
+		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), ShadingLanguage::GLSL);
+		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), ShadingLanguage::GLSL);
+
+		auto shaders = std::to_array<Shader>({
+			device.CreateShader({ ShaderStage::Vertex, vertexSPIRV, "Vertex Shader" }),
+			device.CreateShader({ ShaderStage::Fragment, fragmentSPIRV, "Fragment Shader" }),
+		});
+
+		// Bindingsets & Layouts
+		InputLayout inputLayout = device.CreateInputLayout({ 
+			VertexAttributeSpecification()
+				.SetBufferIndex(0)
+				.SetFormat(Format::RGB32Float)
+				.SetSize(VertexAttributeSpecification::AutoSize)
+				.SetOffset(VertexAttributeSpecification::AutoOffset)
+				.SetDebugName("a_Position"),
+			VertexAttributeSpecification()
+				.SetBufferIndex(0)
+				.SetFormat(Format::RG32Float)
+				.SetSize(VertexAttributeSpecification::AutoSize)
+				.SetOffset(VertexAttributeSpecification::AutoOffset)
+				.SetDebugName("a_TexCoord")
+		});
+
+		// Pipeline
+		// TODO: ...
 
 		// Main Loop
 		while (window.IsOpen())
@@ -137,6 +212,9 @@ int Main(int argc, char* argv[])
 			}
 			swapchain.Present();
 		}
+
+		for (auto& shader : shaders)
+			device.DestroyShader(shader);
 
 		device.DestroyRenderpass(renderpass);
 

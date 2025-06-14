@@ -10,6 +10,40 @@ namespace Nano::Graphics
 {
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // VertexAttributeSpecification
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct VertexAttributeSpecification
+    {
+    public:
+        inline constexpr static uint32_t AutoSize = std::numeric_limits<uint32_t>::max();
+        inline constexpr static uint32_t AutoOffset = std::numeric_limits<uint32_t>::max();
+    public:
+        uint32_t BufferIndex = 0;
+        Format VertexFormat = Format::Unknown;
+
+        uint32_t Size = 0;
+        uint32_t Offset = 0;
+        uint32_t ArraySize = 1;
+
+        bool IsInstanced = false;
+
+        std::string_view DebugName = {};
+
+    public:
+        // Setters
+        inline constexpr VertexAttributeSpecification& SetBufferIndex(uint32_t index) { BufferIndex = index; return *this; }
+        inline constexpr VertexAttributeSpecification& SetFormat(Format format) { VertexFormat = format; return *this; }
+        
+        inline constexpr VertexAttributeSpecification& SetSize(uint32_t size) { Size = size; return *this; }
+        inline constexpr VertexAttributeSpecification& SetOffset(uint32_t offset) { Offset = offset; return *this; }
+        inline constexpr VertexAttributeSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
+
+        inline constexpr VertexAttributeSpecification& SetIsInstanced(bool enabled) { IsInstanced = enabled; return *this; }
+
+        inline constexpr VertexAttributeSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // BufferSpecification
     ////////////////////////////////////////////////////////////////////////////////////
     class BufferSpecification

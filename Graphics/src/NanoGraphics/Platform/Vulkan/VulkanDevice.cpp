@@ -182,6 +182,11 @@ namespace Nano::Graphics::Internal
         });
     }
 
+    void VulkanDevice::DestroyInputLayout(InputLayout& layout) const
+    {
+        (void)layout;
+    }
+
     void VulkanDevice::DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const
     {
         VulkanGraphicsPipeline& vulkanGraphicsPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(&pipeline);

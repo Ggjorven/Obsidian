@@ -4,6 +4,7 @@
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/BufferSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 #include "NanoGraphics/Renderer/FramebufferSpec.hpp"

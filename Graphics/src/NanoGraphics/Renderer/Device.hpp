@@ -15,6 +15,8 @@
 
 #include <Nano/Nano.hpp>
 
+#include <span>
+
 namespace Nano::Graphics
 {
 
@@ -55,6 +57,10 @@ namespace Nano::Graphics
 
         inline Shader CreateShader(const ShaderSpecification& specs) const { return Shader(*this, specs); }
         inline void DestroyShader(Shader& shader) const { m_Device.DestroyShader(shader); }
+
+        inline InputLayout CreateInputLayout(std::span<const VertexAttributeSpecification> attributes) const { return InputLayout(*this, attributes); }
+        inline InputLayout CreateInputLayout(const std::vector<VertexAttributeSpecification>& attributes) const { return CreateInputLayout(std::span<const VertexAttributeSpecification>(attributes)); }
+        inline void DestroyInputLayout(InputLayout& layout) const { m_Device.DestroyInputLayout(layout); }
 
         inline GraphicsPipeline CreateGraphicsPipeline(const GraphicsPipelineSpecification& specs) const { return GraphicsPipeline(*this, specs); }
         inline void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const { m_Device.DestroyGraphicsPipeline(pipeline); }

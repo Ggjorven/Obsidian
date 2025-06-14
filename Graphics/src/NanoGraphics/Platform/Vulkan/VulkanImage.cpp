@@ -124,7 +124,7 @@ namespace Nano::Graphics::Internal
         usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
         usageInfo.usage = usage;
 
-        if (usage != (VkImageUsageFlags)0)
+        if (usage != static_cast<VkImageUsageFlags>(0))
             createInfo.pNext = &usageInfo;
 
         if (viewType == ImageSubresourceViewType::StencilOnly)

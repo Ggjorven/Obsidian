@@ -8,6 +8,10 @@
 
 #include <Nano/Nano.hpp>
 
+#include <shaderc/shaderc.hpp>
+
+#include <vector>
+
 namespace Nano::Graphics
 {
     class Device;
@@ -41,6 +45,24 @@ namespace Nano::Graphics::Internal
         ShaderSpecification m_Specification;
 
         VkShaderModule m_Shader = VK_NULL_HANDLE;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // VulkanShaderCompiler
+    ////////////////////////////////////////////////////////////////////////////////////
+    class VulkanShaderCompiler
+    {
+    public:
+        // Constructors & Destructor
+        VulkanShaderCompiler();
+        ~VulkanShaderCompiler();
+
+        // Methods
+        std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language);
+
+    private:
+        shaderc::Compiler m_Compiler = {};
+        shaderc::CompileOptions m_CompileOptions = {};
     };
 
 }
