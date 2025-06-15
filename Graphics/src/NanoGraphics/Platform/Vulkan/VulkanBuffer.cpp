@@ -21,6 +21,8 @@ namespace Nano::Graphics::Internal
     VulkanInputLayout::VulkanInputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
         : m_Attributes(attributes.begin(), attributes.end())
     {
+        (void)device;
+
         CalculateOffsetsAndStride();
 
         uint32_t totalAttributeArraySize = 0;
@@ -106,8 +108,10 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanBuffer::VulkanBuffer(const Device& device, const BufferSpecification& specs)
-        : /*m_Device(*reinterpret_cast<const VulkanDevice*>(&device)),*/ m_Specification(specs)
+        : m_Specification(specs)
     {
+        (void)device;
+
         const VulkanDevice& vulkanDevice = *reinterpret_cast<const VulkanDevice*>(&device);
 
         // Validation checks

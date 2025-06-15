@@ -16,6 +16,8 @@ namespace Nano::Graphics
     class StagingImage;
     class Sampler;
     class InputLayout;
+    class BindingLayout;
+    class BindingSetPool;
     class Buffer;
     class Framebuffer;
     class Renderpass;
@@ -50,12 +52,14 @@ namespace Nano::Graphics::Internal
         void DestroyBuffer(Buffer& buffer) const;
 
         void DestroyFramebuffer(Framebuffer& framebuffer) const;
-
         void DestroyRenderpass(Renderpass& renderpass) const;
 
         void DestroyShader(Shader& shader) const;
 
         void DestroyInputLayout(InputLayout& layout) const;
+        void DestroyBindingLayout(BindingLayout& layout) const;
+
+        void FreeBindingSetPool(BindingSetPool& pool) const;
 
         void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const;
 

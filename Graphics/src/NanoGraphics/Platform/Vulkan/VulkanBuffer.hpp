@@ -43,7 +43,6 @@ namespace Nano::Graphics::Internal
         std::vector<VkVertexInputAttributeDescription> m_AttributeDescriptions = { };
     };
 
-
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanBuffer
     ////////////////////////////////////////////////////////////////////////////////////
@@ -61,10 +60,7 @@ namespace Nano::Graphics::Internal
         inline VkBuffer GetVkBuffer() const { return m_Buffer; }
         inline VmaAllocation GetVmaAllocation() const { return m_Allocation; }
 
-        //inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
-
     private:
-        //const VulkanDevice& m_Device;
         BufferSpecification m_Specification;
 
         VkBuffer m_Buffer = VK_NULL_HANDLE;

@@ -16,7 +16,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanGraphicsPipeline::VulkanGraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs)
-        : /*m_Device(*reinterpret_cast<const VulkanDevice*>(&device)),*/ m_Specification(specs)
+        : m_Specification(specs)
     {
         NG_ASSERT(false, "TODO");
         // TODO: ...

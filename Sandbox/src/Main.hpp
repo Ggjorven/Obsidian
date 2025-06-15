@@ -42,11 +42,13 @@ layout(location = 0) out vec4 o_Colour;
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
-layout (set = 0, binding = 1) uniform sampler2D u_Texture;
+layout (set = 0, binding = 1) uniform texture2D u_Texture;
+layout (set = 0, binding = 12) uniform sampler u_Sampler;
 
 void main()
 {
-    o_Colour = texture(u_Texture, v_TexCoord);
+	// Combine texture and sampler
+    o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
 }
 )";
 
@@ -176,6 +178,47 @@ int Main(int argc, char* argv[])
 				.SetDebugName("a_TexCoord")
 		});
 
+		BindingLayout bindingLayoutSet0 = device.CreateBindingLayout(BindingLayoutSpecification()
+			.SetRegisterSpace(0)
+			.SetRegisterSpaceIsDescriptorSet(true)
+
+			// Vertex
+			.AddItem(BindingLayoutItem()
+				.SetSlot(0)
+				.SetVisibility(ShaderStage::Vertex)
+				.SetType(ResourceType::UniformBuffer)
+				.SetDebugName("u_Camera")
+			)
+
+			// Fragment
+			.AddItem(BindingLayoutItem()
+				.SetSlot(1)
+				.SetVisibility(ShaderStage::Fragment)
+				.SetType(ResourceType::Image)
+				.SetDebugName("u_Texture")
+			)
+			.AddItem(BindingLayoutItem()
+				.SetSlot(2)
+				.SetVisibility(ShaderStage::Fragment)
+				.SetType(ResourceType::Sampler)
+				.SetDebugName("u_Sampler")
+			)
+
+			//.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
+		);
+
+		BindingSetPool bindingSetPoolSet0 = device.AllocateBindingSetPool(BindingSetPoolSpecification()
+			.SetLayout(bindingLayoutSet0)
+			.SetSetAmount(Information::BackBufferCount)
+			.SetDebugName("BindingSetPool")
+		);
+
+		std::array<BindingSet, Information::BackBufferCount> set0s = {
+			bindingSetPoolSet0.CreateBindingSet(),
+			bindingSetPoolSet0.CreateBindingSet(),
+			bindingSetPoolSet0.CreateBindingSet(),
+		};
+
 		// Pipeline
 		// TODO: ...
 
@@ -185,22 +228,28 @@ int Main(int argc, char* argv[])
 			if (window.IsFocused()) [[likely]]
 				window.PollEvents();
 			else
-				window.WaitEvents();
+				window.WaitEvents(1.0); // Note: When the windows is out of focus it only updates every second
 
 			emptyQueue();
 			swapchain.AcquireNextImage();
 
 			CommandList& list = lists[swapchain.GetCurrentFrame()];
+			BindingSet& set0 = set0s[swapchain.GetCurrentFrame()];
 			
 			{
 				list.ResetAndOpen();
-				{
+				{ 
+					// Graphics
 					GraphicsState state = GraphicsState()
 						.SetRenderpass(renderpass)
 						.SetViewport(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y))))
-						.SetColourClear({ (static_cast<float>(window.GetInput().GetCursorPosition().x) / static_cast<float>(window.GetSize().x)), (static_cast<float>(window.GetInput().GetCursorPosition().y) / static_cast<float>(window.GetSize().y)), 0.0f, 1.0f});
+						.SetColourClear({ (static_cast<float>(window.GetInput().GetCursorPosition().x) / static_cast<float>(window.GetSize().x)), (static_cast<float>(window.GetInput().GetCursorPosition().y) / static_cast<float>(window.GetSize().y)), 0.0f, 1.0f })
+						.AddBindingSet(0, set0);
 					list.SetGraphicsState(state);
+
+					// Rendering
+					// ...
 				}
 				list.Close();
 
@@ -212,6 +261,10 @@ int Main(int argc, char* argv[])
 			}
 			swapchain.Present();
 		}
+
+		device.FreeBindingSetPool(bindingSetPoolSet0);
+
+		device.DestroyBindingLayout(bindingLayoutSet0);
 
 		for (auto& shader : shaders)
 			device.DestroyShader(shader);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NanoGraphics/Core/Logging.hpp"
+
 #include "NanoGraphics/Maths/Structs.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
@@ -11,6 +13,7 @@
 #include <cstdint>
 #include <span>
 #include <cmath>
+#include <array>
 #include <vector>
 #include <variant>
 #include <string_view>
@@ -19,6 +22,7 @@
 namespace Nano::Graphics
 {
 
+    class BindingSet;
     class Image;
     class Buffer;
     class Renderpass;
@@ -94,6 +98,8 @@ namespace Nano::Graphics
     struct GraphicsState
     {
     public:
+        inline constexpr static uint32_t MaxBindingSets = 8;
+    public:
         GraphicsPipeline* Pipeline = nullptr;
         Renderpass* Pass = nullptr;
         Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[CurrentFrame] from pass.
@@ -103,6 +109,8 @@ namespace Nano::Graphics
 
         Maths::Vec4<float> ColourClear = { 0.0f, 0.0f, 0.0f, 1.0f };
         float DepthClear = 1.0f;
+
+        std::array<BindingSet*, MaxBindingSets> BindingSets = { };
 
     public:
         // Setters
@@ -115,6 +123,8 @@ namespace Nano::Graphics
 
         inline constexpr GraphicsState& SetColourClear(const Maths::Vec4<float>& colour) { ColourClear = colour; return *this; }
         inline constexpr GraphicsState& SetDepthClear(float depth) { DepthClear = depth; return *this; }
+
+        inline GraphicsState& AddBindingSet(uint32_t setID, BindingSet& set) { NG_ASSERT((setID < MaxBindingSets), "[GraphicsState] SetID exceeds max binding sets."); BindingSets[setID] = &set; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

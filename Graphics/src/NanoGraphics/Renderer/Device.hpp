@@ -3,6 +3,7 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
+#include "NanoGraphics/Renderer/Bindings.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"
 #include "NanoGraphics/Renderer/Buffer.hpp"
 #include "NanoGraphics/Renderer/Swapchain.hpp"
@@ -61,6 +62,13 @@ namespace Nano::Graphics
         inline InputLayout CreateInputLayout(std::span<const VertexAttributeSpecification> attributes) const { return InputLayout(*this, attributes); }
         inline InputLayout CreateInputLayout(const std::vector<VertexAttributeSpecification>& attributes) const { return CreateInputLayout(std::span<const VertexAttributeSpecification>(attributes)); }
         inline void DestroyInputLayout(InputLayout& layout) const { m_Device.DestroyInputLayout(layout); }
+
+        inline BindingLayout CreateBindingLayout(const BindingLayoutSpecification& specs) const { return BindingLayout(*this, specs); }
+        inline BindingLayout CreateBindingLayout(const BindlessLayoutSpecification& specs) const { return BindingLayout(*this, specs); }
+        inline void DestroyBindingLayout(BindingLayout& layout) const { m_Device.DestroyBindingLayout(layout); }
+
+        inline BindingSetPool AllocateBindingSetPool(const BindingSetPoolSpecification& specs) const { return BindingSetPool(*this, specs); }
+        inline void FreeBindingSetPool(BindingSetPool& pool) const { m_Device.FreeBindingSetPool(pool); }
 
         inline GraphicsPipeline CreateGraphicsPipeline(const GraphicsPipelineSpecification& specs) const { return GraphicsPipeline(*this, specs); }
         inline void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const { m_Device.DestroyGraphicsPipeline(pipeline); }

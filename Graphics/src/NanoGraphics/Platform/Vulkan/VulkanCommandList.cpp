@@ -290,6 +290,18 @@ namespace Nano::Graphics::Internal
             vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
         }
 
+        // TODO: Pipeline
+        {
+            // TODO: Add proper pipeline
+            //vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_NULL_HANDLE);
+        }
+
+        // BindingSets
+        {
+            // TODO: Add proper pipeline layout
+            //BindDescriptorSets(state.BindingSets, nullptr, ShaderStage::Vertex | ShaderStage::Fragment); 
+        }
+
         SetViewport(state.ViewportState);
         SetScissor(state.Scissor);
     }
@@ -461,6 +473,46 @@ namespace Nano::Graphics::Internal
         VkPipelineStageFlags2 firstStage = GetFirstPipelineStage(waitStage);
         if (GetFirstPipelineStage(firstStage) < GetFirstPipelineStage(m_WaitStage))
             m_WaitStage = firstStage;
+    }
+
+    void VulkanCommandList::BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, ShaderStage stages) const
+    {
+        // Note: This corresponds to SetID               Sets
+        std::vector<std::pair<uint32_t, std::vector<VkDescriptorSet>>> descriptorSetsSet;
+        descriptorSetsSet.emplace_back().second.reserve(sets.size());
+
+        // Runtime validation
+        {
+            for (size_t i = 0; i < sets.size(); i++)
+            {
+                if (sets[i] == nullptr)
+                    continue;
+
+                // If SetID doesn't match create a new starting point with current SetID
+                if (descriptorSetsSet.back().first != i)
+                    descriptorSetsSet.emplace_back(static_cast<uint32_t>(i), std::vector<VkDescriptorSet>()).second.reserve(sets.size());
+
+                // Add descriptor
+                VulkanBindingSet& vulkanSet = *reinterpret_cast<VulkanBindingSet*>(sets[i]);
+                descriptorSetsSet.back().second.push_back(vulkanSet.GetVkDescriptorSet());
+            }
+        }
+
+        // Binding
+        for (const auto& [setID, descriptors] : descriptorSetsSet)
+        {
+            VkBindDescriptorSetsInfo bindInfo = {};
+            bindInfo.sType = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO;
+            bindInfo.stageFlags = ShaderStageToVkShaderStageFlags(stages);
+            bindInfo.layout = layout;
+            bindInfo.firstSet = setID;
+            bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptors.size());
+            bindInfo.pDescriptorSets = descriptors.data();
+            bindInfo.dynamicOffsetCount = 0;
+            bindInfo.pDynamicOffsets = nullptr;
+
+            vkCmdBindDescriptorSets2(m_CommandBuffer, &bindInfo);
+        }
     }
 
 }

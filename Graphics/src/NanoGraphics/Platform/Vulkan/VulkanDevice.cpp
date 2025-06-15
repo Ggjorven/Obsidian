@@ -5,6 +5,7 @@
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Renderer/Device.hpp"
+#include "NanoGraphics/Renderer/Bindings.hpp"
 #include "NanoGraphics/Renderer/Swapchain.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"
 #include "NanoGraphics/Renderer/Buffer.hpp"
@@ -13,6 +14,7 @@
 #include "NanoGraphics/Renderer/Shader.hpp"
 #include "NanoGraphics/Renderer/Pipeline.hpp"
 
+#include "NanoGraphics/Platform/Vulkan/VulkanBindings.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanSwapchain.hpp"
@@ -23,6 +25,7 @@
 namespace Nano::Graphics::Internal
 {
 
+    static_assert(std::is_same_v<BindingLayout::Type, VulkanBindingLayout>, "Current BindingLayout::Type is not VulkanBindingLayout and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<StagingImage::Type, VulkanStagingImage>, "Current StagingImage::Type is not VulkanStagingImage and Vulkan source code is being compiled.");
@@ -185,6 +188,30 @@ namespace Nano::Graphics::Internal
     void VulkanDevice::DestroyInputLayout(InputLayout& layout) const
     {
         (void)layout;
+    }
+
+    void VulkanDevice::DestroyBindingLayout(BindingLayout& layout) const
+    {
+        VulkanBindingLayout& vulkanPool = *reinterpret_cast<VulkanBindingLayout*>(&layout);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkDescriptorSetLayout vkLayout = vulkanPool.GetVkDescriptorSetLayout();
+        m_Context.Destroy([device, vkLayout]() mutable
+        {
+            vkDestroyDescriptorSetLayout(device, vkLayout, VulkanAllocator::GetCallbacks());
+        });
+    }
+
+    void VulkanDevice::FreeBindingSetPool(BindingSetPool& pool) const
+    {
+        VulkanBindingSetPool& vulkanPool = *reinterpret_cast<VulkanBindingSetPool*>(&pool);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkDescriptorPool vkPool = vulkanPool.GetVkDescriptorPool();
+        m_Context.Destroy([device, vkPool]() mutable
+        {
+            vkDestroyDescriptorPool(device, vkPool, VulkanAllocator::GetCallbacks());
+        });
     }
 
     void VulkanDevice::DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const

@@ -3,6 +3,7 @@
 #include "NanoGraphics/Core/Logging.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/BindingsSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
@@ -373,11 +374,37 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // ResourceTypeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ResourceTypeMapping
+    {
+    public:
+        ResourceType Type;
+
+        VkDescriptorType VulkanDescriptorType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ResourceTypeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ResourceTypeMapping = std::to_array<ResourceTypeMapping>({
+        // ResourceType                         VulkanDescriptorType
+        { ResourceType::None,                   static_cast<VkDescriptorType>(0) },
+        { ResourceType::Image,                  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE },
+        { ResourceType::ImageUnordered,         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
+        { ResourceType::StorageBuffer,          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+        { ResourceType::StorageBufferUnordered, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
+        { ResourceType::UniformBuffer,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+        { ResourceType::Sampler,                VK_DESCRIPTOR_TYPE_SAMPLER },
+        { ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, // Note: Not really, but there is no PushConstants descriptor
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Conversion helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr VkPipelineStageFlags2 ResourceStateToFirstVkPipelineStage(ResourceState state)
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].StageFlags;
+        return g_ResourceStateMapping[static_cast<size_t>((std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0))].StageFlags;
     }
 
     inline constexpr VkPipelineStageFlags2 ResourceStateToVkPipelineStage(ResourceState state)
@@ -387,10 +414,10 @@ namespace Nano::Graphics::Internal
 
         while (value) 
         {
-            int index = (std::countr_zero(value) + 1);
+            int index = std::countr_zero(value);
             value &= ~(1u << index); // clear bit
 
-            result |= g_ResourceStateMapping[index].StageFlags;
+            result |= g_ResourceStateMapping[static_cast<size_t>(index) + 1].StageFlags;
         }
 
         return result;
@@ -398,7 +425,7 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkAccessFlags2 ResourceStateToFirstVkAccessMask(ResourceState state)
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].AccessMask;
+        return g_ResourceStateMapping[static_cast<size_t>((std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0))].AccessMask;
     }
 
     inline constexpr VkAccessFlags2 ResourceStateToVkAccessMask(ResourceState state)
@@ -408,10 +435,10 @@ namespace Nano::Graphics::Internal
 
         while (value)
         {
-            int index = (std::countr_zero(value) + 1);
+            int index = std::countr_zero(value);
             value &= ~(1u << index); // clear bit
 
-            result |= g_ResourceStateMapping[index].AccessMask;
+            result |= g_ResourceStateMapping[static_cast<size_t>(index) + 1].AccessMask;
         }
 
         return result;
@@ -419,10 +446,10 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkImageLayout ResourceStateToImageLayout(ResourceState state) // Note: We take the first image layout?
     {
-        return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)].ImageLayout;
+        return g_ResourceStateMapping[static_cast<size_t>((std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0))].ImageLayout;
     }
 
-    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[(std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0)]; }
+    inline constexpr const ResourceStateMapping& ResourceStateToMapping(ResourceState state) { return g_ResourceStateMapping[static_cast<size_t>((std::to_underlying(state) ? (std::countr_zero(std::to_underlying(state)) + 1) : 0))]; }
 
     inline constexpr VkImageType ImageDimensionToVkImageType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageType; }
     inline constexpr VkImageViewType ImageDimensionToVkImageViewType(ImageDimension dimension) { return g_ImageDimensionMappings[static_cast<size_t>(dimension)].VulkanImageViewType; }
@@ -540,10 +567,10 @@ namespace Nano::Graphics::Internal
 
         while (value)
         {
-            int index = (std::countr_zero(value) + 1);
+            int index = std::countr_zero(value);
             value &= ~(1u << index); // clear bit
 
-            result |= g_ShaderStageMapping[index].VulkanStage;
+            result |= g_ShaderStageMapping[static_cast<size_t>(index) + 1].VulkanStage;
         }
 
         return result;
@@ -552,6 +579,8 @@ namespace Nano::Graphics::Internal
     inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
     inline constexpr VkPrimitiveTopology PrimitiveTypeToVkPrimitiveTopology(PrimitiveType type) { return g_PrimitiveTypeMapping[static_cast<size_t>(type)].VulkanPrimitiveType; }
 
+    inline constexpr VkDescriptorType ResourceTypeToVkDescriptorType(ResourceType type) { return g_ResourceTypeMapping[static_cast<size_t>(type)].VulkanDescriptorType; }
+    
     inline constexpr VkImageUsageFlags ImageSpecificationToVkImageUsageFlags(const ImageSpecification& specs)
     {
         VkImageUsageFlags ret = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -691,5 +720,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
     ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
+
+    uint32_t ResourceTypeToRegisterOffset(const VulkanBindingOffsets& bindingOffsets, ResourceType type);
 
 }

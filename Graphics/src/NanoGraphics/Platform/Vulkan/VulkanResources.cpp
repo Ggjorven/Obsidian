@@ -78,4 +78,33 @@ namespace Nano::Graphics::Internal
         return ret;
     }
 
+    uint32_t ResourceTypeToRegisterOffset(const VulkanBindingOffsets& bindingOffsets, ResourceType type)
+    {
+        switch (type)
+        {
+        case ResourceType::Image:
+        case ResourceType::StorageBuffer:
+        //case ResourceType::RayTracingAccelStruct:
+            return bindingOffsets.ShaderResource;
+
+        case ResourceType::ImageUnordered:
+        case ResourceType::StorageBufferUnordered:
+            return bindingOffsets.UnorderedAccess;
+
+        case ResourceType::UniformBuffer:
+        case ResourceType::PushConstants:
+            return bindingOffsets.UniformBuffer;
+            break;
+
+        case ResourceType::Sampler:
+            return bindingOffsets.Sampler;
+
+        default:
+            break;
+        }
+
+        NG_UNREACHABLE();
+        return 0;
+    }
+
 }

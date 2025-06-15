@@ -31,11 +31,7 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const GraphicsPipelineSpecification& GetSpecification() const { return m_Specification; }
 
-        // Internal getters
-        //inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
-
     private:
-        //const VulkanDevice& m_Device;
         GraphicsPipelineSpecification m_Specification;
     };
 

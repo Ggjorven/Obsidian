@@ -1,11 +1,14 @@
 #pragma once
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/ShaderSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
+
+#include <array>
 
 namespace Nano::Graphics
 {
@@ -100,6 +103,8 @@ namespace Nano::Graphics::Internal
 	private:
 		// Private methods
 		void SetWaitStage(VkPipelineStageFlags2 waitStage);
+
+		void BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, ShaderStage stages) const;
 
 	private:
 		VulkanCommandListPool& m_Pool;
