@@ -190,7 +190,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Utils
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanAllocator::MapMemory(VmaAllocation& allocation, void*& mapData) const
+    void VulkanAllocator::MapMemory(VmaAllocation allocation, void*& mapData) const
     {
         NG_PROFILE("VkAllocator::MapMemory()");
 
@@ -200,7 +200,7 @@ namespace Nano::Graphics::Internal
         vmaMapMemory(m_Allocator, allocation, &mapData);
     }
 
-    void VulkanAllocator::UnMapMemory(VmaAllocation& allocation) const
+    void VulkanAllocator::UnmapMemory(VmaAllocation allocation) const
     {
         NG_PROFILE("VkAllocator::MapMemory()");
 
@@ -210,7 +210,7 @@ namespace Nano::Graphics::Internal
         vmaUnmapMemory(m_Allocator, allocation);
     }
 
-    void VulkanAllocator::SetData(VmaAllocation& allocation, void* data, size_t size) const
+    void VulkanAllocator::SetData(VmaAllocation allocation, void* data, size_t size) const
     {
         NG_PROFILE("VkAllocator::SetData()");
 
@@ -222,7 +222,7 @@ namespace Nano::Graphics::Internal
 
         VulkanAllocator::MapMemory(allocation, mappedData);
         VulkanAllocator::SetMappedData(mappedData, data, size);
-        VulkanAllocator::UnMapMemory(allocation);
+        VulkanAllocator::UnmapMemory(allocation);
     }
 
     void VulkanAllocator::SetMappedData(void* mappedData, void* data, size_t size) const

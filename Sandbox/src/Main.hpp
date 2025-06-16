@@ -19,18 +19,19 @@ layout(location = 1) in vec2 a_TexCoord;
 layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec2 v_TexCoord;
 
-layout(std140, set = 0, binding = 0) uniform CameraSettings
-{
-    mat4 View;
-    mat4 Projection;
-} u_Camera;
+//layout(std140, set = 0, binding = 0) uniform CameraSettings
+//{
+//    mat4 View;
+//    mat4 Projection;
+//} u_Camera;
 
 void main()
 {
     v_Position = a_Position;
     v_TexCoord = a_TexCoord;
 
-    gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
+    //gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
+    gl_Position = vec4(a_Position, 1.0);
 }
 )";
 
@@ -42,13 +43,14 @@ layout(location = 0) out vec4 o_Colour;
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
-layout (set = 0, binding = 1) uniform texture2D u_Texture;
-layout (set = 0, binding = 2) uniform sampler u_Sampler;
+//layout (set = 0, binding = 1) uniform texture2D u_Texture;
+//layout (set = 0, binding = 2) uniform sampler u_Sampler;
 
 void main()
 {
 	// Combine texture and sampler
-    o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
+    //o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
+	o_Colour = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )";
 
@@ -194,6 +196,7 @@ int Main(int argc, char* argv[])
 			.SetRegisterSpace(0)
 			.SetRegisterSpaceIsDescriptorSet(true)
 
+			/*
 			// Vertex
 			.AddItem(BindingLayoutItem()
 				.SetSlot(0)
@@ -215,6 +218,7 @@ int Main(int argc, char* argv[])
 				.SetType(ResourceType::Sampler)
 				.SetDebugName("u_Sampler")
 			)
+			*/
 
 			.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
 		);
@@ -266,24 +270,46 @@ int Main(int argc, char* argv[])
 		);
 		initCommand.Open();
 
+		Buffer stagingBuffer = device.CreateBuffer(BufferSpecification()
+			.SetSize(std::max(sizeof(g_VertexData), sizeof(g_IndexData)))
+			.SetCPUAccess(CpuAccessMode::Write)
+		);
+		initCommand.StartTracking(stagingBuffer, ResourceState::Unknown);
+
+		void* memory;
+		device.MapBuffer(stagingBuffer, memory);
+
 		Buffer vertexBuffer = device.CreateBuffer(BufferSpecification()
 			.SetSize(sizeof(g_VertexData))
 			.SetIsVertexBuffer(true)
 			.SetDebugName("Vertexbuffer")
 		);
+		initCommand.StartTracking(vertexBuffer, ResourceState::VertexBuffer);
+		std::memcpy(memory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexShader));
+		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData));
 
 		Buffer indexBuffer = device.CreateBuffer(BufferSpecification()
 			.SetSize(sizeof(g_IndexData))
-			.SetIsVertexBuffer(true)
+			.SetFormat(Format::R32UInt)
+			.SetIsIndexBuffer(true)
 			.SetDebugName("Indexbuffer")
 		);
+		initCommand.StartTracking(indexBuffer, ResourceState::IndexBuffer);
+		std::memcpy(memory, static_cast<const void*>(g_IndexData.data()), sizeof(g_IndexData));
+		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData));
 
-		//Image image = device.CreateImage(ImageSpecification()
-		//	.SetWidthAndHeight(1, 1)
-		//);
+		// TODO: Image & Sampler
+
+		device.UnmapBuffer(stagingBuffer);
 
 		initCommand.Close();
 		initCommand.Submit(CommandListSubmitArgs().SetQueue(CommandQueue::Graphics));
+
+		initCommand.WaitTillComplete();
+
+		device.DestroyBuffer(stagingBuffer);
+
+		// Tracking init
 
 		// Main Loop
 		while (window.IsOpen())
@@ -313,7 +339,13 @@ int Main(int argc, char* argv[])
 					list.SetGraphicsState(state);
 
 					// Rendering
-					// ...
+					list.BindVertexBuffer(vertexBuffer);
+					list.BindIndexBuffer(indexBuffer);
+
+					list.DrawIndexed(DrawArguments()
+						.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
+						.SetInstanceCount(1)
+					);
 				}
 				list.Close();
 

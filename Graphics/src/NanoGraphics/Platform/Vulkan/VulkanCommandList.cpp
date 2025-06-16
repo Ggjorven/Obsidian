@@ -237,6 +237,20 @@ namespace Nano::Graphics::Internal
         VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
     }
 
+    void VulkanCommandList::WaitTillComplete() const
+    {
+        VkSemaphore semaphore = m_Pool.GetVulkanSwapchain().GetVkTimelineSemaphore();
+        uint64_t value = m_Pool.GetVulkanSwapchain().GetPreviousCommandListWaitValue(*this);
+
+        VkSemaphoreWaitInfo waitInfo = {};
+        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        waitInfo.semaphoreCount = 1;
+        waitInfo.pSemaphores = &semaphore;
+        waitInfo.pValues = &value;
+
+        vkWaitSemaphores(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &waitInfo, std::numeric_limits<uint64_t>::max());
+    }
+
     void VulkanCommandList::CommitBarriers()
     {
         m_StateTracker.CommitBarriers(m_CommandBuffer);
@@ -338,6 +352,27 @@ namespace Nano::Graphics::Internal
         vkScissor.offset = { scissor.MinX, scissor.MinY };
         vkScissor.extent = { static_cast<uint32_t>(scissor.GetWidth()), static_cast<uint32_t>(scissor.GetHeight()) };
         vkCmdSetScissor(m_CommandBuffer, 0, 1, &vkScissor);
+    }
+
+    void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const
+    {
+        NG_ASSERT((buffer.GetSpecification().IsVertexBuffer), "[VkCommandList] To bind a buffer as a vertex buffer it must have been created with IsVertexBuffer equal to true.");
+        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+
+        VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
+        VkDeviceSize vkOffsets = 0;
+        
+        vkCmdBindVertexBuffers(m_CommandBuffer, 0, 1, &vkBuffer, &vkOffsets);
+    }
+
+    void VulkanCommandList::BindIndexBuffer(const Buffer& buffer) const
+    {
+        NG_ASSERT((buffer.GetSpecification().IsIndexBuffer), "[VkCommandList] To bind a buffer as an index buffer it must have been created with IsIndexBuffer equal to true.");
+        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+
+        VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
+
+        vkCmdBindIndexBuffer(m_CommandBuffer, vkBuffer, 0, ((vulkanBuffer.GetSpecification().BufferFormat == Format::R16UInt) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32));
     }
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
@@ -474,6 +509,14 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBuffer(m_CommandBuffer, srcVulkanBuffer.GetVkBuffer(), dstVulkanBuffer.GetVkBuffer(), 1, &copyRegion);
 
         // TODO: Reset back to permanent state
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Draw methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::DrawIndexed(const DrawArguments& args) const
+    {
+        vkCmdDrawIndexed(m_CommandBuffer, args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

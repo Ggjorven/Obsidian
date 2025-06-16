@@ -79,6 +79,8 @@ namespace Nano::Graphics::Internal
 
 		void Submit(const CommandListSubmitArgs& args) const;
 
+		void WaitTillComplete() const;
+
 		void CommitBarriers();
 
 		// Object methods
@@ -90,9 +92,15 @@ namespace Nano::Graphics::Internal
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
 
+		void BindVertexBuffer(const Buffer& buffer) const;
+		void BindIndexBuffer(const Buffer& buffer) const;
+
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice);
 		void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset);
+
+		// Draw methods
+		void DrawIndexed(const DrawArguments& args) const;
 
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }

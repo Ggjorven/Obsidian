@@ -93,6 +93,26 @@ namespace Nano::Graphics
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // DrawArguments
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct DrawArguments
+    {
+    public:
+        uint32_t VertexCount = 0;
+        uint32_t InstanceCount = 1;
+        uint32_t StartIndexLocation = 0;
+        uint32_t StartVertexLocation = 0;
+        uint32_t StartInstanceLocation = 0;
+
+    public:
+        inline constexpr DrawArguments& SetVertexCount(uint32_t count) { VertexCount = count; return *this; }
+        inline constexpr DrawArguments& SetInstanceCount(uint32_t count) { InstanceCount = count; return *this; }
+        inline constexpr DrawArguments& SetStartIndexLocation(uint32_t location) { StartIndexLocation = location; return *this; }
+        inline constexpr DrawArguments& SetStartVertexLocation(uint32_t location) { StartVertexLocation = location; return *this; }
+        inline constexpr DrawArguments& SetStartInstanceLocation(uint32_t location) { StartInstanceLocation = location; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // GraphicsState
     ////////////////////////////////////////////////////////////////////////////////////
     struct GraphicsState

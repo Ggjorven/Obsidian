@@ -56,6 +56,32 @@ namespace Nano::Graphics::Internal
         m_Context.GetVulkanLogicalDevice().Wait();
     }
 
+    void VulkanDevice::MapBuffer(const Buffer& buffer, void*& memory) const
+    {
+        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        NG_ASSERT(static_cast<bool>(buffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
+        m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
+    }
+
+    void VulkanDevice::UnmapBuffer(const Buffer& buffer) const
+    {
+        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
+    }
+
+    void VulkanDevice::MapStagingImage(const StagingImage& image, void*& memory) const
+    {
+        const VulkanBuffer& vulkanBuffer = reinterpret_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
+        NG_ASSERT(static_cast<bool>(vulkanBuffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
+        m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
+    }
+
+    void VulkanDevice::UnmapStagingImage(const StagingImage& image) const
+    {
+        const VulkanBuffer& vulkanBuffer = reinterpret_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
+        m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
     // Destruction methods
     ////////////////////////////////////////////////////////////////////////////////////

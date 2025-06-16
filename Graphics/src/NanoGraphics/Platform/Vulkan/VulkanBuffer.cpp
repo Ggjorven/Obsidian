@@ -119,9 +119,14 @@ namespace Nano::Graphics::Internal
         // Validation checks
         if constexpr (VulkanContext::Validation)
         {
+            if (m_Specification.IsIndexBuffer)
+            {
+                NG_ASSERT(((m_Specification.BufferFormat == Format::R16UInt) || (m_Specification.BufferFormat == Format::R32UInt)), "[VkBuffer] An indexbuffer must have format R16UInt or R32UInt.");
+            }
+
             if (m_Specification.KeepResourceState && m_Specification.State == ResourceState::Unknown)
             {
-                vulkanDevice.GetContext().Error("[VulkanBuffer] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
+                vulkanDevice.GetContext().Error("[VkBuffer] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
             }
         }
 

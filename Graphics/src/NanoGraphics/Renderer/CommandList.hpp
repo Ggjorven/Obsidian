@@ -14,6 +14,7 @@ namespace Nano::Graphics
 
     class Swapchain;
     class Image;
+    class Buffer;
     class CommandListPool;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -38,15 +39,28 @@ namespace Nano::Graphics
 
         inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList.Submit(args); }
 
+        inline void WaitTillComplete() const { m_CommandList.WaitTillComplete(); }
+
+        inline void CommitBarriers() { m_CommandList.CommitBarriers(); }
+
         // Object methods
+        inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { m_CommandList.StartTracking(image, subresources, currentState); }
+        inline void StartTracking(const Buffer& buffer, ResourceState currentState) { m_CommandList.StartTracking(buffer, currentState); }
+
         inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
 
         inline void SetViewport(const Viewport& viewport) const { m_CommandList.SetViewport(viewport); }
         inline void SetScissor(const ScissorRect& scissor) const { m_CommandList.SetScissor(scissor); }
 
+        inline void BindVertexBuffer(const Buffer& buffer) const { m_CommandList.BindVertexBuffer(buffer); }
+        inline void BindIndexBuffer(const Buffer& buffer) const { m_CommandList.BindIndexBuffer(buffer); }
+
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { m_CommandList.CopyImage(dst, dstSlice, src, srcSlice); }
         inline void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_CommandList.CopyBuffer(dst, src, size, srcOffset, dstOffset); }
+
+        // Draw methods
+        inline void DrawIndexed(const DrawArguments& args) const { m_CommandList.DrawIndexed(args); }
 
     private:
         // Constructor

@@ -41,6 +41,11 @@ namespace Nano::Graphics::Internal
         // Methods
         void Wait() const;
 
+        void MapBuffer(const Buffer& buffer, void*& memory) const;
+        void UnmapBuffer(const Buffer& buffer) const;
+        void MapStagingImage(const StagingImage& image, void*& memory) const;
+        void UnmapStagingImage(const StagingImage& image) const;
+
         // Destruction methods
         void DestroySwapchain(Swapchain& swapchain) const;
 

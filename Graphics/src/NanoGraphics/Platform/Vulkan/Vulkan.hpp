@@ -72,9 +72,9 @@ namespace Nano::Graphics::Internal
         void DestroyImage(VkImage image, VmaAllocation allocation) const;
 
         // Utils
-        void MapMemory(VmaAllocation& allocation, void*& mapData) const;
-        void UnMapMemory(VmaAllocation& allocation) const;
-        void SetData(VmaAllocation& allocation, void* data, size_t size) const;
+        void MapMemory(VmaAllocation allocation, void*& mapData) const;
+        void UnmapMemory(VmaAllocation allocation) const;
+        void SetData(VmaAllocation allocation, void* data, size_t size) const;
         void SetMappedData(void* mappedData, void* data, size_t size) const;
 
         // Getters

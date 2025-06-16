@@ -39,6 +39,11 @@ namespace Nano::Graphics
         // Methods 
         inline void Wait() const { m_Device.Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
 
+        inline void MapBuffer(const Buffer& buffer, void*& memory) const { return m_Device.MapBuffer(buffer, memory); }
+        inline void UnmapBuffer(const Buffer& buffer) const { return m_Device.UnmapBuffer(buffer); }
+        inline void MapStagingImage(const StagingImage& image, void*& memory) const { return m_Device.MapStagingImage(image, memory); }
+        inline void UnmapStagingImage(const StagingImage& image) const { return m_Device.UnmapStagingImage(image); }
+
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline Swapchain CreateSwapchain(const SwapchainSpecification& specs) const { return Swapchain(*this, specs); }
         inline void DestroySwapchain(Swapchain& swapchain) const { return m_Device.DestroySwapchain(swapchain); }
