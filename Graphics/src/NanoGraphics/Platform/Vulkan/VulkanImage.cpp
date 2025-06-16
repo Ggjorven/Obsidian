@@ -162,9 +162,12 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanStagingImage::VulkanStagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
         : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
-        .SetSize(GetBufferSize())
-        .SetCPUAccess(cpuAccessMode)
-        .SetDebugName(specs.DebugName)) // Note: The buffer is automatically a TransferSrc (& TransferDst), we don't need to set anything special
+            .SetSize(GetBufferSize())
+            .SetCPUAccess(cpuAccessMode)
+            .SetResourceState(specs.State)
+            .SetKeepResourceState(specs.KeepResourceState)
+            .SetDebugName(specs.DebugName)
+        ) // Note: The buffer is automatically a TransferSrc (& TransferDst), we don't need to set anything special
     {
     }
 

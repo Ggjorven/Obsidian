@@ -264,6 +264,12 @@ namespace Nano::Graphics::Internal
         m_StateTracker.StartTracking(image, subresources, currentState);
     }
 
+    void VulkanCommandList::StartTracking(const StagingImage& image, ResourceState currentState)
+    {
+        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
+        m_StateTracker.StartTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
+    }
+
     void VulkanCommandList::StartTracking(const Buffer& buffer, ResourceState currentState)
     {
         m_StateTracker.StartTracking(buffer, currentState);
@@ -401,6 +407,10 @@ namespace Nano::Graphics::Internal
             resDstSlice.ImageArraySlice, 1
         );
 
+        // Enforce permanent state
+        ResolvePermanentState(src, srcSubresource);
+        ResolvePermanentState(dst, dstSubresource);
+
         VkFormat dstFormat = FormatToVkFormat(dst.GetSpecification().ImageFormat);
         VkImageAspectFlags dstAspectFlags = GuessSubresourceImageAspectFlags(dstFormat, ImageSubresourceViewType::AllAspects);
 
@@ -442,7 +452,10 @@ namespace Nano::Graphics::Internal
 
         vkCmdCopyImage2(m_CommandBuffer, &copyInfo);
 
-        // TODO: Reset back to permanent state
+        // Update back to permanent state
+        ResolvePermanentState(src, srcSubresource);
+        ResolvePermanentState(dst, dstSubresource);
+        CommitBarriers();
     }
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice)
@@ -460,6 +473,10 @@ namespace Nano::Graphics::Internal
             resDstSlice.ImageMipLevel, 1,
             resDstSlice.ImageArraySlice, 1
         );
+
+        // Enforce permanent state
+        ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        ResolvePermanentState(dst, dstSubresource);
 
         VkBufferImageCopy2 copyInfo = {};
         copyInfo.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
@@ -489,11 +506,18 @@ namespace Nano::Graphics::Internal
 
         vkCmdCopyBufferToImage2(m_CommandBuffer, &copyBufferToImageInfo);
 
-        // TODO: Reset back to permanent state
+        // Update back to permanent state
+        ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        ResolvePermanentState(dst, dstSubresource);
+        CommitBarriers();
     }
 
     void VulkanCommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
     {
+        // Enforce permanent state
+        ResolvePermanentState(src);
+        ResolvePermanentState(dst);
+
         VulkanBuffer& dstVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&src);
 
@@ -508,7 +532,10 @@ namespace Nano::Graphics::Internal
 
         vkCmdCopyBuffer(m_CommandBuffer, srcVulkanBuffer.GetVkBuffer(), dstVulkanBuffer.GetVkBuffer(), 1, &copyRegion);
 
-        // TODO: Reset back to permanent state
+        // Update back to permanent state
+        ResolvePermanentState(src);
+        ResolvePermanentState(dst);
+        CommitBarriers();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 
@@ -15,6 +16,9 @@
 namespace Nano::Graphics
 {
     class Device;
+    class Image;
+    class Sampler;
+    class Buffer;
     class BindingSetPool;
 }
 
@@ -73,10 +77,22 @@ namespace Nano::Graphics::Internal
         VulkanBindingSet(BindingSetPool& pool);
         ~VulkanBindingSet();
 
+        // Methods
+        void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
+        void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
+        void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
+
+        void UploadList(std::span<const BindingSetUploadable> uploadables);
+
         // Internal getters
         inline VkDescriptorSet GetVkDescriptorSet() const { return m_DescriptorSet; }
 
     private:
+        // Private methods
+        void UploadImage(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
+    
+    private:
+        const VulkanDevice& m_Device;
         VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
     };
 
@@ -94,6 +110,8 @@ namespace Nano::Graphics::Internal
         VkDescriptorSet CreateDescriptorSet();
 
         // Internal getters
+        inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
+
         inline VkDescriptorPool GetVkDescriptorPool() const { return m_DescriptorPool; }
 
     private:

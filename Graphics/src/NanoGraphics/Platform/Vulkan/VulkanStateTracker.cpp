@@ -276,5 +276,55 @@ namespace Nano::Graphics::Internal
         m_BufferBarriers.clear();
     }
 
+    void VulkanStateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource)
+    {
+        NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
+
+        if (!image.GetSpecification().KeepResourceState)
+            return;
+
+        ResourceState state = image.GetSpecification().State;
+        ResourceState currentState = GetResourceState(image, subresource);
+
+        if (state != currentState)
+            RequireImageState(image, subresource, state);
+    }
+
+    void VulkanStateTracker::ResolvePermanentState(Buffer& buffer)
+    {
+        NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        if (!buffer.GetSpecification().KeepResourceState)
+            return;
+
+        ResourceState state = buffer.GetSpecification().State;
+        ResourceState currentState = GetResourceState(buffer);
+
+        if (state != currentState)
+            RequireBufferState(buffer, state);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Getters
+    ////////////////////////////////////////////////////////////////////////////////////
+    ResourceState VulkanStateTracker::GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const
+    {
+        NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
+
+        const ImageSpecification& imageSpec = image.GetSpecification();
+        subresource = ResolveImageSubresouce(subresource, imageSpec, false);
+
+        if (subresource.IsEntireTexture(imageSpec))
+            return m_ImageStates.at(&image).State;
+        
+        return m_ImageStates.at(&image).SubresourceStates[ImageSubresourceSpecification::SubresourceIndex(subresource.BaseMipLevel, subresource.BaseArraySlice, imageSpec)];
+    }
+
+    ResourceState VulkanStateTracker::GetResourceState(const Buffer& buffer) const
+    {
+        NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        return m_BufferStates.at(&buffer).State;
+    }
 
 }

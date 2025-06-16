@@ -70,6 +70,8 @@ namespace Nano::Graphics::Internal
 
         VkBuffer m_Buffer = VK_NULL_HANDLE;
         VmaAllocation m_Allocation = VK_NULL_HANDLE;
+
+        // TODO: BufferViews like ImageViews
     };
 
 }

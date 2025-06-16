@@ -22,14 +22,14 @@ namespace Nano::Graphics::Internal
         NG_ASSERT((sliceSpec.ImageMipLevel < imageSpec.MipLevels), "[ImageSlicSpec] Slice miplevels are more than there are in the image.");
 
         // Note: We shift right because each mip makes it smaller
-        if (sliceSpec.Width == std::numeric_limits<uint32_t>::max())
+        if (sliceSpec.Width == ImageSliceSpecification::FullSize)
             ret.Width = std::max(imageSpec.Width >> sliceSpec.ImageMipLevel, 1u);
 
         // Note: We shift right because each mip makes it smaller
-        if (sliceSpec.Height == std::numeric_limits<uint32_t>::max())
+        if (sliceSpec.Height == ImageSliceSpecification::FullSize)
             ret.Height = std::max(imageSpec.Height >> sliceSpec.ImageMipLevel, 1u);
 
-        if (sliceSpec.Depth == std::numeric_limits<uint32_t>::max())
+        if (sliceSpec.Depth == ImageSliceSpecification::FullSize)
         {
             if (imageSpec.Dimension == ImageDimension::Image3D)
                 ret.Depth = std::max(imageSpec.Depth >> sliceSpec.ImageMipLevel, 1u);
@@ -74,6 +74,16 @@ namespace Nano::Graphics::Internal
             ret.NumArraySlices = 1;
             break;
         }
+
+        return ret;
+    }
+
+    BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs)
+    {
+        BufferRange ret(range);
+
+        if (range.Size == BufferRange::FullSize)
+            ret.Size = specs.Size;
 
         return ret;
     }

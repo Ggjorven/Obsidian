@@ -43,14 +43,14 @@ layout(location = 0) out vec4 o_Colour;
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
-//layout (set = 0, binding = 1) uniform texture2D u_Texture;
-//layout (set = 0, binding = 2) uniform sampler u_Sampler;
+layout (set = 0, binding = 1) uniform texture2D u_Texture;
+layout (set = 0, binding = 2) uniform sampler u_Sampler;
 
 void main()
 {
 	// Combine texture and sampler
-    //o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
-	o_Colour = vec4(1.0, 0.0, 0.0, 1.0);
+    o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
+	//o_Colour = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )";
 
@@ -206,6 +206,7 @@ int Main(int argc, char* argv[])
 			)
 
 			// Fragment
+			*/
 			.AddItem(BindingLayoutItem()
 				.SetSlot(1)
 				.SetVisibility(ShaderStage::Fragment)
@@ -218,7 +219,6 @@ int Main(int argc, char* argv[])
 				.SetType(ResourceType::Sampler)
 				.SetDebugName("u_Sampler")
 			)
-			*/
 
 			.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
 		);
@@ -264,7 +264,7 @@ int Main(int argc, char* argv[])
 			.AddBindingLayout(bindingLayoutSet0)
 		);
 
-		// Buffers
+		// Buffers & Image initialization
 		CommandList initCommand = pool.AllocateList(CommandListSpecification()
 			.SetDebugName("InitCommand")
 		);
@@ -276,8 +276,8 @@ int Main(int argc, char* argv[])
 		);
 		initCommand.StartTracking(stagingBuffer, ResourceState::Unknown);
 
-		void* memory;
-		device.MapBuffer(stagingBuffer, memory);
+		void* bufferMemory;
+		device.MapBuffer(stagingBuffer, bufferMemory);
 
 		Buffer vertexBuffer = device.CreateBuffer(BufferSpecification()
 			.SetSize(sizeof(g_VertexData))
@@ -285,7 +285,7 @@ int Main(int argc, char* argv[])
 			.SetDebugName("Vertexbuffer")
 		);
 		initCommand.StartTracking(vertexBuffer, ResourceState::Unknown);
-		std::memcpy(memory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
+		std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
 		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData), 0, 0);
 
 		Buffer indexBuffer = device.CreateBuffer(BufferSpecification()
@@ -295,11 +295,37 @@ int Main(int argc, char* argv[])
 			.SetDebugName("Indexbuffer")
 		);
 		initCommand.StartTracking(indexBuffer, ResourceState::Unknown);
-		std::memcpy(static_cast<uint8_t*>(memory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
+		std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
 		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData), 0);
 
-		// TODO: Image & Sampler
+		StagingImage stagingImage = device.CreateStagingImage(ImageSpecification()
+			.SetImageFormat(Format::RGBA8Unorm)
+			.SetImageDimension(ImageDimension::Image2D)
+			.SetWidthAndHeight(1, 1), 
+			CpuAccessMode::Write
+		);
+		initCommand.StartTracking(stagingImage, ResourceState::Unknown);
+		
+		void* imageMemory;
+		device.MapStagingImage(stagingImage, imageMemory);
 
+		Image image = device.CreateImage(ImageSpecification()
+			.SetImageFormat(Format::RGBA8Unorm)
+			.SetImageDimension(ImageDimension::Image2D)
+			.SetResourceState(ResourceState::ShaderResource)
+			.SetKeepResourceState(true)
+			.SetWidthAndHeight(1, 1)
+			.SetIsShaderResource(true)
+			.SetMipLevels(1)
+		);
+		initCommand.StartTracking(image, ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
+		uint32_t imageColour = 0xFF00FF00;
+		std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
+		initCommand.CopyImage(image, ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
+
+		Sampler sampler = device.CreateSampler(SamplerSpecification());
+
+		device.UnmapStagingImage(stagingImage);
 		device.UnmapBuffer(stagingBuffer);
 
 		initCommand.Close();
@@ -308,8 +334,14 @@ int Main(int argc, char* argv[])
 		initCommand.WaitTillComplete();
 
 		device.DestroyBuffer(stagingBuffer);
+		device.DestroyStagingImage(stagingImage);
 
-		// Tracking init
+		// Upload to bindingsets
+		for (auto& bindingSet : set0s)
+		{
+			bindingSet.Upload(image, ImageSubresourceSpecification(0, 1, 0, 1), ResourceType::Image, 1, 0);
+			bindingSet.Upload(sampler, ResourceType::Sampler, 2, 0);
+		}
 
 		// Main Loop
 		while (window.IsOpen())
@@ -357,6 +389,9 @@ int Main(int argc, char* argv[])
 			}
 			swapchain.Present();
 		}
+
+		device.DestroySampler(sampler);
+		device.DestroyImage(image);
 
 		device.DestroyBuffer(indexBuffer);
 		device.DestroyBuffer(vertexBuffer);

@@ -191,7 +191,7 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
         inline constexpr ImageSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
         inline constexpr ImageSpecification& SetMipLevels(uint32_t mipLevels) { MipLevels = mipLevels; return *this; }
-        inline ImageSpecification& SetMaxMipLevels() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
+        inline ImageSpecification& SetMipLevelsToMax() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
@@ -273,14 +273,16 @@ namespace Nano::Graphics
     struct ImageSliceSpecification
     {
     public:
+        // Note: std::numeric_limits<uint32_t>::max() is equal to the full image.
+        inline constexpr static uint32_t FullSize = std::numeric_limits<uint32_t>::max();
+    public:
         int32_t X = 0;
         int32_t Y = 0;
         int32_t Z = 0;
 
-        // Note: std::numeric_limits<uint32_t>::max() is equal to the full image.
-        uint32_t Width = std::numeric_limits<uint32_t>::max();
-        uint32_t Height = std::numeric_limits<uint32_t>::max();
-        uint32_t Depth = std::numeric_limits<uint32_t>::max();
+        uint32_t Width = FullSize;
+        uint32_t Height = FullSize;
+        uint32_t Depth = FullSize;
 
         MipLevel ImageMipLevel = 0;
         ArraySlice ImageArraySlice = 0;
@@ -448,6 +450,18 @@ namespace Nano::Graphics
         inline constexpr bool FormatHasDepth(Format format) { return g_FormatInfo[static_cast<size_t>(format)].HasDepth; }
         inline constexpr bool FormatHasStencil(Format format) { return g_FormatInfo[static_cast<size_t>(format)].HasStencil; }
         inline constexpr const FormatInfo& FormatToFormatInfo(Format format) { return g_FormatInfo[static_cast<size_t>(format)]; }
+        
+        inline constexpr ImageSubresourceViewType FormatToImageSubresourceViewType(Format format)
+        {
+            const FormatInfo& formatInfo = FormatToFormatInfo(format);
+
+            if (formatInfo.HasDepth)
+                return ImageSubresourceViewType::DepthOnly;
+            else if (formatInfo.HasStencil)
+                return ImageSubresourceViewType::StencilOnly;
+            
+            return ImageSubresourceViewType::AllAspects;
+        }
 
     }
 

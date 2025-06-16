@@ -45,6 +45,7 @@ namespace Nano::Graphics
 
         // Object methods
         inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { m_CommandList.StartTracking(image, subresources, currentState); }
+        inline void StartTracking(const StagingImage& image, ResourceState currentState) { m_CommandList.StartTracking(image, currentState); }
         inline void StartTracking(const Buffer& buffer, ResourceState currentState) { m_CommandList.StartTracking(buffer, currentState); }
 
         inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
@@ -61,6 +62,10 @@ namespace Nano::Graphics
 
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_CommandList.DrawIndexed(args); }
+
+        // Getters
+        inline ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const { return m_CommandList.GetResourceState(image, subresource); }
+        inline ResourceState GetResourceState(const Buffer& buffer) const { return m_CommandList.GetResourceState(buffer); }
 
     private:
         // Constructor

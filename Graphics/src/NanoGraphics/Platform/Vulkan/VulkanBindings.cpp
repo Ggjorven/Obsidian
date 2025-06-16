@@ -183,13 +183,98 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanBindingSet::VulkanBindingSet(BindingSetPool& pool)
-        : m_DescriptorSet(reinterpret_cast<VulkanBindingSetPool*>(&pool)->CreateDescriptorSet())
+        : m_Device(reinterpret_cast<VulkanBindingSetPool*>(&pool)->GetVulkanDevice()), m_DescriptorSet(reinterpret_cast<VulkanBindingSetPool*>(&pool)->CreateDescriptorSet())
     {
     }
 
     VulkanBindingSet::~VulkanBindingSet()
     {
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanBindingSet::Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
+    {
+        NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
+
+        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+
+        VkImageLayout imageLayout;
+        VkImageUsageFlags imageUsage;
+
+        // Note: Shader vs UnorderedAccess
+        if (resourceType == ResourceType::Image) // Shader
+        {
+            imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageUsage = VK_IMAGE_USAGE_SAMPLED_BIT;
+        }
+        else // UnorderedAccess
+        {
+            imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageUsage = VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+
+        VkDescriptorImageInfo imageInfo = {};
+        imageInfo.imageLayout = imageLayout;
+        imageInfo.imageView = vulkanImage.GetSubresourceView(resSubresources, image.GetSpecification().Dimension, image.GetSpecification().ImageFormat, imageUsage, FormatToImageSubresourceViewType(image.GetSpecification().ImageFormat)).GetVkImageView();
+        
+        VkWriteDescriptorSet descriptorWrite = {};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
+        
+        vkUpdateDescriptorSets(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBindingSet::Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
+    {
+        NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
+        
+        VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
+
+        VkDescriptorImageInfo imageInfo = {};
+        imageInfo.sampler = vulkanSampler.GetVkSampler();
+
+        VkWriteDescriptorSet descriptorWrite = {};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
+
+        vkUpdateDescriptorSets(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanBindingSet::Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
+    {
+        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
+
+        NG_ASSERT(false, "TODO");
+    }
+
+    void VulkanBindingSet::UploadList(std::span<const BindingSetUploadable> uploadables)
+    {
+        NG_ASSERT(false, "TODO");
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanBindingSet::UploadImage(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
+    {
+        NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
+        NG_ASSERT(false, "TODO");
+    }
+
+    // TODO: ...
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor

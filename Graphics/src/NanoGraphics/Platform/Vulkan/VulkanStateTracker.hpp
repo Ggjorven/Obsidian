@@ -67,11 +67,17 @@ namespace Nano::Graphics::Internal
 		
 		void CommitBarriers(VkCommandBuffer cmdBuf);
 
+		void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource);
+		void ResolvePermanentState(Buffer& buffer);
+
 		// Getters
 		inline bool Contains(const Image& image) const { return m_ImageStates.contains(&image); }
 		inline bool Contains(const Buffer& buffer) const { return m_BufferStates.contains(&buffer); }
 		inline VulkanImageState& GetState(const Image& image) { return m_ImageStates[&image]; }
 		inline VulkanBufferState& GetState(const Buffer& buffer) { return m_BufferStates[&buffer]; }
+
+		ResourceState GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const;
+		ResourceState GetResourceState(const Buffer& buffer) const;
 
 	private:
 		const VulkanDevice& m_Device;

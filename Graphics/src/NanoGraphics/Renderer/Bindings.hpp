@@ -3,6 +3,8 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/BufferSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanBindings.hpp"
 
@@ -12,6 +14,9 @@ namespace Nano::Graphics
 {
 
     class Device;
+    class Image;
+    class Sampler;
+    class Buffer;
     class BindingSetPool;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +60,14 @@ namespace Nano::Graphics
     public:
         // Destructor
         ~BindingSet() = default;
+
+        // Methods
+        inline void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(image, subresources, resourceType, slot, arrayIndex); }
+        inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(sampler, resourceType, slot, arrayIndex); }
+        inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(buffer, range, resourceType, slot, arrayIndex); }
+        
+        // TODO: Add initializer list?
+        inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet.UploadList(uploadables); }
 
     private:
         // Constructor

@@ -4,10 +4,29 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include <cstdint>
+#include <numeric>
+#include <limits>
 #include <string_view>
 
 namespace Nano::Graphics
 {
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Structs
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BufferRange
+    {
+    public:
+        inline constexpr static uint32_t FullSize = std::numeric_limits<uint32_t>::max();
+    public:
+        size_t Size = FullSize;
+        size_t Offset = 0;
+
+    public:
+        // Setters
+        inline constexpr BufferRange& SetSize(size_t size) { Size = size; return *this; }
+        inline constexpr BufferRange& SetOffset(size_t offset) { Offset = offset; return *this; }
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // VertexAttributeSpecification

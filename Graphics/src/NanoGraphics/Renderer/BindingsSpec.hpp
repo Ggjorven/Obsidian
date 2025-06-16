@@ -3,18 +3,25 @@
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/BufferSpec.hpp"
 #include "NanoGraphics/Renderer/ShaderSpec.hpp"
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 
 #include <Nano/Nano.hpp>
 
 #include <cstdint>
+#include <variant>
 #include <string_view>
 
 namespace Nano::Graphics
 {
 
     class BindingLayout;
+
+    class Image;
+    class Sampler;
+    class Buffer;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Flags
@@ -85,6 +92,28 @@ namespace Nano::Graphics
         inline constexpr VulkanBindingOffsets& SetSamplerOffset(uint32_t offset) { Sampler = offset; return *this; }
         inline constexpr VulkanBindingOffsets& SetConstantBufferOffset(uint32_t offset) { UniformBuffer = offset; return *this; }
         inline constexpr VulkanBindingOffsets& SetUnorderedAccessViewOffset(uint32_t offset) { UnorderedAccess = offset; return *this; }
+    };
+
+    struct BindingSetUploadable
+    {
+    public:
+        std::variant<Image*, Sampler*, Buffer*> Element = {};
+        std::variant<ImageSubresourceSpecification, BufferRange> Range = {};
+
+        ResourceType Type = ResourceType::None;
+        
+        uint32_t Slot = 0;
+        uint32_t ArrayIndex = 0;
+
+    public:
+        // Setters
+        inline BindingSetUploadable& SetElement(Image& image, const ImageSubresourceSpecification& subresources = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices)) { Element = &image; Range = subresources; return *this; }
+        inline BindingSetUploadable& SetElement(Sampler& sampler) { Element = &sampler; return *this; }
+        inline BindingSetUploadable& SetElement(Buffer& buffer, const BufferRange& range = BufferRange(BufferRange::FullSize, 0)) { Element = &buffer; Range = range; return *this; }
+
+        inline constexpr BindingSetUploadable& SetResourceType(ResourceType type) { Type = type; return *this; }
+        inline constexpr BindingSetUploadable& SetSlot(uint32_t slot) { Slot = slot; return *this; }
+        inline constexpr BindingSetUploadable& SetArrayIndex(uint32_t index) { ArrayIndex = index; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
