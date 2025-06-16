@@ -202,8 +202,7 @@ namespace Nano::Graphics::Internal
                 .SetImageFormat(colourFormat)
                 .SetWidthAndHeight(width, height)
                 .SetIsRenderTarget(true)
-                .SetResourceState(ResourceState::Present)
-                .SetKeepResourceState(true);
+                .SetPermanentState(ResourceState::Present);
 
             if (m_Images[i].IsConstructed())
             {

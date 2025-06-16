@@ -175,8 +175,7 @@ namespace Nano::Graphics
         bool IsUnorderedAccessed = false;
         bool IsRenderTarget = false;
 
-        ResourceState State = ResourceState::Unknown;
-        bool KeepResourceState = false; // Note: After executing commands will go back to set ResourceState ^
+        ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
         std::string_view DebugName = {};
 
@@ -184,27 +183,30 @@ namespace Nano::Graphics
         // Setters // TODO: Make MaxMipLevels constexpr
         inline constexpr ImageSpecification& SetImageFormat(Format format) { ImageFormat = format; return *this; }
         inline constexpr ImageSpecification& SetImageDimension(ImageDimension dimension) { Dimension = dimension; return *this; }
+        
         inline constexpr ImageSpecification& SetWidth(uint32_t width) { Width = width; return *this; }
         inline constexpr ImageSpecification& SetHeight(uint32_t height) { Height = height; return *this; }
         inline constexpr ImageSpecification& SetDepth(uint32_t depth) { Depth = depth; return *this; }
         inline constexpr ImageSpecification& SetWidthAndHeight(uint32_t width, uint32_t height) { Width = width; Height = height; return *this; }
         inline constexpr ImageSpecification& SetWidthAndHeightAndDepth(uint32_t width, uint32_t height, uint32_t depth) { Width = width; Height = height; Depth = depth; return *this; }
+        
         inline constexpr ImageSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
         inline constexpr ImageSpecification& SetMipLevels(uint32_t mipLevels) { MipLevels = mipLevels; return *this; }
         inline ImageSpecification& SetMipLevelsToMax() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
+        
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
-        inline constexpr ImageSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
-        inline constexpr ImageSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }
+        
+        inline constexpr ImageSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
+        
         inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
 
+        inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
+
         // Operators
-        inline constexpr bool operator == (const ImageSpecification& other) const 
-        { 
-            return ((ImageFormat == other.ImageFormat) && (Dimension == other.Dimension) && (Width == other.Width) && (Height == other.Height) && (Depth == other.Depth) && (ArraySize == other.ArraySize) && (MipLevels == other.MipLevels) && (SampleCount == other.SampleCount) && (IsShaderResource == other.IsShaderResource) && (IsUnorderedAccessed == other.IsUnorderedAccessed) && (IsRenderTarget == other.IsRenderTarget) && (State == other.State) && (KeepResourceState == other.KeepResourceState)); 
-        }
+        inline constexpr bool operator == (const ImageSpecification& other) const { return ((ImageFormat == other.ImageFormat) && (Dimension == other.Dimension) && (Width == other.Width) && (Height == other.Height) && (Depth == other.Depth) && (ArraySize == other.ArraySize) && (MipLevels == other.MipLevels) && (SampleCount == other.SampleCount) && (IsShaderResource == other.IsShaderResource) && (IsUnorderedAccessed == other.IsUnorderedAccessed) && (IsRenderTarget == other.IsRenderTarget) && (PermanentState == other.PermanentState)); }
         inline constexpr bool operator != (const ImageSpecification& other) const { return !(*this == other); }
     };
 

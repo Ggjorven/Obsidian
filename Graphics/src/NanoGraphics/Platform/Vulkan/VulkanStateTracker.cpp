@@ -281,10 +281,10 @@ namespace Nano::Graphics::Internal
         NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
         NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
 
-        if (!image.GetSpecification().KeepResourceState)
+        if (!image.GetSpecification().HasPermanentState())
             return;
 
-        ResourceState state = image.GetSpecification().State;
+        ResourceState state = image.GetSpecification().PermanentState;
         ResourceState currentState = GetResourceState(image, subresource);
 
         if (state != currentState)
@@ -294,10 +294,10 @@ namespace Nano::Graphics::Internal
     void VulkanStateTracker::ResolvePermanentState(Buffer& buffer)
     {
         NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
-        if (!buffer.GetSpecification().KeepResourceState)
+        if (!buffer.GetSpecification().HasPermanentState())
             return;
 
-        ResourceState state = buffer.GetSpecification().State;
+        ResourceState state = buffer.GetSpecification().PermanentState;
         ResourceState currentState = GetResourceState(buffer);
 
         if (state != currentState)

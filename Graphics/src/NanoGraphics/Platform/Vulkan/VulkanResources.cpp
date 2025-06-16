@@ -19,7 +19,7 @@ namespace Nano::Graphics::Internal
     {
         ImageSliceSpecification ret(sliceSpec);
 
-        NG_ASSERT((sliceSpec.ImageMipLevel < imageSpec.MipLevels), "[ImageSlicSpec] Slice miplevels are more than there are in the image.");
+        NG_ASSERT((sliceSpec.ImageMipLevel < imageSpec.MipLevels), "[ImageSliceSpec] Slice miplevels are more than there are in the image.");
 
         // Note: We shift right because each mip makes it smaller
         if (sliceSpec.Width == ImageSliceSpecification::FullSize)

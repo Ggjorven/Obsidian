@@ -408,8 +408,8 @@ namespace Nano::Graphics::Internal
         );
 
         // Enforce permanent state
-        ResolvePermanentState(src, srcSubresource);
-        ResolvePermanentState(dst, dstSubresource);
+        //ResolvePermanentState(src, srcSubresource);
+        //ResolvePermanentState(dst, dstSubresource);
 
         VkFormat dstFormat = FormatToVkFormat(dst.GetSpecification().ImageFormat);
         VkImageAspectFlags dstAspectFlags = GuessSubresourceImageAspectFlags(dstFormat, ImageSubresourceViewType::AllAspects);
@@ -475,8 +475,8 @@ namespace Nano::Graphics::Internal
         );
 
         // Enforce permanent state
-        ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
-        ResolvePermanentState(dst, dstSubresource);
+        //ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        //ResolvePermanentState(dst, dstSubresource);
 
         VkBufferImageCopy2 copyInfo = {};
         copyInfo.sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2;
@@ -515,8 +515,8 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
     {
         // Enforce permanent state
-        ResolvePermanentState(src);
-        ResolvePermanentState(dst);
+        //ResolvePermanentState(src);
+        //ResolvePermanentState(dst);
 
         VulkanBuffer& dstVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&src);

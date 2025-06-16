@@ -79,8 +79,7 @@ namespace Nano::Graphics
 
         bool IsUnorderedAccessed = false;
 
-        ResourceState State = ResourceState::Unknown;
-        bool KeepResourceState = false; // Note: After executing commands will go back to set ResourceState ^
+        ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
         CpuAccessMode CpuAccess = CpuAccessMode::None;
 
@@ -96,10 +95,12 @@ namespace Nano::Graphics
         inline constexpr BufferSpecification& SetIsUniformBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
 
         inline constexpr BufferSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
-        inline constexpr BufferSpecification& SetResourceState(ResourceState state) { State = state; return *this; }
-        inline constexpr BufferSpecification& SetKeepResourceState(bool enabled) { KeepResourceState = enabled; return *this; }
+        inline constexpr BufferSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
         inline constexpr BufferSpecification& SetCPUAccess(CpuAccessMode access) { CpuAccess = access; return *this; }
         inline constexpr BufferSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+
+        inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
+
     };
 
 }

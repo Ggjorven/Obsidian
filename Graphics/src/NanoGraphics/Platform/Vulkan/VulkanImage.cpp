@@ -40,10 +40,6 @@ namespace Nano::Graphics::Internal
         // Validation checks
         if constexpr (VulkanContext::Validation)
         {
-            if (m_Specification.KeepResourceState && m_Specification.State == ResourceState::Unknown)
-            {
-                m_Device.GetContext().Error("[VkImage] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
-            }
             if (!((specs.SampleCount >= 1) && (specs.SampleCount <= 64) && (specs.SampleCount & (specs.SampleCount - 1)) == 0))
             {
                 m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", specs.SampleCount));
@@ -164,8 +160,7 @@ namespace Nano::Graphics::Internal
         : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
             .SetSize(GetBufferSize())
             .SetCPUAccess(cpuAccessMode)
-            .SetResourceState(specs.State)
-            .SetKeepResourceState(specs.KeepResourceState)
+            .SetPermanentState(specs.PermanentState)
             .SetDebugName(specs.DebugName)
         ) // Note: The buffer is automatically a TransferSrc (& TransferDst), we don't need to set anything special
     {

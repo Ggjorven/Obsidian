@@ -15,6 +15,32 @@ namespace Nano::Graphics::Internal
 
     static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
 
+    namespace
+    {
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // ResourceTypeToLayoutsAndUsageMapping
+        ////////////////////////////////////////////////////////////////////////////////////
+        struct ResourceTypeToLayoutsAndUsageMapping
+        {
+        public:
+            ResourceType Type;
+
+            VkImageLayout VulkanImageLayout;
+            VkImageUsageFlags VulkanImageUsage;
+        };
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // ResourceTypeToLayoutsAndUsageMapping array
+        ////////////////////////////////////////////////////////////////////////////////////
+        inline constexpr static auto g_ResourceTypeToLayoutsAndUsageMapping = std::to_array<ResourceTypeToLayoutsAndUsageMapping>({
+            // ResourceType                 VulkanImageLayout                           VulkanImageUsage
+            { ResourceType::Image,          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,   VK_IMAGE_USAGE_SAMPLED_BIT },
+            { ResourceType::ImageUnordered, VK_IMAGE_LAYOUT_GENERAL,                    VK_IMAGE_USAGE_STORAGE_BIT },
+        });
+
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructors & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -201,20 +227,8 @@ namespace Nano::Graphics::Internal
         VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
         ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
 
-        VkImageLayout imageLayout;
-        VkImageUsageFlags imageUsage;
-
-        // Note: Shader vs UnorderedAccess
-        if (resourceType == ResourceType::Image) // Shader
-        {
-            imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageUsage = VK_IMAGE_USAGE_SAMPLED_BIT;
-        }
-        else // UnorderedAccess
-        {
-            imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-            imageUsage = VK_IMAGE_USAGE_STORAGE_BIT;
-        }
+        VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
+        VkImageUsageFlags imageUsage = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageUsage;
 
         VkDescriptorImageInfo imageInfo = {};
         imageInfo.imageLayout = imageLayout;
@@ -257,24 +271,124 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
 
-        NG_ASSERT(false, "TODO");
+        VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
+        BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
+
+        VkDescriptorBufferInfo bufferInfo = {};
+        bufferInfo.buffer = vulkanBuffer.GetVkBuffer();
+        bufferInfo.offset = resRange.Offset;
+        bufferInfo.range = resRange.Size;
+
+        VkWriteDescriptorSet descriptorWrite = {};
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(resourceType);
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+
+        vkUpdateDescriptorSets(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
     void VulkanBindingSet::UploadList(std::span<const BindingSetUploadable> uploadables)
     {
-        NG_ASSERT(false, "TODO");
+        std::vector<VkWriteDescriptorSet> writes;
+        writes.reserve(uploadables.size());
+        std::vector<VkDescriptorImageInfo> imageInfos;
+        imageInfos.reserve(uploadables.size());
+        std::vector<VkDescriptorBufferInfo> bufferInfos;
+        bufferInfos.reserve(uploadables.size());
+
+        for (const auto& uploadable : uploadables)
+        {
+            std::visit([&](auto&& obj)
+            {
+                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, Image*>)
+                {
+                    NG_ASSERT((std::holds_alternative<ImageSubresourceSpecification>(uploadable.Range)), "[VkBindingSet] Image passed in as uploadable, but no complimentary subresource passed in.");
+                    UploadImage(writes, imageInfos, *obj, std::get<ImageSubresourceSpecification>(uploadable.Range), uploadable.Type, uploadable.Slot, uploadable.ArrayIndex);
+                }
+                else if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, Sampler*>)
+                {
+                    UploadSampler(writes, imageInfos, *obj, uploadable.Type, uploadable.Slot, uploadable.ArrayIndex);
+                }   
+                else if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, Buffer*>)
+                {
+                    NG_ASSERT((std::holds_alternative<BufferRange>(uploadable.Range)), "[VkBindingSet] Buffer passed in as uploadable, but no complimentary bufferrange passed in.");
+                    UploadBuffer(writes, bufferInfos, *obj, std::get<BufferRange>(uploadable.Range), uploadable.Type, uploadable.Slot, uploadable.ArrayIndex);
+                }
+            }, uploadable.Element);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Private methods
+    // Private methods // Note: I am aware of the code duplications, but this is the fastest approach.
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanBindingSet::UploadImage(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
+    void VulkanBindingSet::UploadImage(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
         NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
-        NG_ASSERT(false, "TODO");
+    
+        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+
+        VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
+        VkImageUsageFlags imageUsage = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageUsage;
+
+        VkDescriptorImageInfo& imageInfo = imageInfos.emplace_back();
+        imageInfo.imageLayout = imageLayout;
+        imageInfo.imageView = vulkanImage.GetSubresourceView(resSubresources, image.GetSpecification().Dimension, image.GetSpecification().ImageFormat, imageUsage, FormatToImageSubresourceViewType(image.GetSpecification().ImageFormat)).GetVkImageView();
+
+        VkWriteDescriptorSet& descriptorWrite = writes.emplace_back();
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
     }
 
-    // TODO: ...
+    void VulkanBindingSet::UploadSampler(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
+    {
+        NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
+    
+        VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
+
+        VkDescriptorImageInfo& imageInfo = imageInfos.emplace_back();
+        imageInfo.sampler = vulkanSampler.GetVkSampler();
+
+        VkWriteDescriptorSet& descriptorWrite = writes.emplace_back();
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pImageInfo = &imageInfo;
+    }
+
+    void VulkanBindingSet::UploadBuffer(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorBufferInfo>& bufferInfos, Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
+    {
+        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
+    
+        VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
+        BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
+
+        VkDescriptorBufferInfo& bufferInfo = bufferInfos.emplace_back();
+        bufferInfo.buffer = vulkanBuffer.GetVkBuffer();
+        bufferInfo.offset = resRange.Offset;
+        bufferInfo.range = resRange.Size;
+
+        VkWriteDescriptorSet& descriptorWrite = writes.emplace_back();
+        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrite.dstSet = m_DescriptorSet;
+        descriptorWrite.dstBinding = slot;
+        descriptorWrite.dstArrayElement = arrayIndex;
+        descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(resourceType);
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.pBufferInfo = &bufferInfo;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
