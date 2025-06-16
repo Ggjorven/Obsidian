@@ -271,7 +271,7 @@ int Main(int argc, char* argv[])
 		initCommand.Open();
 
 		Buffer stagingBuffer = device.CreateBuffer(BufferSpecification()
-			.SetSize(std::max(sizeof(g_VertexData), sizeof(g_IndexData)))
+			.SetSize(sizeof(g_VertexData) + sizeof(g_IndexData)) // std::max(sizeof(g_VertexData), sizeof(g_IndexData))
 			.SetCPUAccess(CpuAccessMode::Write)
 		);
 		initCommand.StartTracking(stagingBuffer, ResourceState::Unknown);
@@ -284,9 +284,9 @@ int Main(int argc, char* argv[])
 			.SetIsVertexBuffer(true)
 			.SetDebugName("Vertexbuffer")
 		);
-		initCommand.StartTracking(vertexBuffer, ResourceState::VertexBuffer);
-		std::memcpy(memory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexShader));
-		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData));
+		initCommand.StartTracking(vertexBuffer, ResourceState::Unknown);
+		std::memcpy(memory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
+		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData), 0, 0);
 
 		Buffer indexBuffer = device.CreateBuffer(BufferSpecification()
 			.SetSize(sizeof(g_IndexData))
@@ -294,9 +294,9 @@ int Main(int argc, char* argv[])
 			.SetIsIndexBuffer(true)
 			.SetDebugName("Indexbuffer")
 		);
-		initCommand.StartTracking(indexBuffer, ResourceState::IndexBuffer);
-		std::memcpy(memory, static_cast<const void*>(g_IndexData.data()), sizeof(g_IndexData));
-		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData));
+		initCommand.StartTracking(indexBuffer, ResourceState::Unknown);
+		std::memcpy(static_cast<uint8_t*>(memory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
+		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData), 0);
 
 		// TODO: Image & Sampler
 
