@@ -22,7 +22,7 @@ namespace Nano::Graphics
     class Framebuffer;
     class Renderpass;
     class Shader;
-    class Pipeline;
+    class GraphicsPipeline;
 }
 
 namespace Nano::Graphics::Internal

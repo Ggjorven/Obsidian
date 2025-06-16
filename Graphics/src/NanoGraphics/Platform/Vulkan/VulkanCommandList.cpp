@@ -7,14 +7,18 @@
 #include "NanoGraphics/Renderer/Device.hpp"
 #include "NanoGraphics/Renderer/CommandList.hpp"
 #include "NanoGraphics/Renderer/Swapchain.hpp"
+#include "NanoGraphics/Renderer/Pipeline.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanPipeline.hpp"
 
 namespace Nano::Graphics::Internal
 {
 
     static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<GraphicsPipeline::Type, VulkanGraphicsPipeline>, "Current GraphicsPipeline::Type is not VulkanGraphicsPipeline and Vulkan source code is being compiled.");
+    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<CommandList::Type, VulkanCommandList>, "Current CommandList::Type is not VulkanCommandList and Vulkan source code is being compiled.");
     static_assert(std::is_same_v<CommandListPool::Type, VulkanCommandListPool>, "Current CommandListPool::Type is not VulkanImage and Vulkan source code is being compiled.");
 
@@ -142,6 +146,7 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("VulkanCommandList::Close()");
 
         // Renderpass
+        if (m_GraphicsState.Pass)
         {
             VkSubpassEndInfo endInfo = {};
             endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
@@ -254,7 +259,7 @@ namespace Nano::Graphics::Internal
     {
         m_GraphicsState = state;
 
-        //NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
+        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
         NG_ASSERT(m_GraphicsState.Pass, "[VkCommandList] No Renderpass passed in.");
 
         // Renderpass
@@ -290,16 +295,22 @@ namespace Nano::Graphics::Internal
             vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
         }
 
-        // TODO: Pipeline
+        VulkanGraphicsPipeline& vulkanPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(state.Pipeline);
+        // Pipeline
         {
-            // TODO: Add proper pipeline
-            //vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_NULL_HANDLE);
+            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
         }
 
         // BindingSets
         {
-            // TODO: Add proper pipeline layout
-            //BindDescriptorSets(state.BindingSets, nullptr, ShaderStage::Vertex | ShaderStage::Fragment); 
+            for (auto set : state.BindingSets) // Note: Only bind when there is a non-nullptr set
+            {
+                if (set != nullptr) [[likely]]
+                {
+                    BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Graphics/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
+                    break;
+                }
+            }
         }
 
         SetViewport(state.ViewportState);
@@ -475,7 +486,7 @@ namespace Nano::Graphics::Internal
             m_WaitStage = firstStage;
     }
 
-    void VulkanCommandList::BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, ShaderStage stages) const
+    void VulkanCommandList::BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindPoint/*, ShaderStage stages*/) const
     {
         // Note: This corresponds to SetID               Sets
         std::vector<std::pair<uint32_t, std::vector<VkDescriptorSet>>> descriptorSetsSet;
@@ -499,19 +510,22 @@ namespace Nano::Graphics::Internal
         }
 
         // Binding
-        for (const auto& [setID, descriptors] : descriptorSetsSet)
+        for (const auto& [setID, descriptorSets] : descriptorSetsSet)
         {
+            /*
             VkBindDescriptorSetsInfo bindInfo = {};
             bindInfo.sType = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO;
             bindInfo.stageFlags = ShaderStageToVkShaderStageFlags(stages);
             bindInfo.layout = layout;
             bindInfo.firstSet = setID;
-            bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptors.size());
-            bindInfo.pDescriptorSets = descriptors.data();
+            bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
+            bindInfo.pDescriptorSets = descriptorSets.data();
             bindInfo.dynamicOffsetCount = 0;
             bindInfo.pDynamicOffsets = nullptr;
 
             vkCmdBindDescriptorSets2(m_CommandBuffer, &bindInfo);
+            */
+            vkCmdBindDescriptorSets(m_CommandBuffer, PipelineBindpointToVkBindpoint(bindPoint), layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
         }
     }
 

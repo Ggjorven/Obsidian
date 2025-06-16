@@ -1,9 +1,18 @@
 #pragma once
 
+#include "NanoGraphics/Renderer/BindingsSpec.hpp"
+
+#include <Nano/Nano.hpp>
+
 #include <cstdint>
+#include <string_view>
 
 namespace Nano::Graphics
 {
+
+    class Shader;
+    class Renderpass;
+    class InputLayout;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Flags
@@ -21,12 +30,281 @@ namespace Nano::Graphics
         PatchList
     };
 
+    enum class BlendFactor : uint8_t
+    {
+        Zero = 0, One,
+        SrcColour, InvSrcColour,
+        SrcAlpha, InvSrcAlpha,
+        DstAlpha, InvDstAlpha,
+        DstColour, InvDstColour,
+        SrcAlphaSaturate, 
+        ConstantColour, InvConstantColour,
+        Src1Colour, InvSrc1Colour,
+        Src1Alpha, InvSrc1Alpha,
+
+        // Vulkan names
+        OneMinusSrcColour = InvSrcColour,
+        OneMinusSrcAlpha = InvSrcAlpha,
+        OneMinusDstAlpha = InvDstAlpha,
+        OneMinusDstColour = InvDstColour,
+        OneMinusConstantColour = InvConstantColour,
+        OneMinusSrc1Colour = InvSrc1Colour,
+        OneMinusSrc1Alpha = InvSrc1Alpha,
+    };
+
+    enum class BlendOperation : uint8_t
+    {
+        Add = 0,
+        Subtract, ReverseSubtract,
+        Min, Max
+    };
+
+    enum class ColourMask : uint8_t
+    {
+        None = 0,
+
+        Red = 1 << 0,
+        Green = 1 << 1,
+        Blue = 1 << 2,
+        Alpha = 1 << 3,
+
+        All = Red | Green | Blue | Alpha
+    };
+
+    NANO_DEFINE_BITWISE(ColourMask)
+
+    enum class RasterFillMode : uint8_t // Note: Corresponds to Vulkan's PolygonMode
+    {
+        Solid = 0,
+        Wireframe,
+
+        // Vulkan names
+        Fill = Solid,
+        Line = Wireframe
+    };
+
+    enum class RasterCullingMode : uint8_t
+    {
+        None = 0,
+        Back,
+        Front,
+    };
+
+    enum class StencilOperation : uint8_t
+    {
+        Keep = 0,
+        Zero,
+        Replace,
+        IncrementAndClamp, DecrementAndClamp,
+        Invert,
+        IncrementAndWrap, DecrementAndWrap
+    };
+
+    enum class ComparisonFunc : uint8_t
+    {
+        Never = 0,
+        Less,
+        Equal,
+        LessOrEqual,
+        Greater,
+        NotEqual,
+        GreaterOrEqual,
+        Always
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Structs
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BlendState
+    {
+    public:
+        struct RenderTarget
+        {
+        public:
+            bool BlendEnable = false;
+            BlendFactor SrcBlend = BlendFactor::One;
+            BlendFactor DstBlend = BlendFactor::Zero;
+            BlendOperation BlendOp = BlendOperation::Add;
+            BlendFactor SrcBlendAlpha = BlendFactor::One;
+            BlendFactor DstBlendAlpha = BlendFactor::Zero;
+            BlendOperation BlendOpAlpha = BlendOperation::Add;
+            ColourMask ColourWriteMask = ColourMask::All;
+
+        public:
+            // Setters
+            inline constexpr RenderTarget& SetBlendEnable(bool enabled) { BlendEnable = enabled; return *this; }
+            inline constexpr RenderTarget& SetSrcBlend(BlendFactor factor) { SrcBlend = factor; return *this; }
+            inline constexpr RenderTarget& SetDstBlend(BlendFactor factor) { DstBlend = factor; return *this; }
+            inline constexpr RenderTarget& SetBlendOperation(BlendOperation operation) { BlendOp = operation; return *this; }
+            inline constexpr RenderTarget& SetSrcBlendAlpha(BlendFactor factor) { SrcBlendAlpha = factor; return *this; }
+            inline constexpr RenderTarget& SetDstBlendAlpha(BlendFactor factor) { DstBlendAlpha = factor; return *this; }
+            inline constexpr RenderTarget& SetBlendOpAlpha(BlendOperation operation) { BlendOpAlpha = operation; return *this; }
+            inline constexpr RenderTarget& SetColourWriteMask(ColourMask mask) { ColourWriteMask = mask; return *this; }
+
+            // Methods
+            //inline constexpr bool UsesConstantColour() const { return ((SrcBlend == BlendFactor::ConstantColour) || (SrcBlend == BlendFactor::OneMinusConstantColour) || (DstBlend == BlendFactor::ConstantColour) || (DstBlend == BlendFactor::OneMinusConstantColour) || (SrcBlendAlpha == BlendFactor::ConstantColour) || (SrcBlendAlpha == BlendFactor::OneMinusConstantColour) || (DstBlendAlpha == BlendFactor::ConstantColour) || (DstBlendAlpha == BlendFactor::OneMinusConstantColour)); }
+
+            // Operators
+            //inline constexpr bool operator == (const RenderTarget& other) const { return ((BlendEnable == other.BlendEnable) && (SrcBlend == other.SrcBlend) && (DstBlend == other.DstBlend) && (BlendOp == other.BlendOp) && (SrcBlendAlpha == other.SrcBlendAlpha) && (DstBlendAlpha == other.DstBlendAlpha) && (BlendOpAlpha == other.BlendOpAlpha) && (ColourWriteMask == other.ColourWriteMask)); }
+            //inline constexpr bool operator != (const RenderTarget& other) const { return !(*this == other); }
+        };
+    public:
+        RenderTarget Target; // Note: At this moment we only support 1 Rendertarget
+        bool AlphaToCoverageEnable = false;
+
+    public:
+        // Setters
+        inline constexpr BlendState& SetRenderTarget(const RenderTarget& target) { Target = target; return *this; }
+        inline constexpr BlendState& SetAlphaToCoverageEnable(bool enabled) { AlphaToCoverageEnable = enabled; return *this; }
+
+        // Methods
+        //inline constexpr bool UsesConstantColour(uint32_t numTargets) const { return Target.UsesConstantColour(); }
+
+        // Operators
+        //inline constexpr bool operator == (const BlendState& other) const { return ((AlphaToCoverageEnable != other.AlphaToCoverageEnable) && (Target == other.Target)); }
+        //inline constexpr bool operator != (const BlendState& other) const { return !(*this == other); }
+    };
+
+    struct RasterState
+    {
+    public:
+        RasterFillMode FillMode = RasterFillMode::Solid;
+        RasterCullingMode CullingMode = RasterCullingMode::Back;
+
+        bool FrontCounterClockwise = false;
+        bool DepthClipEnable = false;
+        bool ScissorEnable = false;
+        bool MultisampleEnable = false;
+        bool AntialiasedLineEnable = false;
+        int DepthBias = 0;
+        float DepthBiasClamp = 0.f;
+        float SlopeScaledDepthBias = 0.f;
+
+        //uint8_t ForcedSampleCount = 0;
+        //bool programmableSamplePositionsEnable = false;
+        //bool conservativeRasterEnable = false;
+        //bool quadFillEnable = false;
+        //char samplePositionsX[16]{};
+        //char samplePositionsY[16]{};
+
+    public:
+        // Setters
+        inline constexpr RasterState& SetFillMode(RasterFillMode mode) { FillMode = mode; return *this; }
+        inline constexpr RasterState& SetCullingMode(RasterCullingMode mode) { CullingMode = mode; return *this; }
+        inline constexpr RasterState& SetFrontCounterClockwise(bool enabled) { FrontCounterClockwise = enabled; return *this; }
+        inline constexpr RasterState& SetDepthClipEnable(bool enabled) { DepthClipEnable = enabled; return *this; }
+        inline constexpr RasterState& SetScissorEnable(bool enabled) { ScissorEnable = enabled; return *this; }
+        inline constexpr RasterState& SetMultisampleEnable(bool enabled) { MultisampleEnable = enabled; return *this; }
+        inline constexpr RasterState& SetAntialiasedLineEnable(bool enabled) { AntialiasedLineEnable = enabled; return *this; }
+        inline constexpr RasterState& SetDepthBias(int value) { DepthBias = value; return *this; }
+        inline constexpr RasterState& SetDepthBiasClamp(float value) { DepthBiasClamp = value; return *this; }
+        inline constexpr RasterState& setSlopeScaleDepthBias(float value) { SlopeScaledDepthBias = value; return *this; }
+        //constexpr RasterState& setForcedSampleCount(uint8_t value) { ForcedSampleCount = value; return *this; }
+        //constexpr RasterState& setProgrammableSamplePositionsEnable(bool value) { programmableSamplePositionsEnable = value; return *this; }
+        //constexpr RasterState& enableProgrammableSamplePositions() { programmableSamplePositionsEnable = true; return *this; }
+        //constexpr RasterState& disableProgrammableSamplePositions() { programmableSamplePositionsEnable = false; return *this; }
+        //constexpr RasterState& setConservativeRasterEnable(bool value) { conservativeRasterEnable = value; return *this; }
+        //constexpr RasterState& enableConservativeRaster() { conservativeRasterEnable = true; return *this; }
+        //constexpr RasterState& disableConservativeRaster() { conservativeRasterEnable = false; return *this; }
+        //constexpr RasterState& setQuadFillEnable(bool value) { quadFillEnable = value; return *this; }
+        //constexpr RasterState& enableQuadFill() { quadFillEnable = true; return *this; }
+        //constexpr RasterState& disableQuadFill() { quadFillEnable = false; return *this; }
+        //constexpr RasterState& setSamplePositions(const char* x, const char* y, int count) { for (int i = 0; i < count; i++) { samplePositionsX[i] = x[i]; samplePositionsY[i] = y[i]; } return *this; }
+    };
+
+    struct DepthStencilState
+    {
+    public:
+        struct StencilOperationSpecification
+        {
+        public:
+            StencilOperation FailOp = StencilOperation::Keep;
+            StencilOperation DepthFailOp = StencilOperation::Keep;
+            StencilOperation PassOp = StencilOperation::Keep;
+            ComparisonFunc StencilFunc = ComparisonFunc::Always;
+
+        public:
+            // Setters
+            inline constexpr StencilOperationSpecification& setFailOp(StencilOperation operation) { FailOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& setDepthFailOp(StencilOperation operation) { DepthFailOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& setPassOp(StencilOperation operation) { PassOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& setStencilFunc(ComparisonFunc func) { StencilFunc = func; return *this; }
+        };
+    public:
+        bool DepthTestEnable = true;
+        bool DepthWriteEnable = true;
+        ComparisonFunc DepthFunc = ComparisonFunc::Less;
+        bool StencilEnable = false;
+        uint8_t StencilReadMask = 0xff;
+        uint8_t StencilWriteMask = 0xff;
+        uint8_t StencilRefValue = 0;
+        bool DynamicStencilRef = false;
+        StencilOperationSpecification FrontFaceStencil = {};
+        StencilOperationSpecification BackFaceStencil = {};
+
+    public:
+        // Setters
+        inline constexpr DepthStencilState& SetDepthTestEnable(bool enabled) { DepthTestEnable = enabled; return *this; }
+        inline constexpr DepthStencilState& SetDepthWriteEnable(bool enabled) { DepthWriteEnable = enabled; return *this; }
+        inline constexpr DepthStencilState& SetDepthFunc(ComparisonFunc func) { DepthFunc = func; return *this; }
+        inline constexpr DepthStencilState& SetStencilEnable(bool enabled) { StencilEnable = enabled; return *this; }
+        inline constexpr DepthStencilState& SetStencilReadMask(uint8_t value) { StencilReadMask = value; return *this; }
+        inline constexpr DepthStencilState& SetStencilWriteMask(uint8_t value) { StencilWriteMask = value; return *this; }
+        inline constexpr DepthStencilState& SetStencilRefValue(uint8_t value) { StencilRefValue = value; return *this; }
+        inline constexpr DepthStencilState& SetFrontFaceStencil(const StencilOperationSpecification& specs) { FrontFaceStencil = specs; return *this; }
+        inline constexpr DepthStencilState& SetBackFaceStencil(const StencilOperationSpecification& specs) { BackFaceStencil = specs; return *this; }
+        inline constexpr DepthStencilState& SetDynamicStencilRef(bool enabled) { DynamicStencilRef = enabled; return *this; }
+    };
+
+    struct RenderState
+    {
+    public:
+        BlendState Blend = {};
+        DepthStencilState DepthStencil = {};
+        RasterState Raster = {};
+
+    public:
+        // Setters
+        inline constexpr RenderState& SetBlendState(const BlendState& state) { Blend = state; return *this; }
+        inline constexpr RenderState& SetDepthStencilState(const DepthStencilState& state) { DepthStencil = state; return *this; }
+        inline constexpr RenderState& SetRasterState(const RasterState& state) { Raster = state; return *this; }
+    };
+
     ////////////////////////////////////////////////////////////////////////////////////
     // GraphicsPipelineSpecification
     ////////////////////////////////////////////////////////////////////////////////////
     struct GraphicsPipelineSpecification
     {
     public:
+        inline constexpr static uint32_t MaxBindings = 8;
+    public:
+        PrimitiveType Primitive = PrimitiveType::TriangleList;
+        InputLayout* Input = nullptr;
+
+        // TODO: Add more shaders
+        Shader* VertexShader = nullptr;
+        Shader* FragmentShader = nullptr;
+        
+        RenderState RenderingState = {};
+        Renderpass* Pass = nullptr;
+
+        Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
+
+        std::string_view DebugName = {};
+
+    public:
+        // Setters
+        inline constexpr GraphicsPipelineSpecification& SetPrimitiveType(PrimitiveType type) { Primitive = type; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetInputLayout(InputLayout& layout) { Input = &layout; return *this; }
+
+        inline constexpr GraphicsPipelineSpecification& SetVertexShader(Shader& shader) { VertexShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetFragmentShader(Shader& shader) { FragmentShader = &shader; return *this; }
+
+        inline constexpr GraphicsPipelineSpecification& SetRenderState(const RenderState& state) { RenderingState = state; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
+
+        inline GraphicsPipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
 }

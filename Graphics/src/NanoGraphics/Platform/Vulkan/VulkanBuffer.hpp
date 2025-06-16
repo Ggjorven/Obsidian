@@ -30,6 +30,11 @@ namespace Nano::Graphics::Internal
         VulkanInputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes);
         ~VulkanInputLayout();
 
+        // Internal getters
+        inline uint32_t GetStride() const { return m_Stride; }
+        inline const std::vector<VkVertexInputBindingDescription>& GetBindingDescriptions() const { return m_BindingDescriptions; }
+        inline const std::vector<VkVertexInputAttributeDescription>& GetAttributeDescriptions() const { return m_AttributeDescriptions; }
+
     private:
         // Private methods
         void CalculateOffsetsAndStride();

@@ -42,6 +42,8 @@ namespace Nano::Graphics::Internal
                 bindingDescription.binding = spec.BufferIndex;
                 bindingDescription.stride = m_Stride;
                 bindingDescription.inputRate = ((spec.IsInstanced) ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX);
+
+                bindingMap[spec.BufferIndex] = bindingDescription;
             }
             else 
             {

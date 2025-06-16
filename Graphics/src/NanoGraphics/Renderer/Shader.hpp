@@ -28,6 +28,9 @@ namespace Nano::Graphics
         // Destructor
         ~Shader() = default;
 
+        // Getters
+        inline const ShaderSpecification& GetSpecification() const { return m_Shader.GetSpecification(); }
+
     private:
         // Constructor
         Shader(const Device& device, const ShaderSpecification& specs)

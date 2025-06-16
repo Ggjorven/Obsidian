@@ -34,16 +34,19 @@ namespace Nano::Graphics::Internal
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
         : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
+        NG_ASSERT(((specs.Width != 0) && (specs.Height != 0)), "[VkImage] Invalid width/height passed in.");
+        NG_ASSERT((specs.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
+
         // Validation checks
         if constexpr (VulkanContext::Validation)
         {
             if (m_Specification.KeepResourceState && m_Specification.State == ResourceState::Unknown)
             {
-                m_Device.GetContext().Error("[VulkanImage] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
+                m_Device.GetContext().Error("[VkImage] KeepResourceState = true, but ResourceState is set to Unknowm which is not compatible. Disable KeepResourceState.");
             }
             if (!((specs.SampleCount >= 1) && (specs.SampleCount <= 64) && (specs.SampleCount & (specs.SampleCount - 1)) == 0))
             {
-                m_Device.GetContext().Error(std::format("[VulkanImage] Invalid samplecount passed in: {0}", specs.SampleCount));
+                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", specs.SampleCount));
             }
         }
 

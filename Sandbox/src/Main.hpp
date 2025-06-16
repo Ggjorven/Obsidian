@@ -43,7 +43,7 @@ layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
 layout (set = 0, binding = 1) uniform texture2D u_Texture;
-layout (set = 0, binding = 12) uniform sampler u_Sampler;
+layout (set = 0, binding = 2) uniform sampler u_Sampler;
 
 void main()
 {
@@ -51,6 +51,19 @@ void main()
     o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
 }
 )";
+
+inline constexpr auto g_VertexData = std::to_array<float>({
+	// Positions				// UVs
+	-0.5f, -0.5f, 0.0f,			0.0f, 0.0f,
+	0.5f,  -0.5f, 0.0f,			1.0f, 0.0f,
+	0.5f,  0.5f,  0.0f,			1.0f, 1.0f,
+	-0.5f, 0.5f,  0.0f,			0.0f, 1.0f
+});
+
+inline constexpr auto g_IndexData = std::to_array<uint32_t>({
+	0u, 1u, 2u,
+	2u, 3u, 0u
+});
 
 int Main(int argc, char* argv[])
 {
@@ -63,21 +76,21 @@ int Main(int argc, char* argv[])
 		Renderpass* renderpassPtr = nullptr;
 
 		// Window Creation
-		WindowSpecification windowSpecs = WindowSpecification()
+		Window window(WindowSpecification()
 			.SetTitle("First")
 			.SetWidthAndHeight(1280, 720)
 			.SetFlags(WindowFlags::Default)
-			.SetEventCallback([&](Event e) 
+			.SetEventCallback([&](Event e)
 			{
 				Events::EventHandler handler(e);
 				handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { windowPtr->Close(); });
-				handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable 
-				{ 
-					swapchainPtr->Resize(wre.GetWidth(), wre.GetHeight()); 
+				handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable
+				{
+					swapchainPtr->Resize(wre.GetWidth(), wre.GetHeight());
 					renderpassPtr->ResizeFramebuffers();
 				});
-			});
-		Window window(windowSpecs);
+			})
+		);
 		windowPtr = &window;
 
 		// Destroy prep
@@ -85,17 +98,17 @@ int Main(int argc, char* argv[])
 		auto emptyQueue = [&]() { while (!destroyQueue.empty()) { destroyQueue.front()(); destroyQueue.pop(); } };
 
 		// Device Creation
-		DeviceSpecification deviceSpecs = DeviceSpecification()
+		Device device(DeviceSpecification()
 			.SetNativeWindow(windowPtr->GetNativeWindow())
 			.SetMessageCallback([](DeviceMessageType msgType, const std::string& message)
 			{
 				switch (msgType)
 				{
-				case DeviceMessageType::Error:
-					NG_LOG_ERROR("Device Error: {0}", message);
-					break;
 				case DeviceMessageType::Warn:
 					NG_LOG_WARN("Device Warning: {0}", message);
+					break;
+				case DeviceMessageType::Error:
+					NG_LOG_ERROR("Device Error: {0}", message);
 					break;
 
 				default:
@@ -105,18 +118,18 @@ int Main(int argc, char* argv[])
 			.SetDestroyCallback([&](DeviceDestroyFn fn)
 			{
 				destroyQueue.push(fn);
-			});
-		Device device(deviceSpecs);
+			})
+		);
 
 		// Swapchain
-		SwapchainSpecification swapchainSpecs = SwapchainSpecification()
+		Swapchain swapchain = device.CreateSwapchain(SwapchainSpecification()
 			.SetWindow(window)
 			.SetFormat(Format::BGRA8Unorm)
 			//.SetFormat(Format::SBGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
 			.SetVSync(false)
-			.SetDebugName("Swapchain");
-		Swapchain swapchain = device.CreateSwapchain(swapchainSpecs);
+			.SetDebugName("Swapchain")
+		);
 		swapchainPtr = &swapchain;
 
 		// Commandlists & Commandpool
@@ -128,28 +141,27 @@ int Main(int argc, char* argv[])
 		};
 
 		// Renderpass & Framebuffers
-		RenderpassSpecification renderpassSpecs = RenderpassSpecification()
+		Renderpass renderpass = device.CreateRenderpass(RenderpassSpecification()
 			.SetBindpoint(PipelineBindpoint::Graphics)
-			
+
 			.SetColourImageSpecification(swapchain.GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
 			.SetColourStartState(ResourceState::Unknown)
 			.SetColourEndState(ResourceState::Present)
 
-			.SetDebugName("Renderpass");
-		Renderpass renderpass = device.CreateRenderpass(renderpassSpecs);
+			.SetDebugName("Renderpass")
+		);
 		renderpassPtr = &renderpass;
 
 		for (uint8_t i = 0; i < Information::BackBufferCount; i++)
 		{
-			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, renderpassSpecs.DebugName);
-			FramebufferSpecification framebufferSpecs = FramebufferSpecification()
+			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, renderpass.GetSpecification().DebugName);
+			(void)renderpass.CreateFramebuffer(FramebufferSpecification()
 				.SetColourAttachment(FramebufferAttachment()
 					.SetImage(swapchain.GetImage(i)))
-				.SetDebugName(debugName);
-
-			(void)renderpass.CreateFramebuffer(framebufferSpecs);
+				.SetDebugName(debugName)
+			);
 		}
 
 		// ShaderCompiler & Shader
@@ -158,8 +170,8 @@ int Main(int argc, char* argv[])
 		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), ShadingLanguage::GLSL);
 
 		auto shaders = std::to_array<Shader>({
-			device.CreateShader({ ShaderStage::Vertex, vertexSPIRV, "Vertex Shader" }),
-			device.CreateShader({ ShaderStage::Fragment, fragmentSPIRV, "Fragment Shader" }),
+			device.CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" }),
+			device.CreateShader({ ShaderStage::Fragment, "main", fragmentSPIRV, "Fragment Shader" }),
 		});
 
 		// Bindingsets & Layouts
@@ -204,7 +216,7 @@ int Main(int argc, char* argv[])
 				.SetDebugName("u_Sampler")
 			)
 
-			//.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
+			.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
 		);
 
 		BindingSetPool bindingSetPoolSet0 = device.AllocateBindingSetPool(BindingSetPoolSpecification()
@@ -220,7 +232,58 @@ int Main(int argc, char* argv[])
 		};
 
 		// Pipeline
-		// TODO: ...
+		GraphicsPipeline pipeline = device.CreateGraphicsPipeline(GraphicsPipelineSpecification()
+			.SetPrimitiveType(PrimitiveType::TriangleList)
+			.SetInputLayout(inputLayout)
+			.SetVertexShader(shaders[0])
+			.SetFragmentShader(shaders[1])
+
+			.SetRenderState(RenderState()
+				.SetRasterState(RasterState()
+					.SetCullingMode(RasterCullingMode::None)
+					// TODO: ...
+				)
+				.SetBlendState(BlendState()
+					.SetRenderTarget(BlendState::RenderTarget()
+						.SetBlendEnable(true)
+						// TODO: ...
+					)
+					// TODO: ...
+				)
+				.SetDepthStencilState(DepthStencilState()
+					.SetDepthTestEnable(false)
+					// TODO: ...
+				)
+			)
+
+			.SetRenderpass(renderpass)
+			.AddBindingLayout(bindingLayoutSet0)
+		);
+
+		// Buffers
+		CommandList initCommand = pool.AllocateList(CommandListSpecification()
+			.SetDebugName("InitCommand")
+		);
+		initCommand.Open();
+
+		Buffer vertexBuffer = device.CreateBuffer(BufferSpecification()
+			.SetSize(sizeof(g_VertexData))
+			.SetIsVertexBuffer(true)
+			.SetDebugName("Vertexbuffer")
+		);
+
+		Buffer indexBuffer = device.CreateBuffer(BufferSpecification()
+			.SetSize(sizeof(g_IndexData))
+			.SetIsVertexBuffer(true)
+			.SetDebugName("Indexbuffer")
+		);
+
+		//Image image = device.CreateImage(ImageSpecification()
+		//	.SetWidthAndHeight(1, 1)
+		//);
+
+		initCommand.Close();
+		initCommand.Submit(CommandListSubmitArgs().SetQueue(CommandQueue::Graphics));
 
 		// Main Loop
 		while (window.IsOpen())
@@ -241,6 +304,7 @@ int Main(int argc, char* argv[])
 				{ 
 					// Graphics
 					GraphicsState state = GraphicsState()
+						.SetPipeline(pipeline)
 						.SetRenderpass(renderpass)
 						.SetViewport(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y))))
@@ -261,6 +325,11 @@ int Main(int argc, char* argv[])
 			}
 			swapchain.Present();
 		}
+
+		device.DestroyBuffer(indexBuffer);
+		device.DestroyBuffer(vertexBuffer);
+
+		device.DestroyGraphicsPipeline(pipeline);
 
 		device.FreeBindingSetPool(bindingSetPoolSet0);
 

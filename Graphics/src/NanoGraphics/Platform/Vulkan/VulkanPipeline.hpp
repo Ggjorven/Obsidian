@@ -31,8 +31,19 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const GraphicsPipelineSpecification& GetSpecification() const { return m_Specification; }
 
+        // Internal getters
+        inline VkPipeline GetVkPipeline() const { return m_Pipeline; }
+        inline VkPipelineLayout GetVkPipelineLayout() const { return m_PipelineLayout; }
+
     private:
         GraphicsPipelineSpecification m_Specification;
+
+        VkPipeline m_Pipeline = VK_NULL_HANDLE;
+        VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ////////////////////////////////////////////////////////////////////////////////////
 
 }

@@ -104,7 +104,7 @@ namespace Nano::Graphics::Internal
 		// Private methods
 		void SetWaitStage(VkPipelineStageFlags2 waitStage);
 
-		void BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, ShaderStage stages) const;
+		void BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
 
 	private:
 		VulkanCommandListPool& m_Pool;

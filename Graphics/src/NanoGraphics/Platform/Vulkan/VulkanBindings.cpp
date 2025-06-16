@@ -23,6 +23,9 @@ namespace Nano::Graphics::Internal
     {
         //VkShaderStageFlags shaderStageFlags = ShaderStageToVkShaderStageFlags(specs.Visibility);
 
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+        layoutBindings.reserve(specs.Bindings.size());
+
         for (const BindingLayoutItem& item : specs.Bindings)
         {
             if (item.Type == ResourceType::PushConstants) // Note: No descriptor needed for PushConstants
@@ -40,16 +43,19 @@ namespace Nano::Graphics::Internal
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
             
-            m_LayoutBindings.push_back(descriptorSetLayoutBinding);
+            layoutBindings.push_back(descriptorSetLayoutBinding);
         }
 
-        Finish(*reinterpret_cast<const VulkanDevice*>(&device));
+        Finish(*reinterpret_cast<const VulkanDevice*>(&device), layoutBindings);
     }
 
     VulkanBindingLayout::VulkanBindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
         : m_Specification(specs)
     {
         //VkShaderStageFlags shaderStageFlags = ShaderStageToVkShaderStageFlags(specs.Visibility);
+
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+        layoutBindings.reserve(specs.RegisterSpaces.size());
         
         uint32_t bindingPoint = 0;
         uint32_t arraySize = specs.MaxCapacity;
@@ -64,14 +70,23 @@ namespace Nano::Graphics::Internal
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
 
-            m_LayoutBindings.push_back(descriptorSetLayoutBinding);
+            layoutBindings.push_back(descriptorSetLayoutBinding);
         }
 
-        Finish(*reinterpret_cast<const VulkanDevice*>(&device));
+        Finish(*reinterpret_cast<const VulkanDevice*>(&device), layoutBindings);
     }
 
     VulkanBindingLayout::~VulkanBindingLayout()
     {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanBindingLayout::UpdatePoolSizeInfosToMaxSets(uint32_t maxSets)
+    {
+        for (auto& poolSize : m_PoolSizeInfo)
+            poolSize.descriptorCount *= maxSets;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -105,15 +120,15 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanBindingLayout::Finish(const VulkanDevice& device)
+    void VulkanBindingLayout::Finish(const VulkanDevice& device, const std::vector<VkDescriptorSetLayoutBinding>& layoutBindings)
     {
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         //descriptorSetLayoutCreateInfo.flags = (IsBindless() ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0);
-        descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(m_LayoutBindings.size());
-        descriptorSetLayoutCreateInfo.pBindings = m_LayoutBindings.data();
+        descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+        descriptorSetLayoutCreateInfo.pBindings = layoutBindings.data();
 
-        std::vector<VkDescriptorBindingFlags> bindlessFlags(m_LayoutBindings.size(), VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+        std::vector<VkDescriptorBindingFlags> bindlessFlags(layoutBindings.size(), VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
         VkDescriptorSetLayoutBindingFlagsCreateInfo extendedCreateInfo = {}; // Note: For bindless
         extendedCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
         extendedCreateInfo.bindingCount = static_cast<uint32_t>(bindlessFlags.size());
@@ -126,7 +141,7 @@ namespace Nano::Graphics::Internal
         
         // Count number of descriptors per type
         std::unordered_map<VkDescriptorType, uint32_t> poolSizeMap;
-        for (const auto& layoutBinding : m_LayoutBindings)
+        for (const auto& layoutBinding : layoutBindings)
         {
             // Initialize the mapping
             if (!poolSizeMap.contains(layoutBinding.descriptorType))
@@ -186,6 +201,7 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(m_Specification.SetAmount > 0, "[VkBindingSetPool] SetAmount must be non-zero.");
 
         VulkanBindingLayout& bindingLayout = *reinterpret_cast<VulkanBindingLayout*>(m_Specification.Layout);
+        bindingLayout.UpdatePoolSizeInfosToMaxSets(specs.SetAmount); // Update the infos.
 
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -214,7 +230,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT((m_Specification.SetAmount > m_CurrentDescriptor), "[VkBindingSetPool] Cannot allocate more descriptor sets than the specification's count specified.");
         
-        if (!m_DescriptorSets.empty())
+        if (m_DescriptorSets[0] != VK_NULL_HANDLE) // Note: Early return if already allocated and return from cache
             return m_DescriptorSets[m_CurrentDescriptor++];
 
         VulkanBindingLayout& bindingLayout = *reinterpret_cast<VulkanBindingLayout*>(m_Specification.Layout);

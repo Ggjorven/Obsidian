@@ -374,6 +374,181 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // BlendFactorMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BlendFactorMapping
+    {
+    public:
+        BlendFactor Factor;
+
+        VkBlendFactor VulkanBlendFactor;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendFactorMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_BlendFactorMapping = std::to_array<BlendFactorMapping>({
+        // BlendFactor                          VulkanBlendFactor
+        { BlendFactor::Zero,                    VK_BLEND_FACTOR_ZERO },
+        { BlendFactor::One,                     VK_BLEND_FACTOR_ONE },
+        { BlendFactor::SrcColour,               VK_BLEND_FACTOR_SRC_COLOR },
+        { BlendFactor::OneMinusSrcColour,       VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
+        { BlendFactor::OneMinusSrcColour,       VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
+        { BlendFactor::SrcAlpha,                VK_BLEND_FACTOR_SRC_ALPHA },
+        { BlendFactor::OneMinusSrcAlpha,        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA },
+        { BlendFactor::DstAlpha,                VK_BLEND_FACTOR_DST_ALPHA },
+        { BlendFactor::OneMinusDstAlpha,        VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA },
+        { BlendFactor::DstColour,               VK_BLEND_FACTOR_DST_COLOR },
+        { BlendFactor::OneMinusDstColour,       VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR },
+        { BlendFactor::SrcAlphaSaturate,        VK_BLEND_FACTOR_SRC_ALPHA_SATURATE },
+        { BlendFactor::ConstantColour,          VK_BLEND_FACTOR_CONSTANT_COLOR },
+        { BlendFactor::OneMinusConstantColour,  VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR },
+        { BlendFactor::Src1Colour,              VK_BLEND_FACTOR_SRC1_COLOR },
+        { BlendFactor::OneMinusSrc1Colour,      VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR },
+        { BlendFactor::Src1Alpha,               VK_BLEND_FACTOR_SRC1_ALPHA },
+        { BlendFactor::OneMinusSrc1Alpha,       VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BlendOperationMapping
+    {
+    public:
+        BlendOperation Operation;
+
+        VkBlendOp VulkanBlendOperation;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_BlendOperationMapping = std::to_array<BlendOperationMapping>({
+        // BlendOperation                   VulkanBlendOperation
+        { BlendOperation::Add,              VK_BLEND_OP_ADD },
+        { BlendOperation::Subtract,         VK_BLEND_OP_SUBTRACT },
+        { BlendOperation::ReverseSubtract,  VK_BLEND_OP_REVERSE_SUBTRACT },
+        { BlendOperation::Min,              VK_BLEND_OP_MIN },
+        { BlendOperation::Max,              VK_BLEND_OP_MAX },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourMaskMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ColourMaskMapping
+    {
+    public:
+        ColourMask Mask;
+
+        VkColorComponentFlags VulkanColourComponentFlags;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourMaskMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ColourMaskMapping = std::to_array<ColourMaskMapping>({
+        // ColourMask               VulkanColourComponentFlags
+        { ColourMask::None,         static_cast<VkColorComponentFlags>(0) },
+        { ColourMask::Red,          VK_COLOR_COMPONENT_R_BIT },
+        { ColourMask::Green,        VK_COLOR_COMPONENT_G_BIT },
+        { ColourMask::Blue,         VK_COLOR_COMPONENT_B_BIT },
+        { ColourMask::Alpha,        VK_COLOR_COMPONENT_A_BIT },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterFillModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct RasterFillModeMapping
+    {
+    public:
+        RasterFillMode FillMode;
+
+        VkPolygonMode VulkanPolygonMode;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterFillModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_RasterFillModeMapping = std::to_array<RasterFillModeMapping>({
+        // RasterFillMode               VulkanPolygonMode
+        { RasterFillMode::Fill,         VK_POLYGON_MODE_FILL },
+        { RasterFillMode::Line,         VK_POLYGON_MODE_LINE },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterCullingModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct RasterCullingModeMapping
+    {
+    public:
+        RasterCullingMode CullingMode;
+
+        VkCullModeFlags VulkanCullModeFlags;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterCullingModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_RasterCullingModeMapping = std::to_array<RasterCullingModeMapping>({
+        // RasterCullingMode            VulkanCullModeFlags
+        { RasterCullingMode::None,      VK_CULL_MODE_NONE },
+        { RasterCullingMode::Back,      VK_CULL_MODE_BACK_BIT },
+        { RasterCullingMode::Front,     VK_CULL_MODE_FRONT_BIT },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StencilOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct StencilOperationMapping
+    {
+    public:
+        StencilOperation Operation;
+
+        VkStencilOp VulkanStencilOperation;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StencilOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_StencilOperationMapping = std::to_array<StencilOperationMapping>({
+        // StencilOperation                         VulkanStencilOperation
+        { StencilOperation::Keep,                   VK_STENCIL_OP_KEEP },
+        { StencilOperation::Zero,                   VK_STENCIL_OP_ZERO },
+        { StencilOperation::Replace,                VK_STENCIL_OP_REPLACE },
+        { StencilOperation::IncrementAndClamp,      VK_STENCIL_OP_INCREMENT_AND_CLAMP },
+        { StencilOperation::DecrementAndClamp,      VK_STENCIL_OP_DECREMENT_AND_CLAMP },
+        { StencilOperation::Invert,                 VK_STENCIL_OP_INVERT },
+        { StencilOperation::IncrementAndWrap,       VK_STENCIL_OP_INCREMENT_AND_WRAP },
+        { StencilOperation::DecrementAndWrap,       VK_STENCIL_OP_DECREMENT_AND_WRAP },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComparisonFuncMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ComparisonFuncMapping
+    {
+    public:
+        ComparisonFunc Comparison;
+
+        VkCompareOp VulkanCompareOperation;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComparisonFuncMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ComparisonFuncMapping = std::to_array<ComparisonFuncMapping>({
+        // ComparisonFunc                   VulkanCompareOperation
+        { ComparisonFunc::Never,            VK_COMPARE_OP_NEVER },
+        { ComparisonFunc::Less,             VK_COMPARE_OP_LESS },
+        { ComparisonFunc::Equal,            VK_COMPARE_OP_EQUAL },
+        { ComparisonFunc::LessOrEqual,      VK_COMPARE_OP_LESS_OR_EQUAL },
+        { ComparisonFunc::Greater,          VK_COMPARE_OP_GREATER },
+        { ComparisonFunc::NotEqual,         VK_COMPARE_OP_NOT_EQUAL },
+        { ComparisonFunc::GreaterOrEqual,   VK_COMPARE_OP_GREATER_OR_EQUAL },
+        { ComparisonFunc::Always,           VK_COMPARE_OP_ALWAYS },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // ResourceTypeMapping
     ////////////////////////////////////////////////////////////////////////////////////
     struct ResourceTypeMapping
@@ -578,6 +753,30 @@ namespace Nano::Graphics::Internal
 
     inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
     inline constexpr VkPrimitiveTopology PrimitiveTypeToVkPrimitiveTopology(PrimitiveType type) { return g_PrimitiveTypeMapping[static_cast<size_t>(type)].VulkanPrimitiveType; }
+    inline constexpr VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor factor) { return g_BlendFactorMapping[static_cast<size_t>(factor)].VulkanBlendFactor; }
+    inline constexpr VkBlendOp BlendOperationToVkBlendOp(BlendOperation operation) { return g_BlendOperationMapping[static_cast<size_t>(operation)].VulkanBlendOperation; }
+    
+    inline constexpr VkColorComponentFlags ColourMaskToVkColorComponentFlags(ColourMask mask)
+    {
+        VkColorComponentFlags result = 0;
+        std::underlying_type_t<ColourMask> value = std::to_underlying(mask);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ColourMaskMapping[static_cast<size_t>(index) + 1].VulkanColourComponentFlags;
+        }
+
+        return result;
+    }
+
+    inline constexpr VkPolygonMode RasterFillModeToVkPolygonMode(RasterFillMode mode) { return g_RasterFillModeMapping[static_cast<size_t>(mode)].VulkanPolygonMode; }
+    inline constexpr VkCullModeFlags RasterCullingModeToVkCullModeFlags(RasterCullingMode mode) { return g_RasterCullingModeMapping[static_cast<size_t>(mode)].VulkanCullModeFlags; }
+
+    inline constexpr VkStencilOp StencilOperationToVkStencilOp(StencilOperation operation) { return g_StencilOperationMapping[static_cast<size_t>(operation)].VulkanStencilOperation; }
+    inline constexpr VkCompareOp ComparisonFuncToVkCompareOp(ComparisonFunc func) { return g_ComparisonFuncMapping[static_cast<size_t>(func)].VulkanCompareOperation; }
 
     inline constexpr VkDescriptorType ResourceTypeToVkDescriptorType(ResourceType type) { return g_ResourceTypeMapping[static_cast<size_t>(type)].VulkanDescriptorType; }
     

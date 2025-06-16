@@ -219,8 +219,13 @@ namespace Nano::Graphics::Internal
         VulkanGraphicsPipeline& vulkanGraphicsPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(&pipeline);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
-        NG_ASSERT(false, "TODO");
-        // TODO: ...
+        VkPipelineLayout vkPipelineLayout = vulkanGraphicsPipeline.GetVkPipelineLayout();
+        VkPipeline vkPipeline = vulkanGraphicsPipeline.GetVkPipeline();
+        m_Context.Destroy([device, vkPipelineLayout, vkPipeline]() mutable
+        {
+            vkDestroyPipeline(device, vkPipeline, VulkanAllocator::GetCallbacks());
+            vkDestroyPipelineLayout(device, vkPipelineLayout, VulkanAllocator::GetCallbacks());
+        });
     }
 
 }

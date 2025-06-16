@@ -50,7 +50,7 @@ namespace Nano::Graphics
     {
     public:
         size_t Size = 0;
-        Format BufferFormat = Format::Unknown;
+        //Format BufferFormat = Format::Unknown;
 
         bool IsVertexBuffer = false;
         bool IsIndexBuffer = false;
@@ -70,7 +70,7 @@ namespace Nano::Graphics
     public:
         // Setters
         inline constexpr BufferSpecification& SetSize(size_t size) { Size = size; return *this; }
-        inline constexpr BufferSpecification& SetFormat(Format format) { BufferFormat = format; return *this; }
+        //inline constexpr BufferSpecification& SetFormat(Format format) { BufferFormat = format; return *this; }
 
         inline constexpr BufferSpecification& SetIsVertexBuffer(bool enabled) { IsVertexBuffer = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsIndexBuffer(bool enabled) { IsIndexBuffer = enabled; return *this; }
