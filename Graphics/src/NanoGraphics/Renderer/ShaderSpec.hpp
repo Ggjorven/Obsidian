@@ -66,7 +66,6 @@ namespace Nano::Graphics
         inline constexpr ShaderSpecification& SetShaderStage(ShaderStage stage) { Stage = stage; return *this; }
         inline constexpr ShaderSpecification& SetMainName(std::string_view name) { MainName = name; return *this; }
         inline ShaderSpecification& SetSPIRV(std::vector<char>&& ownedSPIRV) { SPIRV = std::move(ownedSPIRV); return *this; }
-        inline ShaderSpecification& SetSPIRV(const std::vector<char>& ownedSPIRV) { SPIRV = ownedSPIRV; return *this; }
         inline constexpr ShaderSpecification& SetSPIRV(std::span<const char> viewedSPIRV) { SPIRV = viewedSPIRV; return *this; }
         inline constexpr ShaderSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };

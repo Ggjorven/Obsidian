@@ -267,7 +267,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
     {
-        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
+        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
         VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
@@ -369,7 +369,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::UploadBuffer(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorBufferInfo>& bufferInfos, Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
-        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
+        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
     
         VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());

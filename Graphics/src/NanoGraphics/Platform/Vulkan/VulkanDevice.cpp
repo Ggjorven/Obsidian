@@ -92,8 +92,10 @@ namespace Nano::Graphics::Internal
         for (auto& image : vulkanSwapchain.m_Images)
             DestroySubresourceViews(*reinterpret_cast<Image*>(&image.Get()));
 
-        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore]() mutable
+        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore, resizePool = vulkanSwapchain.m_ResizePool]() mutable
         {
+            vkDestroyCommandPool(device, resizePool, VulkanAllocator::GetCallbacks());
+
             vkDestroySwapchainKHR(device, swapchain, VulkanAllocator::GetCallbacks());
             vkDestroySurfaceKHR(instance, surface, VulkanAllocator::GetCallbacks());
 

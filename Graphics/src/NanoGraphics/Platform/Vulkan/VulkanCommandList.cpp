@@ -119,6 +119,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::Reset() const
     {
+        NG_PROFILE("VulkanCommandList::Reset()");
         vkResetCommandBuffer(m_CommandBuffer, 0);
     }
 
@@ -239,6 +240,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::WaitTillComplete() const
     {
+        NG_PROFILE("VulkanCommandList::WaitTillComplete()");
         VkSemaphore semaphore = m_Pool.GetVulkanSwapchain().GetVkTimelineSemaphore();
         uint64_t value = m_Pool.GetVulkanSwapchain().GetPreviousCommandListWaitValue(*this);
 
@@ -253,6 +255,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::CommitBarriers()
     {
+        NG_PROFILE("VulkanCommandList::CommitBarriers()");
         m_StateTracker.CommitBarriers(m_CommandBuffer);
     }
 
@@ -261,22 +264,26 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
     {
+        NG_PROFILE("VulkanCommandList::StartTracking()");
         m_StateTracker.StartTracking(image, subresources, currentState);
     }
 
     void VulkanCommandList::StartTracking(const StagingImage& image, ResourceState currentState)
     {
+        NG_PROFILE("VulkanCommandList::StartTracking()");
         const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
         m_StateTracker.StartTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
     }
 
     void VulkanCommandList::StartTracking(const Buffer& buffer, ResourceState currentState)
     {
+        NG_PROFILE("VulkanCommandList::StartTracking()");
         m_StateTracker.StartTracking(buffer, currentState);
     }
 
     void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
     {
+        NG_PROFILE("VulkanCommandList::SetGraphicsState()");
         m_GraphicsState = state;
 
         NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
@@ -284,6 +291,8 @@ namespace Nano::Graphics::Internal
 
         // Renderpass
         {
+            NG_PROFILE("VulkanCommandList::SetGraphicsState::Renderpass");
+
             VulkanRenderpass& renderpass = *reinterpret_cast<VulkanRenderpass*>(state.Pass);
             VulkanFramebuffer* framebuffer = nullptr;
             if (state.Frame)
@@ -318,11 +327,15 @@ namespace Nano::Graphics::Internal
         VulkanGraphicsPipeline& vulkanPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(state.Pipeline);
         // Pipeline
         {
+            NG_PROFILE("VulkanCommandList::SetGraphicsState::Pipeline");
+
             vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
         }
 
         // BindingSets
         {
+            NG_PROFILE("VulkanCommandList::SetGraphicsState::BindingSets");
+
             for (auto set : state.BindingSets) // Note: Only bind when there is a non-nullptr set
             {
                 if (set != nullptr) [[likely]]
@@ -339,6 +352,8 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const
     {
+        NG_PROFILE("VulkanCommandList::SetViewport()");
+
         // Note: For future DX coords?
         //VkViewport(v.minX, v.maxY, v.maxX - v.minX, -(v.maxY - v.minY), v.minZ, v.maxZ);
 
@@ -354,6 +369,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::SetScissor(const ScissorRect& scissor) const
     {
+        NG_PROFILE("VulkanCommandList::SetScissor()");
         VkRect2D vkScissor = {};
         vkScissor.offset = { scissor.MinX, scissor.MinY };
         vkScissor.extent = { static_cast<uint32_t>(scissor.GetWidth()), static_cast<uint32_t>(scissor.GetHeight()) };
@@ -362,6 +378,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const
     {
+        NG_PROFILE("VulkanCommandList::BindVertexBuffer()");
         NG_ASSERT((buffer.GetSpecification().IsVertexBuffer), "[VkCommandList] To bind a buffer as a vertex buffer it must have been created with IsVertexBuffer equal to true.");
         const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
 
@@ -373,6 +390,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::BindIndexBuffer(const Buffer& buffer) const
     {
+        NG_PROFILE("VulkanCommandList::BindIndexBuffer()");
         NG_ASSERT((buffer.GetSpecification().IsIndexBuffer), "[VkCommandList] To bind a buffer as an index buffer it must have been created with IsIndexBuffer equal to true.");
         const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
 
@@ -383,6 +401,8 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
     {
+        NG_PROFILE("VulkanCommandList::CopyImage()");
+
         NG_ASSERT(m_StateTracker.Contains(dst), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on dst image.");
         NG_ASSERT(m_StateTracker.Contains(src), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on src image.");
 
@@ -460,6 +480,8 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice)
     {
+        NG_PROFILE("VulkanCommandList::CopyImage()");
+
         VulkanStagingImage& srcVulkanStagingImage = *reinterpret_cast<VulkanStagingImage*>(&src);
         VulkanBuffer& srcVulkanBuffer = reinterpret_cast<VulkanStagingImage*>(&src)->GetVulkanBuffer();
         VulkanImage& dstVulkanImage = *reinterpret_cast<VulkanImage*>(&dst);
@@ -514,6 +536,8 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
     {
+        NG_PROFILE("VulkanCommandList::CopyBuffer()");
+
         // Enforce permanent state
         //ResolvePermanentState(src);
         //ResolvePermanentState(dst);
@@ -543,6 +567,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::DrawIndexed(const DrawArguments& args) const
     {
+        NG_PROFILE("VulkanCommandList::DrawIndexed()");
         vkCmdDrawIndexed(m_CommandBuffer, args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 

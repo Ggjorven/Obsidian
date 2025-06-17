@@ -97,6 +97,10 @@ namespace Nano::Graphics::Internal
 		uint32_t m_CurrentFrame = 0;
 		uint32_t m_AcquiredImage = 0;
 
+		// Resizing utilities
+		VkCommandPool m_ResizePool = VK_NULL_HANDLE;
+		VkCommandBuffer m_ResizeCommand = VK_NULL_HANDLE;
+
 		friend class VulkanDevice;
 	};
 #endif

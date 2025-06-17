@@ -35,13 +35,13 @@ namespace Nano::Graphics
         StorageBuffer,
         StorageBufferUnordered,
         UniformBuffer,
-        // TODO: Add volatile/dynamic uniform
+        DynamicUniformBuffer, // Note: Currently unusable, since we need a way to get MaxElements and alignment. // TODO: ...
         Sampler,
         PushConstants,
         //RayTracingAccelStruct,
         
         // Note: CombinedImageSampler is not supported, since only Vulkan supports it
-        //       instead use a seperate texture2D ([]) and sampler ([]), and combine with sampler2D
+        //       instead use a seperate texture2D ([]) and sampler ([]), and combine with sampler2D (GLSL)
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

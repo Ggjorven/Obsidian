@@ -33,28 +33,23 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT(!vulkanRenderpass.GetVulkanFramebuffers().empty(), "[VkGraphicsPipeline] Renderpass passed in with no created framebuffers.");
 		VulkanFramebuffer& vulkanFramebuffer = *reinterpret_cast<VulkanFramebuffer*>(&vulkanRenderpass.GetFramebuffer(0));
 
-		Nano::Memory::StaticVector<VkPipelineShaderStageCreateInfo, 2> shaderStages = { }; // Note: Update when more shaders are added
-		if (m_Specification.VertexShader)
-		{
-			VulkanShader& vulkanShader = *reinterpret_cast<VulkanShader*>(m_Specification.VertexShader);
+		Nano::Memory::StaticVector<VkPipelineShaderStageCreateInfo, 5> shaderStages = { }; // Note: Update when more shaders are added
 
+		const auto generateShaderCreateInfo = [&](VkShaderStageFlags shaderStage, VkShaderModule mod, const char* main)
+		{
 			VkPipelineShaderStageCreateInfo& vertShaderStageInfo = shaderStages.emplace_back();
 			vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-			vertShaderStageInfo.module = vulkanShader.GetVkShaderModule();
-			vertShaderStageInfo.pName = m_Specification.VertexShader->GetSpecification().MainName.data();
-		}
-		if (m_Specification.FragmentShader)
-		{
-			VulkanShader& vulkanShader = *reinterpret_cast<VulkanShader*>(m_Specification.FragmentShader);
+			vertShaderStageInfo.stage = static_cast<VkShaderStageFlagBits>(shaderStage);
+			vertShaderStageInfo.module = mod;
+			vertShaderStageInfo.pName = main;
+		};
 
-			VkPipelineShaderStageCreateInfo& vertShaderStageInfo = shaderStages.emplace_back();
-			vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			vertShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			vertShaderStageInfo.module = vulkanShader.GetVkShaderModule();
-			vertShaderStageInfo.pName = m_Specification.FragmentShader->GetSpecification().MainName.data();
-		}
-
+		if (m_Specification.VertexShader) generateShaderCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, reinterpret_cast<VulkanShader*>(m_Specification.VertexShader)->GetVkShaderModule(), m_Specification.VertexShader->GetSpecification().MainName.data());
+		if (m_Specification.TesselationControlShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, reinterpret_cast<VulkanShader*>(m_Specification.TesselationControlShader)->GetVkShaderModule(), m_Specification.TesselationControlShader->GetSpecification().MainName.data());
+		if (m_Specification.TesselationEvaluationShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, reinterpret_cast<VulkanShader*>(m_Specification.TesselationEvaluationShader)->GetVkShaderModule(), m_Specification.TesselationEvaluationShader->GetSpecification().MainName.data());
+		if (m_Specification.GeometryShader) generateShaderCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, reinterpret_cast<VulkanShader*>(m_Specification.GeometryShader)->GetVkShaderModule(), m_Specification.GeometryShader->GetSpecification().MainName.data());
+		if (m_Specification.FragmentShader) generateShaderCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, reinterpret_cast<VulkanShader*>(m_Specification.FragmentShader)->GetVkShaderModule(), m_Specification.FragmentShader->GetSpecification().MainName.data());
+		
 		VulkanInputLayout& vulkanInputLayout = *reinterpret_cast<VulkanInputLayout*>(m_Specification.Input);
 		const auto& bindingDescriptions = vulkanInputLayout.GetBindingDescriptions();
 		const auto& attributeDescriptions = vulkanInputLayout.GetAttributeDescriptions();
@@ -104,18 +99,6 @@ namespace Nano::Graphics::Internal
 		colourBlendAttachment.alphaBlendOp = BlendOperationToVkBlendOp(blendState.Target.BlendOpAlpha);
 		colourBlendAttachment.colorWriteMask = ColourMaskToVkColorComponentFlags(blendState.Target.ColourWriteMask);
 
-		/*
-		VkPipelineColorBlendStateCreateInfo colorBlending = {}; // Note: We currently only support 1 colour attachment
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colourBlendAttachment;
-		colorBlending.blendConstants[0] = 1.0f;
-		colorBlending.blendConstants[1] = 1.0f;
-		colorBlending.blendConstants[2] = 1.0f;
-		colorBlending.blendConstants[3] = 1.0f;
-		*/
 		VkPipelineColorBlendStateCreateInfo colorBlending = {}; // Note: We currently only support 1 colour attachment
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlending.attachmentCount = 1;
@@ -158,28 +141,32 @@ namespace Nano::Graphics::Internal
 		// Descriptor layouts
 		std::vector<VkDescriptorSetLayout> descriptorLayouts;
 		descriptorLayouts.reserve(GraphicsPipelineSpecification::MaxBindings);
+		std::vector<VkPushConstantRange> pushConstants;
+		pushConstants.reserve(GraphicsPipelineSpecification::MaxBindings);
 
 		for (auto descriptorLayout : m_Specification.BindingLayouts)
 		{
 			VulkanBindingLayout& vulkanLayout = *reinterpret_cast<VulkanBindingLayout*>(descriptorLayout);
 			descriptorLayouts.push_back(vulkanLayout.GetVkDescriptorSetLayout());
+
+			// PushConstants
+			uint32_t pushConstantOffset = 0;
+			for (const auto& item : vulkanLayout.GetBindingItems())
+			{
+				if (!(item.Type == ResourceType::PushConstants))
+					continue;
+
+				NG_ASSERT((item.Size > 0), "[VkPipeline] Push constant range passed has size of 0.");
+				NG_ASSERT((item.Size + pushConstantOffset <= BindingLayoutItem::MaxPushConstantSize), "[VkPipeline] Accumulated push constants exceeds the maximum size of {0} bytes.", BindingLayoutItem::MaxPushConstantSize);
+
+				VkPushConstantRange& range = pushConstants.emplace_back();
+				range.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
+				range.offset = pushConstantOffset;
+				range.size = static_cast<uint32_t>(item.Size);
+
+				pushConstantOffset += static_cast<uint32_t>(item.Size);
+			}
 		}
-
-		// Push constants
-		std::vector<VkPushConstantRange> pushConstants;
-		/* // TODO: ...
-		pushConstants.reserve(m_Specification.PushConstants.size());
-
-		for (auto& [stage, info] : m_Specification.PushConstants)
-		{
-			HZ_ASSERT((info.Size > 0), "Push constant range passed has size of 0.");
-
-			VkPushConstantRange& range = pushConstants.emplace_back();
-			range.stageFlags = (VkShaderStageFlagBits)stage;
-			range.offset = static_cast<uint32_t>(info.Offset);
-			range.size = static_cast<uint32_t>(info.Size);
-		}
-		*/
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

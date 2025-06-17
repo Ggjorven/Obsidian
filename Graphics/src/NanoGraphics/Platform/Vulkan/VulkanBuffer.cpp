@@ -114,6 +114,8 @@ namespace Nano::Graphics::Internal
     {
         (void)device;
 
+        NG_ASSERT((specs.Size != 0), "[VkBuffer] Size must not equal 0.");
+
         const VulkanDevice& vulkanDevice = *reinterpret_cast<const VulkanDevice*>(&device);
 
         // Validation checks
@@ -144,10 +146,14 @@ namespace Nano::Graphics::Internal
                 bufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             if (m_Specification.IsIndexBuffer)
                 bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            if (m_Specification.IsUniformBuffer)
+            if (m_Specification.IsUniformBuffer && m_Specification.IsTexel)
+                bufferUsage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+            else if (m_Specification.IsUniformBuffer)
                 bufferUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
-            if (m_Specification.IsUnorderedAccessed)
+            if (m_Specification.IsUnorderedAccessed && m_Specification.IsTexel)
+                bufferUsage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+            else if (m_Specification.IsUnorderedAccessed)
                 bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
         }
 

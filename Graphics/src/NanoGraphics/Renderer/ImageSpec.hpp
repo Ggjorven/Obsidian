@@ -165,7 +165,7 @@ namespace Nano::Graphics
     public:
         Format ImageFormat = Format::Unknown;
         ImageDimension Dimension = ImageDimension::Unknown;
-
+        
         uint32_t Width = 0, Height = 0, Depth = 1;
         uint32_t ArraySize = 1;
         uint32_t MipLevels = 1; // Note: Max = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1;
@@ -180,7 +180,7 @@ namespace Nano::Graphics
         std::string_view DebugName = {};
 
     public:
-        // Setters // TODO: Make MaxMipLevels constexpr
+        // Setters
         inline constexpr ImageSpecification& SetImageFormat(Format format) { ImageFormat = format; return *this; }
         inline constexpr ImageSpecification& SetImageDimension(ImageDimension dimension) { Dimension = dimension; return *this; }
         

@@ -51,7 +51,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandListPool
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanStateTracker : public Traits::NoCopy
+	class VulkanStateTracker : public Traits::NoCopy // TODO: Make statetracker higher level instead of in a commandlist
 	{
 	public:
 		// Constructor & Destructor

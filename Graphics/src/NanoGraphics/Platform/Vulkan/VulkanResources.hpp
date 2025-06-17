@@ -571,6 +571,7 @@ namespace Nano::Graphics::Internal
         { ResourceType::StorageBuffer,          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
         { ResourceType::StorageBufferUnordered, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
         { ResourceType::UniformBuffer,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+        { ResourceType::DynamicUniformBuffer,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
         { ResourceType::Sampler,                VK_DESCRIPTOR_TYPE_SAMPLER },
         { ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, // Note: Not really, but there is no PushConstants descriptor
     });

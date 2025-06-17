@@ -140,13 +140,6 @@ namespace Nano::Graphics
             inline constexpr RenderTarget& SetDstBlendAlpha(BlendFactor factor) { DstBlendAlpha = factor; return *this; }
             inline constexpr RenderTarget& SetBlendOpAlpha(BlendOperation operation) { BlendOpAlpha = operation; return *this; }
             inline constexpr RenderTarget& SetColourWriteMask(ColourMask mask) { ColourWriteMask = mask; return *this; }
-
-            // Methods
-            //inline constexpr bool UsesConstantColour() const { return ((SrcBlend == BlendFactor::ConstantColour) || (SrcBlend == BlendFactor::OneMinusConstantColour) || (DstBlend == BlendFactor::ConstantColour) || (DstBlend == BlendFactor::OneMinusConstantColour) || (SrcBlendAlpha == BlendFactor::ConstantColour) || (SrcBlendAlpha == BlendFactor::OneMinusConstantColour) || (DstBlendAlpha == BlendFactor::ConstantColour) || (DstBlendAlpha == BlendFactor::OneMinusConstantColour)); }
-
-            // Operators
-            //inline constexpr bool operator == (const RenderTarget& other) const { return ((BlendEnable == other.BlendEnable) && (SrcBlend == other.SrcBlend) && (DstBlend == other.DstBlend) && (BlendOp == other.BlendOp) && (SrcBlendAlpha == other.SrcBlendAlpha) && (DstBlendAlpha == other.DstBlendAlpha) && (BlendOpAlpha == other.BlendOpAlpha) && (ColourWriteMask == other.ColourWriteMask)); }
-            //inline constexpr bool operator != (const RenderTarget& other) const { return !(*this == other); }
         };
     public:
         RenderTarget Target; // Note: At this moment we only support 1 Rendertarget
@@ -156,13 +149,6 @@ namespace Nano::Graphics
         // Setters
         inline constexpr BlendState& SetRenderTarget(const RenderTarget& target) { Target = target; return *this; }
         inline constexpr BlendState& SetAlphaToCoverageEnable(bool enabled) { AlphaToCoverageEnable = enabled; return *this; }
-
-        // Methods
-        //inline constexpr bool UsesConstantColour(uint32_t numTargets) const { return Target.UsesConstantColour(); }
-
-        // Operators
-        //inline constexpr bool operator == (const BlendState& other) const { return ((AlphaToCoverageEnable != other.AlphaToCoverageEnable) && (Target == other.Target)); }
-        //inline constexpr bool operator != (const BlendState& other) const { return !(*this == other); }
     };
 
     struct RasterState
@@ -180,13 +166,6 @@ namespace Nano::Graphics
         float DepthBiasClamp = 0.f;
         float SlopeScaledDepthBias = 0.f;
 
-        //uint8_t ForcedSampleCount = 0;
-        //bool programmableSamplePositionsEnable = false;
-        //bool conservativeRasterEnable = false;
-        //bool quadFillEnable = false;
-        //char samplePositionsX[16]{};
-        //char samplePositionsY[16]{};
-
     public:
         // Setters
         inline constexpr RasterState& SetFillMode(RasterFillMode mode) { FillMode = mode; return *this; }
@@ -199,17 +178,6 @@ namespace Nano::Graphics
         inline constexpr RasterState& SetDepthBias(int value) { DepthBias = value; return *this; }
         inline constexpr RasterState& SetDepthBiasClamp(float value) { DepthBiasClamp = value; return *this; }
         inline constexpr RasterState& setSlopeScaleDepthBias(float value) { SlopeScaledDepthBias = value; return *this; }
-        //constexpr RasterState& setForcedSampleCount(uint8_t value) { ForcedSampleCount = value; return *this; }
-        //constexpr RasterState& setProgrammableSamplePositionsEnable(bool value) { programmableSamplePositionsEnable = value; return *this; }
-        //constexpr RasterState& enableProgrammableSamplePositions() { programmableSamplePositionsEnable = true; return *this; }
-        //constexpr RasterState& disableProgrammableSamplePositions() { programmableSamplePositionsEnable = false; return *this; }
-        //constexpr RasterState& setConservativeRasterEnable(bool value) { conservativeRasterEnable = value; return *this; }
-        //constexpr RasterState& enableConservativeRaster() { conservativeRasterEnable = true; return *this; }
-        //constexpr RasterState& disableConservativeRaster() { conservativeRasterEnable = false; return *this; }
-        //constexpr RasterState& setQuadFillEnable(bool value) { quadFillEnable = value; return *this; }
-        //constexpr RasterState& enableQuadFill() { quadFillEnable = true; return *this; }
-        //constexpr RasterState& disableQuadFill() { quadFillEnable = false; return *this; }
-        //constexpr RasterState& setSamplePositions(const char* x, const char* y, int count) { for (int i = 0; i < count; i++) { samplePositionsX[i] = x[i]; samplePositionsY[i] = y[i]; } return *this; }
     };
 
     struct DepthStencilState
@@ -281,8 +249,10 @@ namespace Nano::Graphics
         PrimitiveType Primitive = PrimitiveType::TriangleList;
         InputLayout* Input = nullptr;
 
-        // TODO: Add more shaders
         Shader* VertexShader = nullptr;
+        Shader* TesselationControlShader = nullptr;
+        Shader* TesselationEvaluationShader = nullptr;
+        Shader* GeometryShader = nullptr;
         Shader* FragmentShader = nullptr;
         
         RenderState RenderingState = {};
@@ -298,7 +268,13 @@ namespace Nano::Graphics
         inline constexpr GraphicsPipelineSpecification& SetInputLayout(InputLayout& layout) { Input = &layout; return *this; }
 
         inline constexpr GraphicsPipelineSpecification& SetVertexShader(Shader& shader) { VertexShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetTesselationControlShader(Shader& shader) { TesselationControlShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetHullShader(Shader& shader) { TesselationControlShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetTesselationEvaluationShader(Shader& shader) { TesselationEvaluationShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetDomainShader(Shader& shader) { TesselationEvaluationShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetGeometryShader(Shader& shader) { GeometryShader = &shader; return *this; }
         inline constexpr GraphicsPipelineSpecification& SetFragmentShader(Shader& shader) { FragmentShader = &shader; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetPixelShader(Shader& shader) { FragmentShader = &shader; return *this; }
 
         inline constexpr GraphicsPipelineSpecification& SetRenderState(const RenderState& state) { RenderingState = state; return *this; }
         inline constexpr GraphicsPipelineSpecification& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }

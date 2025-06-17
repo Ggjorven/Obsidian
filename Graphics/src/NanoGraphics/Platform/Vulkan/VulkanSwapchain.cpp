@@ -31,6 +31,24 @@ namespace Nano::Graphics::Internal
         #if defined(NG_PLATFORM_DESKTOP)
             VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
         #endif
+        
+        // Resize utilities
+        {
+            VkCommandPoolCreateInfo poolInfo = {};
+            poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+            poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
+            
+            VK_VERIFY(vkCreateCommandPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_ResizePool));
+
+            VkCommandBufferAllocateInfo allocInfo = {};
+            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocInfo.commandPool = m_ResizePool;
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocInfo.commandBufferCount = 1;
+
+            vkAllocateCommandBuffers(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_ResizeCommand);
+        }
 
         Resize(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y, m_Specification.VSync, m_Specification.RequestedFormat, m_Specification.RequestedColourSpace);
     
@@ -97,7 +115,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanSwapchain::Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace)
     {
-        NG_PROFILE("VkSwapchain::Resize()")
+        NG_PROFILE("VkSwapchain::Resize()");
         if (width == 0 || height == 0) [[unlikely]]
             return;
 
@@ -228,61 +246,60 @@ namespace Nano::Graphics::Internal
             }
         }
 
-        // Temporary transition // TODO: Replace
+        // Transition to PresentSrc
         {
-            // Create command pool
-            VkCommandPool commandPool;
-            VkCommandPoolCreateInfo poolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-            poolInfo.queueFamilyIndex = m_Device.GetContext().GetVulkanPhysicalDevice().GetQueueFamilyIndices().QueueFamily;
-            vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
+            vkResetCommandBuffer(m_ResizeCommand, 0);
 
-            // Allocate command buffer
-            VkCommandBuffer commandBuffer;
-            VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-            allocInfo.commandPool = commandPool;
-            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandBufferCount = 1;
-            vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-            // Begin recording
-            VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+            VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            vkBeginCommandBuffer(commandBuffer, &beginInfo);
+            vkBeginCommandBuffer(m_ResizeCommand, &beginInfo);
 
-            // Transition layout
-            VkImageMemoryBarrier barrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.baseMipLevel = 0;
-            barrier.subresourceRange.levelCount = 1;
-            barrier.subresourceRange.baseArrayLayer = 0;
-            barrier.subresourceRange.layerCount = 1;
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = 0;
+            VkImageMemoryBarrier2 barrier2 = {};
+            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+            barrier2.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            barrier2.srcAccessMask = VK_ACCESS_2_NONE;
+            barrier2.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
+            barrier2.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            barrier2.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-            barrier.image = m_Images[0]->GetVkImage();
-            vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-            barrier.image = m_Images[1]->GetVkImage();
-            vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-            barrier.image = m_Images[2]->GetVkImage();
-            vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+            barrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrier2.subresourceRange.baseMipLevel = 0;
+            barrier2.subresourceRange.levelCount = 1;
+            barrier2.subresourceRange.baseArrayLayer = 0;
+            barrier2.subresourceRange.layerCount = 1;
 
-            // End recording
-            vkEndCommandBuffer(commandBuffer);
+            // Set all the images
+            std::array<VkImageMemoryBarrier2, Information::BackBufferCount> barriers = { };
+            for (size_t i = 0; i < m_Images.size(); i++)
+            {
+                barriers[i] = barrier2;
+                barriers[i].image = m_Images[i]->GetVkImage();
+            }
 
-            // Submit and wait
-            VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &commandBuffer;
-            vkQueueSubmit(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
+            dependencyInfo.pImageMemoryBarriers = barriers.data();
+
+            vkCmdPipelineBarrier2(m_ResizeCommand, &dependencyInfo);
+
+            vkEndCommandBuffer(m_ResizeCommand);
+
+            VkCommandBufferSubmitInfo commandBufferInfo = {};
+            commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+            commandBufferInfo.commandBuffer = m_ResizeCommand;
+
+            VkSubmitInfo2 submitInfo = {};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+            submitInfo.commandBufferInfoCount = 1;
+            submitInfo.pCommandBufferInfos = &commandBufferInfo;
+            vkQueueSubmit2(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+            
             vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics));
-
-            // Cleanup
-            vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-            vkDestroyCommandPool(device, commandPool, nullptr);
         }
     }
 
@@ -390,7 +407,12 @@ namespace Nano::Graphics::Internal
             }
 
             // If not available, try again
-            if (!foundDesiredCombination)
+            if (!foundDesiredCombination && space == ColourSpace::SRGB)
+            {
+                m_Device.GetContext().Error("[VkSwapchain] Failed to resolve format and colourspace. Defaulting to BGRA8Unorm & SRGB.");
+                ResolveFormatAndColourSpace(details, Format::BGRA8Unorm, ColourSpace::SRGB);
+            }
+            else if (!foundDesiredCombination)
                 ResolveFormatAndColourSpace(details, format, ColourSpace::SRGB);
         }
     }

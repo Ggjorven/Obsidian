@@ -77,6 +77,7 @@ namespace Nano::Graphics
         //bool IsAccelStructBuildInput = false;
         //bool IsAccelStructStorage = false;
 
+        bool IsTexel = false;
         bool IsUnorderedAccessed = false;
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
@@ -94,13 +95,14 @@ namespace Nano::Graphics
         inline constexpr BufferSpecification& SetIsIndexBuffer(bool enabled) { IsIndexBuffer = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUniformBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
 
+        inline constexpr BufferSpecification& SetIsTexel(bool enabled) { IsTexel = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
+
         inline constexpr BufferSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
         inline constexpr BufferSpecification& SetCPUAccess(CpuAccessMode access) { CpuAccess = access; return *this; }
         inline constexpr BufferSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
 
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
-
     };
 
 }

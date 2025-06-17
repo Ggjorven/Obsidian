@@ -10,7 +10,9 @@
 using namespace Nano;
 using namespace Nano::Graphics;
 
-/*
+#if 1
+inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
+
 inline constexpr std::string_view g_VertexShader = R"(
 #version 460 core
 
@@ -54,7 +56,8 @@ void main()
 	//o_Colour = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )";
-*/
+#else
+inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::HLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
 struct VSInput
@@ -104,6 +107,7 @@ float4 main(PSInput input) : SV_Target
     // return float4(1.0, 0.0, 0.0, 1.0);
 }
 )";
+#endif
 
 inline constexpr auto g_VertexData = std::to_array<float>({
 	// Positions				// UVs
@@ -218,8 +222,8 @@ int Main(int argc, char* argv[])
 
 		// ShaderCompiler & Shader
 		ShaderCompiler compiler;
-		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), ShadingLanguage::HLSL);
-		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), ShadingLanguage::HLSL);
+		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), g_ShadingLanguage);
+		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), g_ShadingLanguage);
 
 		auto shaders = std::to_array<Shader>({
 			device.CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" }),
@@ -408,14 +412,14 @@ int Main(int argc, char* argv[])
 				list.ResetAndOpen();
 				{ 
 					// Graphics
-					GraphicsState state = GraphicsState()
+					list.SetGraphicsState(GraphicsState()
 						.SetPipeline(pipeline)
 						.SetRenderpass(renderpass)
 						.SetViewport(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(window.GetSize().x), static_cast<float>(window.GetSize().y))))
 						.SetColourClear({ (static_cast<float>(window.GetInput().GetCursorPosition().x) / static_cast<float>(window.GetSize().x)), (static_cast<float>(window.GetInput().GetCursorPosition().y) / static_cast<float>(window.GetSize().y)), 0.0f, 1.0f })
-						.AddBindingSet(0, set0);
-					list.SetGraphicsState(state);
+						.AddBindingSet(0, set0)
+					);
 
 					// Rendering
 					list.BindVertexBuffer(vertexBuffer);
@@ -428,11 +432,11 @@ int Main(int argc, char* argv[])
 				}
 				list.Close();
 
-				CommandListSubmitArgs args = CommandListSubmitArgs()
+				list.Submit(CommandListSubmitArgs()
 					.SetQueue(CommandQueue::Graphics)
 					.SetWaitForSwapchainImage(true)
-					.SetOnFinishMakeSwapchainPresentable(true);
-				list.Submit(args);
+					.SetOnFinishMakeSwapchainPresentable(true)
+				);
 			}
 			swapchain.Present();
 		}
