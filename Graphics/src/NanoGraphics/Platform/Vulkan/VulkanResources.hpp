@@ -922,8 +922,6 @@ namespace Nano::Graphics::Internal
     ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
 
     BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
-
-    uint32_t ResourceTypeToRegisterOffset(const VulkanBindingOffsets& bindingOffsets, ResourceType type);
 #endif
 
 }

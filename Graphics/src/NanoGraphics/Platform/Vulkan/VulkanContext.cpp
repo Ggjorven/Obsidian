@@ -180,6 +180,8 @@ namespace Nano::Graphics::Internal
             nameInfo.pObjectName = name.c_str();
 
             VK_VERIFY(s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo));
+        #else
+            (void)object; (void)type; (void)name;
         #endif
     }
 
@@ -190,6 +192,8 @@ namespace Nano::Graphics::Internal
                 return;
 
             s_MessageCallback(DeviceMessageType::Warn, message);
+        #else
+            (void)message;
         #endif
     }
 
@@ -200,6 +204,8 @@ namespace Nano::Graphics::Internal
                 return;
 
             s_MessageCallback(DeviceMessageType::Error, message);
+        #else
+            (void)message;
         #endif
     }
 

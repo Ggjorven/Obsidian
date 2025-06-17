@@ -67,7 +67,6 @@ namespace Nano::Graphics::Internal
 
     private:
         shaderc::Compiler m_Compiler = {};
-        shaderc::CompileOptions m_CompileOptions = {};
     };
 #endif
 

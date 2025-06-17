@@ -37,14 +37,14 @@ namespace Nano::Graphics
         #define NG_UNREACHABLE() NG_ASSERT(false, "Unreachable");
 
     #else
-        #define NG_LOG_TRACE(...) 
-        #define NG_LOG_INFO(...) 
-        #define NG_LOG_WARN(...) 
-        #define NG_LOG_ERROR(...) 
-        #define NG_LOG_FATAL(...) 
+        #define NG_LOG_TRACE(fmt, ...) 
+        #define NG_LOG_INFO(fmt, ...) 
+        #define NG_LOG_WARN(fmt, ...) 
+        #define NG_LOG_ERROR(fmt, ...) 
+        #define NG_LOG_FATAL(fmt, ...) 
 
-        #define NG_ASSERT(x, msg)
-        #define NG_VERIFY(x, msg)
+        #define NG_ASSERT(x, fmt, ...)
+        #define NG_VERIFY(x, fmt, ...)
         #define NG_UNREACHABLE()
     #endif
 

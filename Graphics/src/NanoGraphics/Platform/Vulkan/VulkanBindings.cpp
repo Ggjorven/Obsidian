@@ -60,11 +60,8 @@ namespace Nano::Graphics::Internal
             VkDescriptorType descriptorType = ResourceTypeToVkDescriptorType(item.Type);
             uint32_t descriptorCount = item.Size;
 
-            uint32_t registerOffset = ResourceTypeToRegisterOffset(specs.BindingOffsets, item.Type);
-            uint32_t bindingLocation = registerOffset + item.Slot;
-
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
-            descriptorSetLayoutBinding.binding = bindingLocation;
+            descriptorSetLayoutBinding.binding = item.Slot;
             descriptorSetLayoutBinding.descriptorCount = descriptorCount;
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
@@ -248,6 +245,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex)
     {
+        (void)resourceType;
         NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
         
         VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
@@ -351,6 +349,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::UploadSampler(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
+        (void)resourceType;
         NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
     
         VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);

@@ -100,11 +100,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanShaderCompiler::VulkanShaderCompiler()
     {
-        #if defined(NG_PLATFORM_MACOS)
-            m_CompileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-        #else
-            m_CompileOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-        #endif
     }
 
     VulkanShaderCompiler::~VulkanShaderCompiler()
@@ -119,10 +114,25 @@ namespace Nano::Graphics::Internal
         NG_ASSERT((!code.empty()), "[VkShaderCompiler] Empty string passed in as shader code.");
 
         // Set language
-        if (language == ShadingLanguage::GLSL)      m_CompileOptions.SetSourceLanguage(shaderc_source_language_glsl);
-        else if (language == ShadingLanguage::HLSL) m_CompileOptions.SetSourceLanguage(shaderc_source_language_hlsl);
+        shaderc::CompileOptions options = {};
+#if defined(NG_PLATFORM_MACOS)
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+#else
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+#endif
+        if (language == ShadingLanguage::GLSL)      
+            options.SetSourceLanguage(shaderc_source_language_glsl);
+        else if (language == ShadingLanguage::HLSL)
+        {
+            options.SetSourceLanguage(shaderc_source_language_hlsl);
+            options.SetTargetSpirv(shaderc_spirv_version_1_6);
 
-        shaderc::SpvCompilationResult module = m_Compiler.CompileGlslToSpv(code, ShaderStageToShaderCKind(stage), "", m_CompileOptions);
+            options.AddMacroDefinition("HLSL");
+            options.SetAutoBindUniforms(false);
+            options.SetHlslIoMapping(true); // Note: Needed for `register(b0, space0)` layout
+        }
+
+        shaderc::SpvCompilationResult module = m_Compiler.CompileGlslToSpv(code, ShaderStageToShaderCKind(stage), "", options);
 
         NG_ASSERT((module.GetCompilationStatus() == shaderc_compilation_status_success), "[VkShaderCompiler] Error compiling shader: {0}", module.GetErrorMessage());
 

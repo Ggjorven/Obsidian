@@ -78,22 +78,6 @@ namespace Nano::Graphics
         inline constexpr uint32_t GetArraySize() const { return (Type == ResourceType::PushConstants) ? 1 : Size; }
     };
 
-    struct VulkanBindingOffsets // Note: Describes compile-time settings for HLSL -> SPIR-V register allocation.
-    {
-    public:
-        uint32_t ShaderResource = 0;
-        uint32_t Sampler = 128;
-        uint32_t UniformBuffer = 256;
-        uint32_t UnorderedAccess = 384;
-
-    public:
-        // Setters
-        inline constexpr VulkanBindingOffsets& SetShaderResourceOffset(uint32_t offset) { ShaderResource = offset; return *this; }
-        inline constexpr VulkanBindingOffsets& SetSamplerOffset(uint32_t offset) { Sampler = offset; return *this; }
-        inline constexpr VulkanBindingOffsets& SetConstantBufferOffset(uint32_t offset) { UniformBuffer = offset; return *this; }
-        inline constexpr VulkanBindingOffsets& SetUnorderedAccessViewOffset(uint32_t offset) { UnorderedAccess = offset; return *this; }
-    };
-
     struct BindingSetUploadable
     {
     public:
@@ -128,7 +112,6 @@ namespace Nano::Graphics
         bool RegisterSpaceIsDescriptorSet = false;
 
         std::vector<BindingLayoutItem> Bindings;
-        VulkanBindingOffsets BindingOffsets = {};
 
         std::string_view DebugName = {};
 
@@ -138,7 +121,6 @@ namespace Nano::Graphics
         inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint32_t space) { RegisterSpace = space; return *this; }
         inline constexpr BindingLayoutSpecification& SetRegisterSpaceIsDescriptorSet(bool enabled) { RegisterSpaceIsDescriptorSet = enabled; return *this; }
         inline constexpr BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
-        inline constexpr BindingLayoutSpecification& SetBindingOffsets(const VulkanBindingOffsets& offsets) { BindingOffsets = offsets; return *this; }
         inline constexpr BindingLayoutSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 

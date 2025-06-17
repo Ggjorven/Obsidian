@@ -62,8 +62,8 @@ namespace Nano::Graphics::Internal
 
     public:
         // Methods
-        inline bool IsComplete() const;
-        inline bool SameQueue() const;
+        bool IsComplete() const;
+        bool SameQueue() const;
 
     public:
         static QueueFamilyIndices Find(VkSurfaceKHR surface, VkPhysicalDevice device); 

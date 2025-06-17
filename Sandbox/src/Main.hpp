@@ -10,6 +10,7 @@
 using namespace Nano;
 using namespace Nano::Graphics;
 
+/*
 inline constexpr std::string_view g_VertexShader = R"(
 #version 460 core
 
@@ -51,6 +52,56 @@ void main()
 	// Combine texture and sampler
     o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
 	//o_Colour = vec4(1.0, 0.0, 0.0, 1.0);
+}
+)";
+*/
+
+inline constexpr std::string_view g_VertexShader = R"(
+struct VSInput
+{
+    float3 Position : POSITION0;
+    float2 TexCoord : TEXCOORD0;
+};
+
+struct VSOutput
+{
+    float2 TexCoord : TEXCOORD0;
+    float3 Position : TEXCOORD1;
+    float4 SV_Position : SV_POSITION;
+};
+
+// cbuffer CameraSettings : register(b0, space0)
+// {
+//     float4x4 View;
+//     float4x4 Projection;
+// };
+
+VSOutput main(VSInput input)
+{
+    VSOutput output;
+    output.Position = input.Position;
+    output.TexCoord = input.TexCoord;
+
+    // output.SV_Position = mul(Projection, mul(View, float4(input.Position, 1.0)));
+    output.SV_Position = float4(input.Position, 1.0);
+    return output;
+}
+)";
+
+inline constexpr std::string_view g_FragmentShader = R"(
+Texture2D u_Texture : register(t1, space0);
+SamplerState u_Sampler : register(s2, space0);
+
+struct PSInput
+{
+    float2 TexCoord : TEXCOORD0;
+    float3 Position : TEXCOORD1;
+};
+
+float4 main(PSInput input) : SV_Target
+{
+    return u_Texture.Sample(u_Sampler, input.TexCoord);
+    // return float4(1.0, 0.0, 0.0, 1.0);
 }
 )";
 
@@ -127,7 +178,6 @@ int Main(int argc, char* argv[])
 		Swapchain swapchain = device.CreateSwapchain(SwapchainSpecification()
 			.SetWindow(window)
 			.SetFormat(Format::BGRA8Unorm)
-			//.SetFormat(Format::SBGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
 			.SetVSync(false)
 			.SetDebugName("Swapchain")
@@ -168,8 +218,8 @@ int Main(int argc, char* argv[])
 
 		// ShaderCompiler & Shader
 		ShaderCompiler compiler;
-		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), ShadingLanguage::GLSL);
-		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), ShadingLanguage::GLSL);
+		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), ShadingLanguage::HLSL);
+		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), ShadingLanguage::HLSL);
 
 		auto shaders = std::to_array<Shader>({
 			device.CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" }),
@@ -219,8 +269,6 @@ int Main(int argc, char* argv[])
 				.SetType(ResourceType::Sampler)
 				.SetDebugName("u_Sampler")
 			)
-
-			.SetBindingOffsets(VulkanBindingOffsets(0, 0, 0, 0))
 		);
 
 		BindingSetPool bindingSetPoolSet0 = device.AllocateBindingSetPool(BindingSetPoolSpecification()
