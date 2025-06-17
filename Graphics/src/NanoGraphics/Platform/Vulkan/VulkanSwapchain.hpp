@@ -25,9 +25,11 @@ namespace Nano::Graphics::Internal
 
 	class VulkanDevice;
 	class VulkanCommandList;
+	class VulkanSwapchain;
 
 	struct SwapchainSupportDetails;
 
+#if defined(NG_API_VULKAN)
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanSwapchain
 	////////////////////////////////////////////////////////////////////////////////////
@@ -97,5 +99,6 @@ namespace Nano::Graphics::Internal
 
 		friend class VulkanDevice;
 	};
+#endif
 
 }

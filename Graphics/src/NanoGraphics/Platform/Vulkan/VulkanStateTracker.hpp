@@ -18,7 +18,9 @@ namespace Nano::Graphics::Internal
 {
 
 	class VulkanDevice;
+	class VulkanStateTracker;
 
+#if defined(NG_API_VULKAN)
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanImageState
 	////////////////////////////////////////////////////////////////////////////////////
@@ -88,5 +90,6 @@ namespace Nano::Graphics::Internal
 		std::vector<ImageBarrier> m_ImageBarriers = { };
 		std::vector<BufferBarrier> m_BufferBarriers = { };
 	};
+#endif
 
 }

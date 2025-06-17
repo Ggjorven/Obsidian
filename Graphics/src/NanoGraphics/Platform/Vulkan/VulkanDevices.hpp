@@ -12,6 +12,7 @@
 namespace Nano::Graphics::Internal
 {
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal structs
     ////////////////////////////////////////////////////////////////////////////////////
@@ -139,5 +140,6 @@ namespace Nano::Graphics::Internal
 
         std::array<VkQueue, static_cast<size_t>(CommandQueue::Count)> m_Queues = { };
     };
+#endif
 
 }

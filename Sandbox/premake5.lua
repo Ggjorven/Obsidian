@@ -39,10 +39,10 @@ project "Sandbox"
 		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
     elseif gfxapi == "d3d12" then
         defines { "NG_API_D3D12" }
-	elseif gfxapi == "d3d11" then
-        defines { "NG_API_D3D11" }
-	elseif gfxapi == "opengl" then
-        defines { "NG_API_OPENGL" }
+    elseif gfxapi == "metal" then
+        defines { "NG_API_METAL" }
+    elseif gfxapi == "dummy" then
+        defines { "NG_API_DUMMY" }
     end
 
 	includedirs
@@ -52,7 +52,6 @@ project "Sandbox"
 		"%{wks.location}/Graphics/src",
 
 		"%{Dependencies.GLFW.IncludeDir}",
-		"%{Dependencies.glad.IncludeDir}",
 		"%{Dependencies.glm.IncludeDir}",
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
@@ -86,7 +85,6 @@ project "Sandbox"
 		links
 		{
 			"%{Dependencies.GLFW.LibName}",
-			"%{Dependencies.glad.LibName}",
 			"%{Dependencies.Tracy.LibName}",
 		}
 
@@ -147,7 +145,6 @@ project "Sandbox"
 			"%{wks.location}/Lumen/src",
 
 			"%{Dependencies.GLFW.IncludeDir}",
-			"%{Dependencies.glad.IncludeDir}",
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",

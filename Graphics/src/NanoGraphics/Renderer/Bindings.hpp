@@ -7,8 +7,12 @@
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanBindings.hpp"
+#include "NanoGraphics/Platform/Dummy/DummyBindings.hpp"
 
 #include <Nano/Nano.hpp>
+
+#include <span>
+#include <initializer_list>
 
 namespace Nano::Graphics
 {
@@ -26,7 +30,10 @@ namespace Nano::Graphics
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingLayout>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingLayout>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyBindingLayout>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyBindingLayout>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyBindingLayout>
         >;
     public:
         // Destructor
@@ -55,7 +62,10 @@ namespace Nano::Graphics
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingSet>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingSet>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyBindingSet>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyBindingSet>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyBindingSet>
         >;
     public:
         // Destructor
@@ -66,8 +76,8 @@ namespace Nano::Graphics
         inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(sampler, resourceType, slot, arrayIndex); }
         inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(buffer, range, resourceType, slot, arrayIndex); }
         
-        // TODO: Add initializer list?
         inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet.UploadList(uploadables); }
+        inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_BindingSet.UploadList(std::span<const BindingSetUploadable>(uploadables)); }
 
     private:
         // Constructor
@@ -87,7 +97,10 @@ namespace Nano::Graphics
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingSetPool>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanBindingSetPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyBindingSetPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyBindingSetPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyBindingSetPool>
         >;
     public:
         // Destructor
@@ -95,6 +108,9 @@ namespace Nano::Graphics
 
         // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline BindingSet CreateBindingSet() { return BindingSet(*this); } // Note: BindingSets get destroyed by the pool
+
+        // Getters
+        inline const BindingSetPoolSpecification& GetSpecification() const { return m_BindingSetPool.GetSpecification(); }
 
     private:
         // Constructor

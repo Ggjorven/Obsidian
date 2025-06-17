@@ -38,17 +38,17 @@ project "Graphics"
 	-- Rendering API specfic selections
 	if gfxapi == "vulkan" then
         defines { "NG_API_VULKAN" }
-		removefiles { "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/D3D11/**", "src/NanoGraphics/Platform/OpenGL/**" }
+		removefiles { "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
 		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
     elseif gfxapi == "d3d12" then
         defines { "NG_API_D3D12" }
-		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D11/**", "src/NanoGraphics/Platform/OpenGL/**" }
-	elseif gfxapi == "d3d11" then
-        defines { "NG_API_D3D11" }
-		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/OpenGL/**" }
-	elseif gfxapi == "opengl" then
-        defines { "NG_API_OPENGL" }
-		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/D3D11/**" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
+	elseif gfxapi == "metal" then
+        defines { "NG_API_METAL" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Dummy/**" }
+	elseif gfxapi == "dummy" then
+        defines { "NG_API_DUMMY" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Metal/**" }
     end
 
 	includedirs
@@ -57,7 +57,6 @@ project "Graphics"
 		"src/NanoGraphics",
 
 		"%{Dependencies.GLFW.IncludeDir}",
-		"%{Dependencies.glad.IncludeDir}",
 		"%{Dependencies.glm.IncludeDir}",
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
@@ -68,7 +67,6 @@ project "Graphics"
 	{
 		"%{Dependencies.GLFW.LibName}",
 		"%{Dependencies.Tracy.LibName}",
-		"%{Dependencies.glad.LibName}",
 	}
 
 	filter "system:windows"
@@ -161,7 +159,6 @@ project "Graphics"
 		
 	filter "configurations:Release"
 		defines "NG_CONFIG_RELEASE"
-		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
 

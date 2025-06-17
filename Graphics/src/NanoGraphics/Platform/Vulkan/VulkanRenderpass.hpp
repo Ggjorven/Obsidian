@@ -20,7 +20,9 @@ namespace Nano::Graphics::Internal
 {
 
     class VulkanDevice;
+    class VulkanRenderpass;
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanRenderpass
     ////////////////////////////////////////////////////////////////////////////////////
@@ -55,5 +57,6 @@ namespace Nano::Graphics::Internal
 
         Nano::Memory::StaticVector<VulkanFramebuffer, Information::BackBufferCount> m_Framebuffers;
     };
+#endif
 
 }

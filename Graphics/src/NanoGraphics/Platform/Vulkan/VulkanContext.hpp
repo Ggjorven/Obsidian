@@ -15,8 +15,11 @@
 namespace Nano::Graphics::Internal
 {
 
+    class VulkanContext;
+
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
-    // VulkanDevice
+    // VulkanContext
     ////////////////////////////////////////////////////////////////////////////////////
     class VulkanContext : public Traits::NoMove, public Traits::NoCopy
     {
@@ -74,5 +77,6 @@ namespace Nano::Graphics::Internal
 
         DeviceDestroyCallback m_DestroyCallback = nullptr;
     };
+#endif
 
 }

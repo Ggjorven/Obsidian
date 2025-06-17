@@ -22,6 +22,7 @@
 namespace Nano::Graphics::Internal
 {
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // ResourceStateMapping
     ////////////////////////////////////////////////////////////////////////////////////
@@ -923,5 +924,6 @@ namespace Nano::Graphics::Internal
     BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
 
     uint32_t ResourceTypeToRegisterOffset(const VulkanBindingOffsets& bindingOffsets, ResourceType type);
+#endif
 
 }

@@ -4,6 +4,7 @@
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanCommandList.hpp"
+#include "NanoGraphics/Platform/Dummy/DummyCommandList.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -24,7 +25,10 @@ namespace Nano::Graphics
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandList>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandList>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyCommandList>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyCommandList>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyCommandList>
         >;
     public:
         // Destructor
@@ -85,7 +89,10 @@ namespace Nano::Graphics
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
-            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandListPool>
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandListPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyCommandListPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyCommandListPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyCommandListPool>
         >;
     public:
         // Destructor

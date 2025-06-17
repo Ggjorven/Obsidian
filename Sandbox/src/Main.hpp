@@ -285,7 +285,7 @@ int Main(int argc, char* argv[])
 			.SetDebugName("Vertexbuffer")
 		);
 		initCommand.StartTracking(vertexBuffer, ResourceState::Unknown);
-		std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
+		if (bufferMemory) std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
 		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData), 0, 0);
 
 		Buffer indexBuffer = device.CreateBuffer(BufferSpecification()
@@ -295,7 +295,7 @@ int Main(int argc, char* argv[])
 			.SetDebugName("Indexbuffer")
 		);
 		initCommand.StartTracking(indexBuffer, ResourceState::Unknown);
-		std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
+		if (bufferMemory) std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
 		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData), 0);
 
 		StagingImage stagingImage = device.CreateStagingImage(ImageSpecification()
@@ -319,7 +319,7 @@ int Main(int argc, char* argv[])
 		);
 		initCommand.StartTracking(image, ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 		uint32_t imageColour = 0xFF00FF00;
-		std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
+		if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
 		initCommand.CopyImage(image, ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 
 		Sampler sampler = device.CreateSampler(SamplerSpecification());
@@ -414,4 +414,4 @@ int Main(int argc, char* argv[])
 	}
 
 	return 0;
-}
+}             

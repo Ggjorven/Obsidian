@@ -22,7 +22,12 @@ namespace Nano::Graphics::Internal
 
 	class VulkanImage;
 	class VulkanDevice;
+	class VulkanImageSubresourceView;
+	class VulkanImage;
+	class VulkanStagingImage;
+	class VulkanSampler;
 
+#if defined(NG_API_VULKAN)
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanImageSubresourceView
 	////////////////////////////////////////////////////////////////////////////////////
@@ -169,5 +174,6 @@ namespace Nano::Graphics::Internal
 
 		VkSampler m_Sampler = VK_NULL_HANDLE;
 	};
+#endif
 
 }

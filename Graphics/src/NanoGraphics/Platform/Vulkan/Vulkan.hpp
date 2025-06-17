@@ -1,5 +1,6 @@
 #pragma once
 
+#if defined(NG_API_VULKAN)
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
@@ -145,3 +146,4 @@ namespace Nano::Graphics::Internal
 
 
 }
+#endif

@@ -19,7 +19,10 @@ namespace Nano::Graphics::Internal
 {
 
     class VulkanDevice;
+    class VulkanInputLayout;
+    class VulkanBuffer;
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanInputLayout
     ////////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +74,8 @@ namespace Nano::Graphics::Internal
         VkBuffer m_Buffer = VK_NULL_HANDLE;
         VmaAllocation m_Allocation = VK_NULL_HANDLE;
 
-        // TODO: BufferViews like ImageViews
+        // Note: Maybe in the future add BufferViews like ImageViews
     };
+#endif
 
 }

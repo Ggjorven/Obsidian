@@ -106,6 +106,9 @@ namespace Nano::Graphics::Internal
         if ((colourFormat != m_Specification.RequestedFormat) || (colourSpace != m_Specification.RequestedColourSpace)) [[unlikely]]
             ResolveFormatAndColourSpace(details, colourFormat, colourSpace);
 
+        // Update specification (Note: The rest gets updated by methods)
+        m_Specification.VSync = vsync;
+
         VkExtent2D swapchainExtent = {};
         if (details.Capabilities.currentExtent.width == 0xFFFFFFFF) // When it's 0xFFFFFFFF we can decide ourselves.
         {

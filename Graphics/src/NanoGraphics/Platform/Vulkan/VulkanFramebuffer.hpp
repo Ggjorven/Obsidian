@@ -17,7 +17,9 @@ namespace Nano::Graphics::Internal
 {
 
     class VulkanRenderpass;
+    class VulkanFramebuffer;
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanFramebuffer
     ////////////////////////////////////////////////////////////////////////////////////
@@ -58,5 +60,6 @@ namespace Nano::Graphics::Internal
 
         VkFramebuffer m_Framebuffer = VK_NULL_HANDLE;
     };
+#endif
 
 }

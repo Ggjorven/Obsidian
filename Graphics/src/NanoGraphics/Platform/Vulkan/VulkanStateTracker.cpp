@@ -262,7 +262,7 @@ namespace Nano::Graphics::Internal
 
         if (!imageBarriers.empty() || !bufferBarriers.empty())
         {
-            VkDependencyInfo dependencyInfo = {}; // TODO: Check if imagebarriers and bufferbarriers can be in the same dependency
+            VkDependencyInfo dependencyInfo = {};
             dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
             dependencyInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(bufferBarriers.size());
             dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();

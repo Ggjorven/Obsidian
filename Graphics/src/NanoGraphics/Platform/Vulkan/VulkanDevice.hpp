@@ -28,6 +28,9 @@ namespace Nano::Graphics
 namespace Nano::Graphics::Internal
 {
 
+    class VulkanDevice;
+
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanDevice
     ////////////////////////////////////////////////////////////////////////////////////
@@ -76,5 +79,6 @@ namespace Nano::Graphics::Internal
         VulkanContext m_Context;
         VulkanAllocator m_Allocator;
     };
+#endif
 
 }

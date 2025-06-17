@@ -4,8 +4,6 @@
 
 #include "NanoGraphics/Renderer/PipelineSpec.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
-
 #include <Nano/Nano.hpp>
 
 namespace Nano::Graphics
@@ -16,32 +14,25 @@ namespace Nano::Graphics
 namespace Nano::Graphics::Internal
 {
 
-    class VulkanDevice;
-    class VulkanGraphicsPipeline;
+    class DummyGraphicsPipeline;
 
-#if defined(NG_API_VULKAN)
+#if 1 //defined(NG_API_DUMMY)
     ////////////////////////////////////////////////////////////////////////////////////
-    // VulkanGraphicsPipeline
+    // DummyGraphicsPipeline
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanGraphicsPipeline
+    class DummyGraphicsPipeline
     {
     public:
         // Constructors & Destructor
-        VulkanGraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs);
-        ~VulkanGraphicsPipeline();
+        inline constexpr DummyGraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs)
+            : m_Specification(specs) { (void)device; }
+        constexpr ~DummyGraphicsPipeline() = default;
 
         // Getters
         inline const GraphicsPipelineSpecification& GetSpecification() const { return m_Specification; }
 
-        // Internal getters
-        inline VkPipeline GetVkPipeline() const { return m_Pipeline; }
-        inline VkPipelineLayout GetVkPipelineLayout() const { return m_PipelineLayout; }
-
     private:
         GraphicsPipelineSpecification m_Specification;
-
-        VkPipeline m_Pipeline = VK_NULL_HANDLE;
-        VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
     };
 #endif
 

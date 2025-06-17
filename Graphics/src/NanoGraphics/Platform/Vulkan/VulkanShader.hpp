@@ -8,7 +8,9 @@
 
 #include <Nano/Nano.hpp>
 
-#include <shaderc/shaderc.hpp>
+#if defined(NG_API_VULKAN)
+    #include <shaderc/shaderc.hpp>
+#endif
 
 #include <vector>
 
@@ -21,7 +23,10 @@ namespace Nano::Graphics::Internal
 {
 
     class VulkanDevice;
+    class VulkanShader;
+    class VulkanShaderCompiler;
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanShader
     ////////////////////////////////////////////////////////////////////////////////////
@@ -64,5 +69,6 @@ namespace Nano::Graphics::Internal
         shaderc::Compiler m_Compiler = {};
         shaderc::CompileOptions m_CompileOptions = {};
     };
+#endif
 
 }

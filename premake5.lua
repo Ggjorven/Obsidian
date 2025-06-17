@@ -9,9 +9,9 @@ newoption
     allowed = 
 	{
         { "vulkan", "Vulkan" },
-        { "d3d12", "D3D12", "D3d12" },
-		{ "d3d11", "D3D11", "D3d11" },
-		{ "opengl", "Opengl", "OpenGL" },
+        { "d3d12", "D3D12", "D3d12", "dx12", "DX12", "Dx12" },
+        { "metal", "Metal", "mtl" },
+        { "dummy", "Dummy", "headless", "Headless" },
     }
 }
 
@@ -81,6 +81,10 @@ if gfxapi == "vulkan" then
 	end
 
 	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
+elseif gfx == "d3d12" then
+	-- error("D3D12 is currently not supported.")
+elseif gfx == "metal" then
+	-- error("Metal is currently not supported.")
 end
 
 MacOSVersion = "14.5"
@@ -91,11 +95,6 @@ Dependencies =
 	{
 		LibName = "GLFW",
 		IncludeDir = "%{wks.location}/vendor/GLFW/GLFW/include"
-	},
-	glad = 
-	{
-		LibName = "glad",
-		IncludeDir = "%{wks.location}/vendor/glad/glad/include"
 	},
 	glm =
 	{
@@ -119,32 +118,34 @@ Dependencies =
 ------------------------------------------------------------------------------
 -- Platform specific
 ------------------------------------------------------------------------------
-if GetOS() == "windows" then
-	Dependencies.Vulkan =
-    {
-        LibName = "vulkan-1",
-		IncludeDir = "%{VULKAN_SDK}/Include/",
-		LibDir = "%{VULKAN_SDK}/Lib/"
-    }
-	Dependencies.ShaderC = { LibName = "shaderc_shared" }
+if gfxapi == "vulkan" then -- TODO: Use Vulkan-Headers
+	if GetOS() == "windows" then
+		Dependencies.Vulkan =
+		{
+			LibName = "vulkan-1",
+			IncludeDir = "%{VULKAN_SDK}/Include/",
+			LibDir = "%{VULKAN_SDK}/Lib/"
+		}
+		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
-elseif GetOS() == "linux" then
-	Dependencies.Vulkan =
-    {
-        LibName = "vulkan",
-		IncludeDir = "%{VULKAN_SDK}/include/",
-		LibDir = "%{VULKAN_SDK}/lib/"
-    }
-	Dependencies.ShaderC = { LibName = "shaderc_shared" }
+	elseif GetOS() == "linux" then
+		Dependencies.Vulkan =
+		{
+			LibName = "vulkan",
+			IncludeDir = "%{VULKAN_SDK}/include/",
+			LibDir = "%{VULKAN_SDK}/lib/"
+		}
+		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
-elseif GetOS() == "macosx" then
-	Dependencies.Vulkan = -- Note: Vulkan on MacOS is currently dynamic. (Example: libvulkan1.3.290.dylib)
-	{
-        LibName = "vulkan.%{VULKAN_VERSION}",
-		IncludeDir = "%{VULKAN_SDK}/../macOS/include/",
-		LibDir = "%{VULKAN_SDK}/../macOS/lib/",
-    }
-	Dependencies.ShaderC = { LibName = "shaderc_combined" }
+	elseif GetOS() == "macosx" then
+		Dependencies.Vulkan = -- Note: Vulkan on MacOS is currently dynamic. (Example: libvulkan1.3.290.dylib)
+		{
+			LibName = "vulkan.%{VULKAN_VERSION}",
+			IncludeDir = "%{VULKAN_SDK}/../macOS/include/",
+			LibDir = "%{VULKAN_SDK}/../macOS/lib/",
+		}
+		Dependencies.ShaderC = { LibName = "shaderc_combined" }
+	end
 end
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -173,7 +174,6 @@ workspace "NanoGraphics"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
-	include "vendor/glad"
 group ""
 
 group "NanoGraphics"

@@ -20,9 +20,10 @@ namespace Nano::Graphics::Information
 
         enum class RenderingAPI : uint8_t
         {
-            OpenGL = 0,
-            Vulkan,
-            D3D11, D3D12
+            Vulkan = 0,
+            D3D12,
+            Metal,
+            Dummy
         };
 
     }
@@ -56,12 +57,11 @@ namespace Nano::Graphics::Information
     #elif defined(NG_API_D3D12)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D12;
         #error Nano Graphics Settings: D3D12 not implemented yet.
-    #elif defined(NG_API_D3D11)
-        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D11;
-        #error Nano Graphics Settings: D3D11 not implemented yet.
-    #elif defined(NG_API_OPENGL)
-        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::OpenGL;
-        #error Nano Graphics Settings: OpenGL not implemented yet.
+    #elif defined(NG_API_METAL)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Metal;
+        #error Nano Graphics Settings: Metal not implemented yet.
+    #elif defined(NG_API_DUMMY)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Dummy;
     #else
         #error Nano Graphics Settings: Unsupported API/Failed to query...
     #endif

@@ -26,7 +26,10 @@ namespace Nano::Graphics::Internal
 
 	class VulkanDevice;
 	class VulkanSwapchain;
+	class VulkanCommandList;
+	class VulkanCommandListPool;
 
+#if defined(NG_API_VULKAN)
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandListPool
 	////////////////////////////////////////////////////////////////////////////////////
@@ -132,5 +135,6 @@ namespace Nano::Graphics::Internal
 
 		GraphicsState m_GraphicsState = {};
 	};
+#endif
 
 }

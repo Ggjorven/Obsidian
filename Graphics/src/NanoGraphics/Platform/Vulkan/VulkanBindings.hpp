@@ -26,8 +26,11 @@ namespace Nano::Graphics::Internal
 {
 
     class VulkanDevice;
+    class VulkanBindingLayout;
+    class VulkanBindingSet;
     class VulkanBindingSetPool;
 
+#if defined(NG_API_VULKAN)
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanBindingLayout
     ////////////////////////////////////////////////////////////////////////////////////
@@ -39,12 +42,12 @@ namespace Nano::Graphics::Internal
         VulkanBindingLayout(const Device& device, const BindlessLayoutSpecification& specs);
         ~VulkanBindingLayout();
 
-        // Methods
-        void UpdatePoolSizeInfosToMaxSets(uint32_t maxSets); // Note: Multiplies each descriptor count by the MaxSets
-
         // Getters
         //ShaderStage GetVisibility() const;
         inline bool IsBindless() const { return std::holds_alternative<BindlessLayoutSpecification>(m_Specification); }
+
+        // Internal methods
+        void UpdatePoolSizeInfosToMaxSets(uint32_t maxSets); // Note: Multiplies each descriptor count by the MaxSets
 
         // Internal getters
         std::span<const BindingLayoutItem> GetBindingItems() const;
@@ -108,6 +111,9 @@ namespace Nano::Graphics::Internal
         VulkanBindingSetPool(const Device& device, const BindingSetPoolSpecification& specs);
         ~VulkanBindingSetPool();
 
+        // Getters
+        inline const BindingSetPoolSpecification& GetSpecification() const { return m_Specification; }
+
         // Internal methods
         VkDescriptorSet CreateDescriptorSet();
 
@@ -125,5 +131,6 @@ namespace Nano::Graphics::Internal
         uint32_t m_CurrentDescriptor = 0;
         std::vector<VkDescriptorSet> m_DescriptorSets;
     };
+#endif
 
 }
