@@ -48,10 +48,6 @@ namespace Nano::Graphics
         inline void CommitBarriers() { m_CommandList.CommitBarriers(); }
 
         // Object methods
-        inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(image, subresources, currentState); }
-        inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(image, currentState); }
-        inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(buffer, currentState); }
-
         inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
 
         inline void SetViewport(const Viewport& viewport) const { m_CommandList.SetViewport(viewport); }
@@ -66,10 +62,6 @@ namespace Nano::Graphics
 
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_CommandList.DrawIndexed(args); }
-
-        // Getters
-        inline ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const { return m_CommandList.GetResourceState(image, subresource); }
-        inline ResourceState GetResourceState(const Buffer& buffer) const { return m_CommandList.GetResourceState(buffer); }
 
     private:
         // Constructor

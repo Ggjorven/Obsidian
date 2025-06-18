@@ -43,6 +43,10 @@ namespace Nano::Graphics
         // Methods 
         inline void Wait() const { m_Device.Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
 
+        inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_Device.StartTracking(image, subresources, currentState); }
+        inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_Device.StartTracking(image, currentState); }
+        inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_Device.StartTracking(buffer, currentState); }
+
         inline void MapBuffer(const Buffer& buffer, void*& memory) const { return m_Device.MapBuffer(buffer, memory); }
         inline void UnmapBuffer(const Buffer& buffer) const { return m_Device.UnmapBuffer(buffer); }
         inline void MapStagingImage(const StagingImage& image, void*& memory) const { return m_Device.MapStagingImage(image, memory); }

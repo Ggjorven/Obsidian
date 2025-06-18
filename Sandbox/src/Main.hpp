@@ -326,7 +326,7 @@ int Main(int argc, char* argv[])
 			.SetSize(sizeof(g_VertexData) + sizeof(g_IndexData)) // std::max(sizeof(g_VertexData), sizeof(g_IndexData))
 			.SetCPUAccess(CpuAccessMode::Write)
 		);
-		initCommand.StartTracking(stagingBuffer, ResourceState::Unknown);
+		device.StartTracking(stagingBuffer, ResourceState::Unknown);
 
 		void* bufferMemory;
 		device.MapBuffer(stagingBuffer, bufferMemory);
@@ -336,7 +336,7 @@ int Main(int argc, char* argv[])
 			.SetIsVertexBuffer(true)
 			.SetDebugName("Vertexbuffer")
 		);
-		initCommand.StartTracking(vertexBuffer, ResourceState::Unknown);
+		device.StartTracking(vertexBuffer, ResourceState::Unknown);
 		if (bufferMemory) std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
 		initCommand.CopyBuffer(vertexBuffer, stagingBuffer, sizeof(g_VertexData), 0, 0);
 
@@ -346,7 +346,7 @@ int Main(int argc, char* argv[])
 			.SetIsIndexBuffer(true)
 			.SetDebugName("Indexbuffer")
 		);
-		initCommand.StartTracking(indexBuffer, ResourceState::Unknown);
+		device.StartTracking(indexBuffer, ResourceState::Unknown);
 		if (bufferMemory) std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
 		initCommand.CopyBuffer(indexBuffer, stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData), 0);
 
@@ -356,7 +356,7 @@ int Main(int argc, char* argv[])
 			.SetWidthAndHeight(1, 1), 
 			CpuAccessMode::Write
 		);
-		initCommand.StartTracking(stagingImage, ResourceState::Unknown);
+		device.StartTracking(stagingImage, ResourceState::Unknown);
 		
 		void* imageMemory;
 		device.MapStagingImage(stagingImage, imageMemory);
@@ -369,7 +369,7 @@ int Main(int argc, char* argv[])
 			.SetIsShaderResource(true)
 			.SetMipLevels(1)
 		);
-		initCommand.StartTracking(image, ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
+		device.StartTracking(image, ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 		uint32_t imageColour = 0xFF00FF00;
 		if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
 		initCommand.CopyImage(image, ImageSliceSpecification(), stagingImage, ImageSliceSpecification());

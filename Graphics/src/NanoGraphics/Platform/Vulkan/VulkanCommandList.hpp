@@ -87,10 +87,6 @@ namespace Nano::Graphics::Internal
 		void CommitBarriers();
 
 		// Object methods
-		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
-		void StartTracking(const StagingImage& image, ResourceState currentState);
-		void StartTracking(const Buffer& buffer, ResourceState currentState);
-
 		void SetGraphicsState(const GraphicsState& state);
 		
 		void SetViewport(const Viewport& viewport) const;
@@ -109,18 +105,12 @@ namespace Nano::Graphics::Internal
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
 
-		inline ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const { return m_StateTracker.GetResourceState(image, subresource); }
-		inline ResourceState GetResourceState(const Buffer& buffer) const { return m_StateTracker.GetResourceState(buffer); }
-
 		// Internal Getters
 		inline VkCommandBuffer GetVkCommandBuffer() const { return m_CommandBuffer; }
 
 	private:
 		// Private methods
 		void SetWaitStage(VkPipelineStageFlags2 waitStage);
-
-		inline void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) { m_StateTracker.ResolvePermanentState(image, subresource); }
-		inline void ResolvePermanentState(Buffer& buffer) { m_StateTracker.ResolvePermanentState(buffer); }
 
 		void BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
 
@@ -130,8 +120,6 @@ namespace Nano::Graphics::Internal
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
-
-		VulkanStateTracker m_StateTracker;
 
 		GraphicsState m_GraphicsState = {};
 	};

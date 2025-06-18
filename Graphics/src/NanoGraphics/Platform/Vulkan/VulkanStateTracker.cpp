@@ -30,12 +30,12 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanStateTracker::Clear()
+    void VulkanStateTracker::Clear() const
     {
         m_ImageStates.clear();
     }
 
-    void VulkanStateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
+    void VulkanStateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
     {
         NG_ASSERT(!(m_ImageStates.contains(&image)), "[VkStateTracker] Started tracking an object that's already being tracked.");
         
@@ -61,7 +61,7 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void VulkanStateTracker::StartTracking(const Buffer& buffer, ResourceState currentState)
+    void VulkanStateTracker::StartTracking(const Buffer& buffer, ResourceState currentState) const
     {
         NG_ASSERT(!(m_BufferStates.contains(&buffer)), "[VkStateTracker] Started tracking an object that's already being tracked.");
 
@@ -71,7 +71,7 @@ namespace Nano::Graphics::Internal
         state.State = currentState;
     }
 
-    void VulkanStateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state)
+    void VulkanStateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
     {
         NG_ASSERT(Contains(image), "[VkStateTracker] Using an untracked image is not allowed, call StartTracking() on image.");
 
@@ -159,7 +159,7 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void VulkanStateTracker::RequireBufferState(Buffer& buffer, ResourceState state)
+    void VulkanStateTracker::RequireBufferState(Buffer& buffer, ResourceState state) const
     {
         NG_ASSERT(Contains(buffer), "[VkStateTracker] Using an untracked buffer is not allowed, call StartTracking() on buffer.");
 
@@ -196,7 +196,7 @@ namespace Nano::Graphics::Internal
         currentState.State = state;
     }
 
-    void VulkanStateTracker::CommitBarriers(VkCommandBuffer cmdBuf)
+    void VulkanStateTracker::CommitBarriers(VkCommandBuffer cmdBuf) const
     {
         if (m_ImageBarriers.empty() && m_BufferBarriers.empty())
             return;
@@ -276,7 +276,7 @@ namespace Nano::Graphics::Internal
         m_BufferBarriers.clear();
     }
 
-    void VulkanStateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource)
+    void VulkanStateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const
     {
         NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
         NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
@@ -291,7 +291,7 @@ namespace Nano::Graphics::Internal
             RequireImageState(image, subresource, state);
     }
 
-    void VulkanStateTracker::ResolvePermanentState(Buffer& buffer)
+    void VulkanStateTracker::ResolvePermanentState(Buffer& buffer) const
     {
         NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
         if (!buffer.GetSpecification().HasPermanentState())

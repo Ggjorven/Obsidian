@@ -40,7 +40,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanDevice::VulkanDevice(const DeviceSpecification& specs)
-        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.DestroyCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice())
+        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.DestroyCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice()), m_StateTracker(*this)
     {
     }
 
@@ -54,6 +54,25 @@ namespace Nano::Graphics::Internal
     void VulkanDevice::Wait() const
     {
         m_Context.GetVulkanLogicalDevice().Wait();
+    }
+
+    void VulkanDevice::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
+    {
+        NG_PROFILE("VulkanDevice::StartTracking()");
+        m_StateTracker.StartTracking(image, subresources, currentState);
+    }
+
+    void VulkanDevice::StartTracking(const StagingImage& image, ResourceState currentState)
+    {
+        NG_PROFILE("VulkanDevice::StartTracking()");
+        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
+        m_StateTracker.StartTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
+    }
+
+    void VulkanDevice::StartTracking(const Buffer& buffer, ResourceState currentState)
+    {
+        NG_PROFILE("VulkanDevice::StartTracking()");
+        m_StateTracker.StartTracking(buffer, currentState);
     }
 
     void VulkanDevice::MapBuffer(const Buffer& buffer, void*& memory) const

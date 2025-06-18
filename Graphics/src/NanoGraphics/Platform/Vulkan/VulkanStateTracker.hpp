@@ -51,7 +51,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandListPool
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanStateTracker : public Traits::NoCopy // TODO: Make statetracker higher level instead of in a commandlist
+	class VulkanStateTracker : public Traits::NoCopy
 	{
 	public:
 		// Constructor & Destructor
@@ -59,24 +59,24 @@ namespace Nano::Graphics::Internal
 		~VulkanStateTracker();
 
 		// Methods
-		void Clear();
+		void Clear() const;
 
-		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
-		void StartTracking(const Buffer& buffer, ResourceState currentState);
+		void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const;
+		void StartTracking(const Buffer& buffer, ResourceState currentState) const;
 
-		void RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state);
-		void RequireBufferState(Buffer& buffer, ResourceState state);
+		void RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const;
+		void RequireBufferState(Buffer& buffer, ResourceState state) const;
 		
-		void CommitBarriers(VkCommandBuffer cmdBuf);
+		void CommitBarriers(VkCommandBuffer cmdBuf) const;
 
-		void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource);
-		void ResolvePermanentState(Buffer& buffer);
+		void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const;
+		void ResolvePermanentState(Buffer& buffer) const;
 
 		// Getters
 		inline bool Contains(const Image& image) const { return m_ImageStates.contains(&image); }
 		inline bool Contains(const Buffer& buffer) const { return m_BufferStates.contains(&buffer); }
-		inline VulkanImageState& GetState(const Image& image) { return m_ImageStates[&image]; }
-		inline VulkanBufferState& GetState(const Buffer& buffer) { return m_BufferStates[&buffer]; }
+		inline VulkanImageState& GetState(const Image& image) const { return m_ImageStates[&image]; }
+		inline VulkanBufferState& GetState(const Buffer& buffer) const { return m_BufferStates[&buffer]; }
 
 		ResourceState GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const;
 		ResourceState GetResourceState(const Buffer& buffer) const;
@@ -84,11 +84,11 @@ namespace Nano::Graphics::Internal
 	private:
 		const VulkanDevice& m_Device;
 
-		std::unordered_map<const Image*, VulkanImageState> m_ImageStates = { };
-		std::unordered_map<const Buffer*, VulkanBufferState> m_BufferStates = { };
+		mutable std::unordered_map<const Image*, VulkanImageState> m_ImageStates = { };
+		mutable std::unordered_map<const Buffer*, VulkanBufferState> m_BufferStates = { };
 
-		std::vector<ImageBarrier> m_ImageBarriers = { };
-		std::vector<BufferBarrier> m_BufferBarriers = { };
+		mutable std::vector<ImageBarrier> m_ImageBarriers = { };
+		mutable std::vector<BufferBarrier> m_BufferBarriers = { };
 	};
 #endif
 

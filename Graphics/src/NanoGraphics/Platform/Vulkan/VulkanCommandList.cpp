@@ -93,7 +93,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanCommandList::VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs)
-        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs), m_StateTracker(m_Pool.GetVulkanSwapchain().GetVulkanDevice())
+        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs)
     {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -256,31 +256,12 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::CommitBarriers()
     {
         NG_PROFILE("VulkanCommandList::CommitBarriers()");
-        m_StateTracker.CommitBarriers(m_CommandBuffer);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().CommitBarriers(m_CommandBuffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Object methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanCommandList::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
-    {
-        NG_PROFILE("VulkanCommandList::StartTracking()");
-        m_StateTracker.StartTracking(image, subresources, currentState);
-    }
-
-    void VulkanCommandList::StartTracking(const StagingImage& image, ResourceState currentState)
-    {
-        NG_PROFILE("VulkanCommandList::StartTracking()");
-        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
-        m_StateTracker.StartTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
-    }
-
-    void VulkanCommandList::StartTracking(const Buffer& buffer, ResourceState currentState)
-    {
-        NG_PROFILE("VulkanCommandList::StartTracking()");
-        m_StateTracker.StartTracking(buffer, currentState);
-    }
-
     void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
     {
         NG_PROFILE("VulkanCommandList::SetGraphicsState()");
@@ -403,8 +384,8 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::CopyImage()");
 
-        NG_ASSERT(m_StateTracker.Contains(dst), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on dst image.");
-        NG_ASSERT(m_StateTracker.Contains(src), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on src image.");
+        NG_ASSERT(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().Contains(dst), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on dst image.");
+        NG_ASSERT(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().Contains(src), "[VkCommandList] Using an untracked image is not allowed, call StartTracking() on src image.");
 
         SetWaitStage(VK_PIPELINE_STAGE_2_TRANSFER_BIT);
 
@@ -440,8 +421,8 @@ namespace Nano::Graphics::Internal
             std::min(resSrcSlice.Depth, resDstSlice.Depth)
         );
 
-        m_StateTracker.RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
-        m_StateTracker.RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyImageInfo2 copyInfo = {};
@@ -473,8 +454,8 @@ namespace Nano::Graphics::Internal
         vkCmdCopyImage2(m_CommandBuffer, &copyInfo);
 
         // Update back to permanent state
-        ResolvePermanentState(src, srcSubresource);
-        ResolvePermanentState(dst, dstSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src, srcSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst, dstSubresource);
         CommitBarriers();
     }
 
@@ -514,8 +495,8 @@ namespace Nano::Graphics::Internal
         copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
         copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
 
-        m_StateTracker.RequireBufferState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
-        m_StateTracker.RequireImageState(dst, dstSubresource, ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(dst, dstSubresource, ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyBufferToImageInfo2 copyBufferToImageInfo = {};
@@ -529,8 +510,8 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBufferToImage2(m_CommandBuffer, &copyBufferToImageInfo);
 
         // Update back to permanent state
-        ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
-        ResolvePermanentState(dst, dstSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst, dstSubresource);
         CommitBarriers();
     }
 
@@ -545,8 +526,8 @@ namespace Nano::Graphics::Internal
         VulkanBuffer& dstVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&src);
 
-        m_StateTracker.RequireBufferState(src, ResourceState::CopySrc);
-        m_StateTracker.RequireBufferState(dst, ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(src, ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(dst, ResourceState::CopyDst);
         CommitBarriers();
 
         VkBufferCopy copyRegion = {};
@@ -557,8 +538,8 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBuffer(m_CommandBuffer, srcVulkanBuffer.GetVkBuffer(), dstVulkanBuffer.GetVkBuffer(), 1, &copyRegion);
 
         // Update back to permanent state
-        ResolvePermanentState(src);
-        ResolvePermanentState(dst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst);
         CommitBarriers();
     }
 

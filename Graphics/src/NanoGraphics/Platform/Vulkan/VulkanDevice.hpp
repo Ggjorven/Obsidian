@@ -6,6 +6,7 @@
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanContext.hpp"
+#include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -44,6 +45,10 @@ namespace Nano::Graphics::Internal
         // Methods
         void Wait() const;
 
+        void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
+        void StartTracking(const StagingImage& image, ResourceState currentState);
+        void StartTracking(const Buffer& buffer, ResourceState currentState);
+
         void MapBuffer(const Buffer& buffer, void*& memory) const;
         void UnmapBuffer(const Buffer& buffer) const;
         void MapStagingImage(const StagingImage& image, void*& memory) const;
@@ -74,10 +79,12 @@ namespace Nano::Graphics::Internal
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }
         inline const VulkanAllocator& GetAllocator() const { return m_Allocator; }
+        inline const VulkanStateTracker& GetTracker() const { return m_StateTracker; }
 
     private:
         VulkanContext m_Context;
         VulkanAllocator m_Allocator;
+        mutable VulkanStateTracker m_StateTracker;
     };
 #endif
 
