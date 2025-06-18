@@ -336,7 +336,7 @@ namespace Nano::Graphics::Internal
         {
             NG_PROFILE("VulkanCommandList::SetGraphicsState::BindingSets");
 
-            for (auto set : state.BindingSets) // Note: Only bind when there is a non-nullptr set
+            for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
             {
                 if (set != nullptr) [[likely]]
                 {
@@ -581,31 +581,41 @@ namespace Nano::Graphics::Internal
             m_WaitStage = firstStage;
     }
 
-    void VulkanCommandList::BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindPoint/*, ShaderStage stages*/) const
+    void VulkanCommandList::BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindPoint/*, ShaderStage stages*/) const
     {
-        // Note: This corresponds to SetID               Sets
-        std::vector<std::pair<uint32_t, std::vector<VkDescriptorSet>>> descriptorSetsSet;
-        descriptorSetsSet.emplace_back().second.reserve(sets.size());
+        // Note: This corresponds to SetID               Sets                   DynamicOffsets
+        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>, std::vector<uint32_t>>> descriptorSetsSet;
+        std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.emplace_back()).reserve(sets.size());
 
         // Runtime validation
         {
             for (size_t i = 0; i < sets.size(); i++)
             {
-                if (sets[i] == nullptr)
+                if (sets[i].Set == nullptr)
                     continue;
 
                 // If SetID doesn't match create a new starting point with current SetID
-                if (descriptorSetsSet.back().first != i)
-                    descriptorSetsSet.emplace_back(static_cast<uint32_t>(i), std::vector<VkDescriptorSet>()).second.reserve(sets.size());
+                if (std::get<uint32_t>(descriptorSetsSet.back()) != i)
+                {
+                    auto& tuple = descriptorSetsSet.emplace_back(
+                        //std::tuple(
+                            static_cast<uint32_t>(i),
+                            std::vector<VkDescriptorSet>(),
+                            std::vector<uint32_t>(sets[i].DynamicOffsets.begin(), sets[i].DynamicOffsets.end())
+                        //)
+                    );
+                    
+                    std::get<std::vector<VkDescriptorSet>>(tuple).reserve(sets.size());
+                }
 
                 // Add descriptor
-                VulkanBindingSet& vulkanSet = *reinterpret_cast<VulkanBindingSet*>(sets[i]);
-                descriptorSetsSet.back().second.push_back(vulkanSet.GetVkDescriptorSet());
+                VulkanBindingSet& vulkanSet = *reinterpret_cast<VulkanBindingSet*>(sets[i].Set);
+                std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.back()).push_back(vulkanSet.GetVkDescriptorSet());
             }
         }
 
         // Binding
-        for (const auto& [setID, descriptorSets] : descriptorSetsSet)
+        for (const auto& [setID, descriptorSets, dynamicOffsets] : descriptorSetsSet)
         {
             /*
             VkBindDescriptorSetsInfo bindInfo = {};
@@ -615,12 +625,12 @@ namespace Nano::Graphics::Internal
             bindInfo.firstSet = setID;
             bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
             bindInfo.pDescriptorSets = descriptorSets.data();
-            bindInfo.dynamicOffsetCount = 0;
-            bindInfo.pDynamicOffsets = nullptr;
+            bindInfo.dynamicOffsetCount = static_cast<uint32_t>(dynamicOffsets.size());
+            bindInfo.pDynamicOffsets = dynamicOffsets.data();
 
             vkCmdBindDescriptorSets2(m_CommandBuffer, &bindInfo);
             */
-            vkCmdBindDescriptorSets(m_CommandBuffer, PipelineBindpointToVkBindpoint(bindPoint), layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+            vkCmdBindDescriptorSets(m_CommandBuffer, PipelineBindpointToVkBindpoint(bindPoint), layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), static_cast<uint32_t>(dynamicOffsets.size()), dynamicOffsets.data());
         }
     }
 

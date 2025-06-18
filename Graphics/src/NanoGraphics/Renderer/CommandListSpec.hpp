@@ -120,6 +120,13 @@ namespace Nano::Graphics
     public:
         inline constexpr static uint32_t MaxBindingSets = 8;
     public:
+        struct BindPair
+        {
+        public:
+            BindingSet* Set = nullptr;
+            std::span<const uint32_t> DynamicOffsets = {}; // Note: For Dynamic UniformBuffer for example (use the buffer's m_Specification.Size per element)
+        };
+    public:
         GraphicsPipeline* Pipeline = nullptr;
         Renderpass* Pass = nullptr;
         Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[CurrentFrame] from pass.
@@ -130,7 +137,8 @@ namespace Nano::Graphics
         Maths::Vec4<float> ColourClear = { 0.0f, 0.0f, 0.0f, 1.0f };
         float DepthClear = 1.0f;
 
-        std::array<BindingSet*, MaxBindingSets> BindingSets = { };
+        std::array<BindPair, MaxBindingSets> BindingSets = { };
+
 
     public:
         // Setters
@@ -144,7 +152,7 @@ namespace Nano::Graphics
         inline constexpr GraphicsState& SetColourClear(const Maths::Vec4<float>& colour) { ColourClear = colour; return *this; }
         inline constexpr GraphicsState& SetDepthClear(float depth) { DepthClear = depth; return *this; }
 
-        inline GraphicsState& AddBindingSet(uint32_t setID, BindingSet& set) { NG_ASSERT((setID < MaxBindingSets), "[GraphicsState] SetID exceeds max binding sets."); BindingSets[setID] = &set; return *this; }
+        inline GraphicsState& AddBindingSet(uint32_t setID, BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { NG_ASSERT((setID < MaxBindingSets), "[GraphicsState] SetID exceeds max binding sets."); BindingSets[setID] = { &set, dynamicOffsets }; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

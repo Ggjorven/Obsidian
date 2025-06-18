@@ -122,7 +122,7 @@ namespace Nano::Graphics::Internal
 		inline void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) { m_StateTracker.ResolvePermanentState(image, subresource); }
 		inline void ResolvePermanentState(Buffer& buffer) { m_StateTracker.ResolvePermanentState(buffer); }
 
-		void BindDescriptorSets(const std::array<BindingSet*, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
+		void BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
 
 	private:
 		VulkanCommandListPool& m_Pool;

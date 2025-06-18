@@ -35,7 +35,7 @@ namespace Nano::Graphics
         StorageBuffer,
         StorageBufferUnordered,
         UniformBuffer,
-        DynamicUniformBuffer, // Note: Currently unusable, since we need a way to get MaxElements and alignment. // TODO: ...
+        DynamicUniformBuffer,
         Sampler,
         PushConstants,
         //RayTracingAccelStruct,
@@ -57,7 +57,7 @@ namespace Nano::Graphics
         uint32_t Slot = 0;
         ResourceType Type = ResourceType::None;
         
-        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count.
+        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count or dynamicuniformbuffer element's size.
 
         std::string_view DebugName = {};
 

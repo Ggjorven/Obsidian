@@ -48,9 +48,9 @@ namespace Nano::Graphics
         inline void CommitBarriers() { m_CommandList.CommitBarriers(); }
 
         // Object methods
-        inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { m_CommandList.StartTracking(image, subresources, currentState); }
-        inline void StartTracking(const StagingImage& image, ResourceState currentState) { m_CommandList.StartTracking(image, currentState); }
-        inline void StartTracking(const Buffer& buffer, ResourceState currentState) { m_CommandList.StartTracking(buffer, currentState); }
+        inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(image, subresources, currentState); }
+        inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(image, currentState); }
+        inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_CommandList.StartTracking(buffer, currentState); }
 
         inline void SetGraphicsState(const GraphicsState& state) { m_CommandList.SetGraphicsState(state); }
 

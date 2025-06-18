@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- Rendering API selection
+-- Graphics API option
 ------------------------------------------------------------------------------
 newoption 
 {
@@ -8,12 +8,13 @@ newoption
     description = "Choose a graphics API",
     allowed = 
 	{
-        { "vulkan", "Vulkan" },
-        { "d3d12", "D3D12", "D3d12", "dx12", "DX12", "Dx12" },
-        { "metal", "Metal", "mtl" },
-        { "dummy", "Dummy", "headless", "Headless" },
+        { "vulkan", "Vulkan graphics API (windows, linux, macosx)" },
+        { "d3d12", "DirectX 12 (windows)" },
+        { "metal", "Metal (macosx)" },
+        { "dummy", "No GraphicsAPI, passthrough function calls. (windows, linux, macosx)" },
     }
 }
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 -- Utilities
@@ -26,22 +27,8 @@ local function GetIOResult(cmd)
 	return output:match("^%s*(.-)%s*$") -- Trim any trailing whitespace (such as newlines)
 end
 
-function GetOS()
-	local osName = os.getenv("OS")
-
-	if osName == "Windows_NT" then
-		return "windows"
-	else
-		local uname = io.popen("uname"):read("*l")
-		if uname == "Linux" then
-			return "linux"
-		elseif uname == "Darwin" then
-			return "macosx"
-		end
-	end
-
-	return "unknown-os"
-end
+platform = os.target()
+gfxapi = _OPTIONS["gfxapi"] or "vulkan"
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -67,12 +54,12 @@ end)
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
--- Dependencies
+-- Graphics API
 ------------------------------------------------------------------------------
-gfxapi = _OPTIONS["gfxapi"] or "vulkan"
 VULKAN_SDK = nil
 VULKAN_VERSION = nil
 
+-- Vulkan
 if gfxapi == "vulkan" then
 	VULKAN_SDK = os.getenv("VULKAN_SDK")
 
@@ -81,12 +68,28 @@ if gfxapi == "vulkan" then
 	end
 
 	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
-elseif gfx == "d3d12" then
-	-- error("D3D12 is currently not supported.")
-elseif gfx == "metal" then
-	-- error("Metal is currently not supported.")
-end
 
+-- DirectX12
+elseif gfxapi == "d3d12" then
+	if platform ~= "windows" then
+		error("The DirectX12 Graphics API is not supported on the current platform.")
+	end
+	
+	error("D3D12 is currently not supported.")
+
+-- Metal
+elseif gfxapi == "metal" then
+	if platform ~= "macosx" then
+		error("The Metal Graphics API is not supported on the current platform.")
+	end
+	
+	error("Metal is currently not supported.")
+end
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+-- Dependencies
+------------------------------------------------------------------------------
 MacOSVersion = "14.5"
 
 Dependencies =
@@ -118,8 +121,8 @@ Dependencies =
 ------------------------------------------------------------------------------
 -- Platform specific
 ------------------------------------------------------------------------------
-if gfxapi == "vulkan" then -- TODO: Use Vulkan-Headers
-	if GetOS() == "windows" then
+if gfxapi == "vulkan" then
+	if platform == "windows" then
 		Dependencies.Vulkan =
 		{
 			LibName = "vulkan-1",
@@ -128,7 +131,7 @@ if gfxapi == "vulkan" then -- TODO: Use Vulkan-Headers
 		}
 		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
-	elseif GetOS() == "linux" then
+	elseif platform == "linux" then
 		Dependencies.Vulkan =
 		{
 			LibName = "vulkan",
@@ -137,7 +140,7 @@ if gfxapi == "vulkan" then -- TODO: Use Vulkan-Headers
 		}
 		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
-	elseif GetOS() == "macosx" then
+	elseif platform == "macosx" then
 		Dependencies.Vulkan = -- Note: Vulkan on MacOS is currently dynamic. (Example: libvulkan1.3.290.dylib)
 		{
 			LibName = "vulkan.%{VULKAN_VERSION}",
@@ -145,6 +148,8 @@ if gfxapi == "vulkan" then -- TODO: Use Vulkan-Headers
 			LibDir = "%{VULKAN_SDK}/../macOS/lib/",
 		}
 		Dependencies.ShaderC = { LibName = "shaderc_combined" }
+	else
+		error("Failed to initialize Vulkan headers for current platform.")
 	end
 end
 ------------------------------------------------------------------------------

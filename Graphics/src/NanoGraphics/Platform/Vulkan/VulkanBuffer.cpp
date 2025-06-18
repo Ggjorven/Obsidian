@@ -112,8 +112,6 @@ namespace Nano::Graphics::Internal
     VulkanBuffer::VulkanBuffer(const Device& device, const BufferSpecification& specs)
         : m_Specification(specs)
     {
-        (void)device;
-
         NG_ASSERT((specs.Size != 0), "[VkBuffer] Size must not equal 0.");
 
         const VulkanDevice& vulkanDevice = *reinterpret_cast<const VulkanDevice*>(&device);
@@ -157,7 +155,46 @@ namespace Nano::Graphics::Internal
                 bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
         }
 
-        m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, m_Specification.Size, bufferUsage, 0);
+        size_t size = 0;
+        // Size helper
+        {
+            if (m_Specification.IsDynamic)
+            {
+                NG_ASSERT((m_Specification.DynamicElements != 0), "[VkBuffer] Dynamic element count must not equal zero when dynamic is enabled.");
+
+                VkPhysicalDeviceProperties2 properties = {};
+                properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+                vkGetPhysicalDeviceProperties2(vulkanDevice.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
+
+                uint64_t alignment = properties.properties.limits.minUniformBufferOffsetAlignment;
+                uint64_t atomSize = properties.properties.limits.nonCoherentAtomSize;
+
+                alignment = std::max(alignment, atomSize);
+
+                NG_ASSERT(((alignment & (alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
+
+                size = (size + alignment - 1) & ~(alignment - 1);
+                m_Specification.Size = size;
+
+                size *= m_Specification.DynamicElements;
+
+                if constexpr (VulkanContext::Validation)
+                {
+                    if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
+                    {
+                        vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
+                        m_Specification.CpuAccess |= CpuAccessMode::Write;
+                    }
+                }
+            }
+            else if (m_Specification.Size < 65536) // Vulkan allows for <= 64kb buffer updates to be done inline via vkCmdUpdateBuffer, but must be a multiple of 4
+                size = (m_Specification.Size + 3) & ~3ull;
+            else
+                size = m_Specification.Size;
+        }
+
+        m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, size, bufferUsage, 0);
 
         if constexpr (VulkanContext::Validation)
         {

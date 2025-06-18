@@ -99,7 +99,7 @@ namespace Nano::Graphics::Internal
 		// Getters
 		inline constexpr const CommandListSpecification& GetSpecification() const { return m_Specification; }
 
-		// TODO: Actually 'transition' between states
+		// Note: We currently don't actually 'transition' between states, maybe do it later.
 		inline constexpr ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const { (void)image; (void)subresource; return ResourceState::Unknown; }
 		inline constexpr ResourceState GetResourceState(const Buffer& buffer) const { (void)buffer; return ResourceState::Unknown; }
 
