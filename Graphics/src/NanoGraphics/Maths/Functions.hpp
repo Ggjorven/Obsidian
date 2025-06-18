@@ -29,12 +29,14 @@ namespace Nano::Graphics::Maths
 
 	Mat4<float> Translate(const Mat4<float>& matrix, const Vec3<float>& translation);
 
+	Mat4<float> Rotate(const Mat4<float>& matrix, float angle, const Vec3<float>& axis); // Note: Angle in radians
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Trigonometry 
 	////////////////////////////////////////////////////////////////////////////////////
-	float Sin(float angle);
-	float Cos(float angle);
-	float Tan(float angle);
+	float Sin(float angle); // Note: Angle in radians
+	float Cos(float angle); // Note: Angle in radians
+	float Tan(float angle); // Note: Angle in radians
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// Utils

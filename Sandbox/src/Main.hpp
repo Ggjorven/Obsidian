@@ -3,11 +3,14 @@
 
 #include "NanoGraphics/Renderer/Device.hpp"
 
+#include "NanoGraphics/Maths/Structs.hpp"
+
 #include <Nano/Nano.hpp>
+
+#include "Utilities/Camera.hpp"
 
 #include <string_view>
 
-using namespace Nano;
 using namespace Nano::Graphics;
 
 #if 1
@@ -121,13 +124,6 @@ inline constexpr auto g_IndexData = std::to_array<uint32_t>({
 	0u, 1u, 2u,
 	2u, 3u, 0u
 });
-
-struct Camera
-{
-public:
-	Nano::Graphics::Maths::Mat4<float> View;
-	Nano::Graphics::Maths::Mat4<float> Projection;
-};
 
 class Application
 {
@@ -355,10 +351,10 @@ public:
 				void* uniformMemory;
 				m_Device->MapBuffer(m_UniformBuffer.Get(), uniformMemory);
 
-				Camera camera = { Nano::Graphics::Maths::Mat4<float>(1.0f), Nano::Graphics::Maths::Mat4<float>(1.0f) };
-				
+				m_Camera.Construct(m_Window.Get());
+
 				if (uniformMemory)
-					std::memcpy(static_cast<uint8_t*>(uniformMemory), &camera, sizeof(camera));
+					std::memcpy(static_cast<uint8_t*>(uniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 
 				m_Device->UnmapBuffer(m_UniformBuffer.Get());
 			}
@@ -445,6 +441,8 @@ public:
 	// Methods
 	void Run()
 	{
+		Nano::Time::Timer<Nano::Time::Period::Milliseconds, float> deltaTimer;
+
 		while (m_Window->IsOpen())
 		{
 			if (m_Window->IsFocused()) [[likely]]
@@ -453,11 +451,13 @@ public:
 				m_Window->WaitEvents(1.0); // Note: When the windows is out of focus it only updates every second
 
 			FreeQueue();
-			m_Swapchain->AcquireNextImage();
 
 			CommandList& list = m_Lists[m_Swapchain->GetCurrentFrame()].Get();
 			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
+			
+			Update(deltaTimer.Restart());
 
+			m_Swapchain->AcquireNextImage();
 			{
 				list.ResetAndOpen();
 				{
@@ -491,7 +491,6 @@ public:
 					.SetOnFinishMakeSwapchainPresentable(true)
 				);
 			}
-
 			m_Swapchain->Present();
 		}
 	}
@@ -500,13 +499,15 @@ private:
 	// Private methods
 	void OnEvent(Event& e)
 	{
-		Events::EventHandler handler(e);
+		Nano::Events::EventHandler handler(e);
 		handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { m_Window->Close(); });
 		handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable
 		{
 			m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
 			m_Renderpass->ResizeFramebuffers();
 		});
+
+		m_Camera->OnEvent(e);
 	}
 
 	void OnDeviceMessage(DeviceMessageType msgType, const std::string& message)
@@ -534,6 +535,19 @@ private:
 		}
 	}
 
+	void Update(float deltaTime)
+	{
+		m_Camera->OnUpdate(deltaTime);
+
+		void* uniformMemory;
+		m_Device->MapBuffer(m_UniformBuffer.Get(), uniformMemory);
+
+		if (uniformMemory)
+			std::memcpy(static_cast<uint8_t*>(uniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
+
+		m_Device->UnmapBuffer(m_UniformBuffer.Get());
+	}
+
 private:
 	Nano::Memory::DeferredConstruct<Window> m_Window = {};
 
@@ -554,7 +568,9 @@ private:
 
 	Nano::Memory::DeferredConstruct<Buffer> m_VertexBuffer = {};
 	Nano::Memory::DeferredConstruct<Buffer> m_IndexBuffer = {};
+
 	Nano::Memory::DeferredConstruct<Buffer> m_UniformBuffer = {};
+	Nano::Memory::DeferredConstruct<Camera> m_Camera = {};
 
 	Nano::Memory::DeferredConstruct<Image> m_Image = {};
 	Nano::Memory::DeferredConstruct<Sampler> m_Sampler = {};

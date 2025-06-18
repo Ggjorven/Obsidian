@@ -14,6 +14,56 @@ namespace Nano::Graphics::Internal
 
     static_assert(std::is_same_v<GraphicsPipeline::Type, VulkanGraphicsPipeline>, "Current GraphicsPipeline::Type is not VulkanGraphicsPipeline and Vulkan source code is being compiled.");
 
+	namespace
+	{
+
+		////////////////////////////////////////////////////////////////////////////////////
+		// Helper function
+		////////////////////////////////////////////////////////////////////////////////////
+		void CreatePipelineLayout(VkPipelineLayout& layout, const Nano::Memory::StaticVector<BindingLayout*, GraphicsPipelineSpecification::MaxBindings>& layouts, VkDevice device)
+		{
+			// Descriptor layouts
+			std::vector<VkDescriptorSetLayout> descriptorLayouts;
+			descriptorLayouts.reserve(GraphicsPipelineSpecification::MaxBindings);
+			std::vector<VkPushConstantRange> pushConstants;
+			pushConstants.reserve(GraphicsPipelineSpecification::MaxBindings);
+
+			for (auto descriptorLayout : layouts)
+			{
+				VulkanBindingLayout& vulkanLayout = *reinterpret_cast<VulkanBindingLayout*>(descriptorLayout);
+				descriptorLayouts.push_back(vulkanLayout.GetVkDescriptorSetLayout());
+
+				// PushConstants
+				uint32_t pushConstantOffset = 0;
+				for (const auto& item : vulkanLayout.GetBindingItems())
+				{
+					if (!(item.Type == ResourceType::PushConstants))
+						continue;
+
+					NG_ASSERT((item.Size > 0), "[VkPipeline] Push constant range passed has size of 0.");
+					NG_ASSERT((item.Size + pushConstantOffset <= BindingLayoutItem::MaxPushConstantSize), "[VkPipeline] Accumulated push constants exceeds the maximum size of {0} bytes.", BindingLayoutItem::MaxPushConstantSize);
+
+					VkPushConstantRange& range = pushConstants.emplace_back();
+					range.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
+					range.offset = pushConstantOffset;
+					range.size = static_cast<uint32_t>(item.Size);
+
+					pushConstantOffset += static_cast<uint32_t>(item.Size);
+				}
+			}
+
+			VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
+			pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+			pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorLayouts.size());
+			pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
+
+			VK_VERIFY(vkCreatePipelineLayout(device, &pipelineLayoutInfo, VulkanAllocator::GetCallbacks(), &layout));
+		}
+
+	}
+
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -138,45 +188,9 @@ namespace Nano::Graphics::Internal
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		// Descriptor layouts
-		std::vector<VkDescriptorSetLayout> descriptorLayouts;
-		descriptorLayouts.reserve(GraphicsPipelineSpecification::MaxBindings);
-		std::vector<VkPushConstantRange> pushConstants;
-		pushConstants.reserve(GraphicsPipelineSpecification::MaxBindings);
+		// Pipeline layout
+		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
 
-		for (auto descriptorLayout : m_Specification.BindingLayouts)
-		{
-			VulkanBindingLayout& vulkanLayout = *reinterpret_cast<VulkanBindingLayout*>(descriptorLayout);
-			descriptorLayouts.push_back(vulkanLayout.GetVkDescriptorSetLayout());
-
-			// PushConstants
-			uint32_t pushConstantOffset = 0;
-			for (const auto& item : vulkanLayout.GetBindingItems())
-			{
-				if (!(item.Type == ResourceType::PushConstants))
-					continue;
-
-				NG_ASSERT((item.Size > 0), "[VkPipeline] Push constant range passed has size of 0.");
-				NG_ASSERT((item.Size + pushConstantOffset <= BindingLayoutItem::MaxPushConstantSize), "[VkPipeline] Accumulated push constants exceeds the maximum size of {0} bytes.", BindingLayoutItem::MaxPushConstantSize);
-
-				VkPushConstantRange& range = pushConstants.emplace_back();
-				range.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
-				range.offset = pushConstantOffset;
-				range.size = static_cast<uint32_t>(item.Size);
-
-				pushConstantOffset += static_cast<uint32_t>(item.Size);
-			}
-		}
-
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
-		pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
-		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorLayouts.size());
-		pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data();
-
-		VK_VERIFY(vkCreatePipelineLayout(vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &pipelineLayoutInfo, VulkanAllocator::GetCallbacks(), &m_PipelineLayout));
-		
 		// Create the actual graphics pipeline (where we actually use the shaders and other info)
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -212,5 +226,38 @@ namespace Nano::Graphics::Internal
     VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     {
     }
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// VulkanComputePipeline
+	////////////////////////////////////////////////////////////////////////////////////
+	VulkanComputePipeline::VulkanComputePipeline(const Device& device, const ComputePipelineSpecification& specs)
+		: m_Specification(specs)
+	{
+		NG_ASSERT(specs.ComputeShader, "[VkComputePipeline] No compute shader passed in to compute pipeline.");
+
+		const VulkanDevice& vulkanDevice = *reinterpret_cast<const VulkanDevice*>(&device);
+
+		VkPipelineShaderStageCreateInfo computeShaderInfo = {};
+		computeShaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderInfo.module = reinterpret_cast<const VulkanShader*>(&specs.ComputeShader)->GetVkShaderModule();
+		computeShaderInfo.pName = specs.ComputeShader->GetSpecification().MainName.data();
+
+		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
+
+		// Create the actual compute pipeline (where we actually use the shaders and other info)
+		VkComputePipelineCreateInfo pipelineInfo = {};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.stage = computeShaderInfo;
+		pipelineInfo.layout = m_PipelineLayout;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineInfo.basePipelineIndex = -1;
+
+		VK_VERIFY(vkCreateComputePipelines(vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice(), vulkanDevice.GetAllocator().GetPipelineCache(), 1, &pipelineInfo, VulkanAllocator::GetCallbacks(), &m_Pipeline));
+	}
+
+	VulkanComputePipeline::~VulkanComputePipeline()
+	{
+	}
 
 }

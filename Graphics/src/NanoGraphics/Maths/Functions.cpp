@@ -47,6 +47,11 @@ namespace Nano::Graphics::Maths
 		return glm::translate(matrix, translation);
 	}
 
+	Mat4<float> Rotate(const Mat4<float>& matrix, float angle, const Vec3<float>& axis)
+	{
+		return glm::rotate(matrix, angle, axis);
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Trigonometry
 	////////////////////////////////////////////////////////////////////////////////////

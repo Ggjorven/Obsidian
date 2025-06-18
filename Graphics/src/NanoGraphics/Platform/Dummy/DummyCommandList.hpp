@@ -77,10 +77,6 @@ namespace Nano::Graphics::Internal
 		inline constexpr void CommitBarriers() {}
 
 		// Object methods
-		inline constexpr void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { (void)image; (void)subresources; (void)currentState; }
-		inline constexpr void StartTracking(const StagingImage& image, ResourceState currentState) { (void)image; (void)currentState; }
-		inline constexpr void StartTracking(const Buffer& buffer, ResourceState currentState) { (void)buffer; (void)currentState; }
-
 		inline constexpr void SetGraphicsState(const GraphicsState& state) { (void)state; }
 
 		inline constexpr void SetViewport(const Viewport& viewport) const { (void)viewport; }
@@ -98,10 +94,6 @@ namespace Nano::Graphics::Internal
 
 		// Getters
 		inline constexpr const CommandListSpecification& GetSpecification() const { return m_Specification; }
-
-		// Note: We currently don't actually 'transition' between states, maybe do it later.
-		inline constexpr ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const { (void)image; (void)subresource; return ResourceState::Unknown; }
-		inline constexpr ResourceState GetResourceState(const Buffer& buffer) const { (void)buffer; return ResourceState::Unknown; }
 
 	private:
 		CommandListSpecification m_Specification;

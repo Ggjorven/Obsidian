@@ -294,4 +294,18 @@ namespace Nano::Graphics::Internal
         });
     }
 
+    void VulkanDevice::DestroyComputePipeline(ComputePipeline& pipeline) const
+    {
+        VulkanComputePipeline& vulkanComputePipeline = *reinterpret_cast<VulkanComputePipeline*>(&pipeline);
+
+        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
+        VkPipelineLayout vkPipelineLayout = vulkanComputePipeline.GetVkPipelineLayout();
+        VkPipeline vkPipeline = vulkanComputePipeline.GetVkPipeline();
+        m_Context.Destroy([device, vkPipelineLayout, vkPipeline]() mutable
+        {
+            vkDestroyPipeline(device, vkPipeline, VulkanAllocator::GetCallbacks());
+            vkDestroyPipelineLayout(device, vkPipelineLayout, VulkanAllocator::GetCallbacks());
+        });
+    }
+
 }

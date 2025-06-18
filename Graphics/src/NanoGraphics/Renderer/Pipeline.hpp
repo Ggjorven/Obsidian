@@ -41,4 +41,31 @@ namespace Nano::Graphics
         friend class Device;
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComputePipeline
+    ////////////////////////////////////////////////////////////////////////////////////
+    class ComputePipeline
+    {
+    public:
+        using Type = Types::SelectorType<Information::RenderingAPI,
+            Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanComputePipeline>,
+            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyComputePipeline>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyComputePipeline>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyComputePipeline>
+        >;
+    public:
+        // Destructor
+        ~ComputePipeline() = default;
+
+    public: //private:
+        // Constructor
+        inline ComputePipeline(const Device& device, const ComputePipelineSpecification& specs)
+            : m_ComputePipeline(device, specs) {}
+
+    private:
+        Type m_ComputePipeline;
+
+        friend class Device;
+    };
+
 }

@@ -85,6 +85,8 @@ namespace Nano::Graphics
 
         inline GraphicsPipeline CreateGraphicsPipeline(const GraphicsPipelineSpecification& specs) const { return GraphicsPipeline(*this, specs); }
         inline void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const { m_Device.DestroyGraphicsPipeline(pipeline); }
+        inline ComputePipeline CreateComputePipeline(const ComputePipelineSpecification& specs) const { return ComputePipeline(*this, specs); }
+        inline void DestroyComputePipeline(ComputePipeline& pipeline) const { m_Device.DestroyComputePipeline(pipeline); }
 
     private:
         Type m_Device;

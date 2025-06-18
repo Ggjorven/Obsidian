@@ -283,4 +283,17 @@ namespace Nano::Graphics
         inline constexpr GraphicsPipelineSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComputePipelineSpecification
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ComputePipelineSpecification
+    {
+    public:
+        inline constexpr static uint32_t MaxBindings = GraphicsPipelineSpecification::MaxBindings;
+    public:
+        Shader* ComputeShader;
+
+        Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
+    };
+
 }

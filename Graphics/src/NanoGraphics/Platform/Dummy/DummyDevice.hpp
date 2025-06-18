@@ -46,6 +46,10 @@ namespace Nano::Graphics::Internal
         inline constexpr void MapStagingImage(const StagingImage& image, void*& memory) const { (void)image; memory = nullptr; }
         inline constexpr void UnmapStagingImage(const StagingImage& image) const { (void)image; }
 
+        inline constexpr void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { (void)image; (void)subresources; (void)currentState; }
+        inline constexpr void StartTracking(const StagingImage& image, ResourceState currentState) { (void)image; (void)currentState; }
+        inline constexpr void StartTracking(const Buffer& buffer, ResourceState currentState) { (void)buffer; (void)currentState; }
+
         // Destruction methods
         inline constexpr void DestroySwapchain(Swapchain& swapchain) const { (void)swapchain; }
 
@@ -67,6 +71,7 @@ namespace Nano::Graphics::Internal
         inline constexpr void FreeBindingSetPool(BindingSetPool& pool) const { (void)pool; }
 
         inline constexpr void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const { (void)pipeline; }
+        inline constexpr void DestroyComputePipeline(ComputePipeline& pipeline) const { (void)pipeline; }
     };
 #endif
 

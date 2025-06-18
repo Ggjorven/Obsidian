@@ -15,6 +15,7 @@ namespace Nano::Graphics::Internal
 {
 
     class DummyGraphicsPipeline;
+    class DummyComputePipeline;
 
 #if 1 //defined(NG_API_DUMMY)
     ////////////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,24 @@ namespace Nano::Graphics::Internal
 
     private:
         GraphicsPipelineSpecification m_Specification;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // DummyComputePipeline
+    ////////////////////////////////////////////////////////////////////////////////////
+    class DummyComputePipeline
+    {
+    public:
+        // Constructors & Destructor
+        DummyComputePipeline(const Device& device, const ComputePipelineSpecification& specs) 
+            : m_Specification(specs) { (void)device; }
+        constexpr ~DummyComputePipeline() = default;
+
+        // Getters
+        inline constexpr const ComputePipelineSpecification& GetSpecification() const { return m_Specification; }
+
+    private:
+        ComputePipelineSpecification m_Specification;
     };
 #endif
 

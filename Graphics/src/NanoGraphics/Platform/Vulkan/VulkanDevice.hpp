@@ -24,6 +24,7 @@ namespace Nano::Graphics
     class Renderpass;
     class Shader;
     class GraphicsPipeline;
+    class ComputePipeline;
 }
 
 namespace Nano::Graphics::Internal
@@ -78,6 +79,7 @@ namespace Nano::Graphics::Internal
         void FreeBindingSetPool(BindingSetPool& pool) const;
 
         void DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const;
+        void DestroyComputePipeline(ComputePipeline& pipeline) const;
 
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }
