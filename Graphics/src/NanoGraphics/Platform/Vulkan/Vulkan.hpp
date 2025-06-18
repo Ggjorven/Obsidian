@@ -79,6 +79,9 @@ namespace Nano::Graphics::Internal
         void SetMappedData(void* mappedData, void* data, size_t size) const;
 
         // Getters
+        VkDeviceMemory GetUnderlyingMemory(VmaAllocation allocation) const;
+
+        // Static getters
         inline static const VkAllocationCallbacks* GetCallbacks() { return &s_Callbacks; }
 
     private:

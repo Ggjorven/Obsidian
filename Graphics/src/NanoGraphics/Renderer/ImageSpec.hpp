@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cmath>
 #include <limits>
+#include <string>
 #include <numeric>
 #include <string_view>
 
@@ -177,7 +178,8 @@ namespace Nano::Graphics
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
-        std::string_view DebugName = {};
+        //std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -201,7 +203,8 @@ namespace Nano::Graphics
         
         inline constexpr ImageSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
         
-        inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        //inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
 
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
 

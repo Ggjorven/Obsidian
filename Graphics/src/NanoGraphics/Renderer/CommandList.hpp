@@ -63,7 +63,10 @@ namespace Nano::Graphics
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_CommandList.DrawIndexed(args); }
 
-    private:
+        // Getters
+        inline const CommandListSpecification& GetSpecification() const { return m_CommandList.GetSpecification(); }
+
+    public: //private:
         // Constructor
         inline CommandList(CommandListPool& pool, const CommandListSpecification& specs)
             : m_CommandList(pool, specs) {}
@@ -99,7 +102,10 @@ namespace Nano::Graphics
         inline void ResetList(CommandList& list) const { m_Pool.ResetList(list); }
         inline void ResetAll() const { m_Pool.ResetAll(); }
 
-    private:
+        // Getters
+        inline const CommandListPoolSpecification& GetSpecification() const { return m_Pool.GetSpecification(); }
+
+    public: //private:
         // Constructor
         inline CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs)
             : m_Pool(swapchain, specs) {}

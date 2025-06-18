@@ -35,9 +35,9 @@ namespace Nano::Graphics
         // Getters
         inline const ShaderSpecification& GetSpecification() const { return m_Shader.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor
-        Shader(const Device& device, const ShaderSpecification& specs)
+        inline Shader(const Device& device, const ShaderSpecification& specs)
             : m_Shader(device, specs) {}
 
     private:

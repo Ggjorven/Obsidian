@@ -218,12 +218,14 @@ namespace Nano::Graphics::Internal
 
         for (uint32_t i = 0; i < imageCount; i++)
         {
+            std::string debugName = std::format("Image({0}) for: {1}", i, m_Specification.DebugName);
             ImageSpecification imageSpec = ImageSpecification()
                 .SetImageDimension(ImageDimension::Image2D)
                 .SetImageFormat(colourFormat)
                 .SetWidthAndHeight(width, height)
                 .SetIsRenderTarget(true)
-                .SetPermanentState(ResourceState::Present);
+                .SetPermanentState(ResourceState::Present)
+                .SetDebugName(debugName);
 
             if (m_Images[i].IsConstructed())
             {
@@ -242,7 +244,7 @@ namespace Nano::Graphics::Internal
             if constexpr (VulkanContext::Validation)
             {
                 if (!m_Specification.DebugName.empty())
-                    m_Device.GetContext().SetDebugName(swapchainImages[i], VK_OBJECT_TYPE_IMAGE, std::format("Image({0}) for: {1}", i, m_Specification.DebugName));
+                    m_Device.GetContext().SetDebugName(swapchainImages[i], VK_OBJECT_TYPE_IMAGE, debugName);
             }
         }
 

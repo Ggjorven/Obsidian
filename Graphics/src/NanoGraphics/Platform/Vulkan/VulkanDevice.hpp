@@ -48,6 +48,9 @@ namespace Nano::Graphics::Internal
         void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState);
         void StartTracking(const StagingImage& image, ResourceState currentState);
         void StartTracking(const Buffer& buffer, ResourceState currentState);
+        void StopTracking(const Image& image);
+        void StopTracking(const StagingImage& image);
+        void StopTracking(const Buffer& buffer);
 
         void MapBuffer(const Buffer& buffer, void*& memory) const;
         void UnmapBuffer(const Buffer& buffer) const;

@@ -40,9 +40,9 @@ namespace Nano::Graphics
 
         inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Renderpass.GetFramebuffer(frame); }
 
-    private:
+    public: //private:
         // Constructor
-        Renderpass(const Device& device, const RenderpassSpecification& specs)
+        inline Renderpass(const Device& device, const RenderpassSpecification& specs)
             : m_Renderpass(device, specs) {}
 
     private:

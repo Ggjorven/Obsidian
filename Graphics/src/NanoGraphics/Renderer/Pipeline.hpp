@@ -30,9 +30,9 @@ namespace Nano::Graphics
         // Destructor
         ~GraphicsPipeline() = default;
 
-    private:
+    public: //private:
         // Constructor
-        GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs)
+        inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs)
             : m_GraphicsPipeline(device, specs) {}
 
     private:

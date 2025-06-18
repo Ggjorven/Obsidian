@@ -42,7 +42,7 @@ namespace Nano::Graphics
         // Getters
         inline bool IsBindless() const { return m_BindingLayout.IsBindless(); }
 
-    private:
+    public: //private:
         // Constructor
         BindingLayout(const Device& device, const BindingLayoutSpecification& specs)
             : m_BindingLayout(device, specs) {}
@@ -79,9 +79,9 @@ namespace Nano::Graphics
         inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet.UploadList(uploadables); }
         inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_BindingSet.UploadList(std::span<const BindingSetUploadable>(uploadables)); }
 
-    private:
+    public: //private:
         // Constructor
-        BindingSet(BindingSetPool& pool)
+        inline BindingSet(BindingSetPool& pool)
             : m_BindingSet(pool) {}
 
     private:
@@ -112,9 +112,9 @@ namespace Nano::Graphics
         // Getters
         inline const BindingSetPoolSpecification& GetSpecification() const { return m_BindingSetPool.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor
-        BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs)
+        inline BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs)
             : m_BindingSetPool(device, specs) {}
 
     private:

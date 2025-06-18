@@ -34,9 +34,9 @@ namespace Nano::Graphics
         // Getters
         inline const FramebufferSpecification& GetSpecification() const { return m_Framebuffer.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor
-        Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
+        inline Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
             : m_Framebuffer(renderpass, specs) {}
 
     private:

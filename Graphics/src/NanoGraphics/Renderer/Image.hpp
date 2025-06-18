@@ -34,9 +34,9 @@ namespace Nano::Graphics
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_Image.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor 
-        Image(const Device& device, const ImageSpecification& specs)
+        inline Image(const Device& device, const ImageSpecification& specs)
             : m_Image(device, specs) {}
 
     private:
@@ -64,9 +64,9 @@ namespace Nano::Graphics
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_StagingImage.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor 
-        StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccess)
+        inline StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccess)
             : m_StagingImage(device, specs, cpuAccess) {}
 
     private:
@@ -94,9 +94,9 @@ namespace Nano::Graphics
         // Getters
         inline const SamplerSpecification& GetSpecification() const { return m_Sampler.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor 
-        Sampler(const Device& device, const SamplerSpecification& specs)
+        inline Sampler(const Device& device, const SamplerSpecification& specs)
             : m_Sampler(device, specs) {}
 
     private:

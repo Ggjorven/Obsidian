@@ -30,9 +30,9 @@ namespace Nano::Graphics
         // Destructor
         ~InputLayout() = default;
 
-    private:
+    public: //private:
         // Constructor
-        InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
+        inline InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
             : m_InputLayout(device, attributes) {}
 
     private:
@@ -60,9 +60,9 @@ namespace Nano::Graphics
         // Getters
         inline const BufferSpecification& GetSpecification() const { return m_Buffer.GetSpecification(); }
 
-    private:
+    public: //private:
         // Constructor
-        Buffer(const Device& device, const BufferSpecification& specs)
+        inline Buffer(const Device& device, const BufferSpecification& specs)
             : m_Buffer(device, specs) {}
 
     private:

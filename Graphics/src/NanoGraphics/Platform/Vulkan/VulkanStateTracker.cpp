@@ -37,7 +37,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanStateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
     {
-        NG_ASSERT(!(m_ImageStates.contains(&image)), "[VkStateTracker] Started tracking an object that's already being tracked.");
+        NG_ASSERT((!Contains(image)), "[VkStateTracker] Started tracking an object that's already being tracked.");
         
         m_ImageStates.emplace();
         VulkanImageState& state = m_ImageStates[&image];
@@ -63,12 +63,24 @@ namespace Nano::Graphics::Internal
 
     void VulkanStateTracker::StartTracking(const Buffer& buffer, ResourceState currentState) const
     {
-        NG_ASSERT(!(m_BufferStates.contains(&buffer)), "[VkStateTracker] Started tracking an object that's already being tracked.");
+        NG_ASSERT((!Contains(buffer)), "[VkStateTracker] Started tracking an object that's already being tracked.");
 
         m_BufferStates.emplace();
         VulkanBufferState& state = m_BufferStates[&buffer];
 
         state.State = currentState;
+    }
+
+    void VulkanStateTracker::StopTracking(const Image& image)
+    {
+        if (Contains(image))
+            m_ImageStates.erase(&image);
+    }
+
+    void VulkanStateTracker::StopTracking(const Buffer& buffer)
+    {
+        if (Contains(buffer))
+            m_BufferStates.erase(&buffer);
     }
 
     void VulkanStateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const

@@ -50,9 +50,9 @@ namespace Nano::Graphics
         inline Image& GetImage(uint8_t frame) { return m_Swapchain.GetImage(frame); }
         inline const Image& GetImage(uint8_t frame) const { return m_Swapchain.GetImage(frame); }
 
-    private:
+    public: //private:
         // Constructor
-        Swapchain(const Device& device, const SwapchainSpecification& specs)
+        inline Swapchain(const Device& device, const SwapchainSpecification& specs)
             : m_Swapchain(device, specs) {}
 
     private:

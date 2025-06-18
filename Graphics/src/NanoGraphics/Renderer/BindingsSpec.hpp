@@ -34,6 +34,7 @@ namespace Nano::Graphics
         ImageUnordered,
         StorageBuffer,
         StorageBufferUnordered,
+        DynamicStorageBuffer,
         UniformBuffer,
         DynamicUniformBuffer,
         Sampler,

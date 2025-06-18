@@ -59,7 +59,10 @@ namespace Nano::Graphics::Internal
         if constexpr (VulkanContext::Validation)
         {
             if (!m_Specification.DebugName.empty())
+            {
                 m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
+                m_Device.GetContext().SetDebugName(m_Device.GetAllocator().GetUnderlyingMemory(m_Allocation), VK_OBJECT_TYPE_DEVICE_MEMORY, std::format("Memory for: {0}", m_Specification.DebugName));
+            }
         }
     }
 

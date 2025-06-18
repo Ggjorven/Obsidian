@@ -236,4 +236,15 @@ namespace Nano::Graphics::Internal
 		std::memcpy(mappedData, data, size);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Getters
+    ////////////////////////////////////////////////////////////////////////////////////
+    VkDeviceMemory VulkanAllocator::GetUnderlyingMemory(VmaAllocation allocation) const
+    {
+        VmaAllocationInfo info;
+        vmaGetAllocationInfo(m_Allocator, allocation, &info);
+
+        return info.deviceMemory;
+    }
+
 }

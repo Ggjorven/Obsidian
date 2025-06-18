@@ -75,6 +75,25 @@ namespace Nano::Graphics::Internal
         m_StateTracker.StartTracking(buffer, currentState);
     }
 
+    void VulkanDevice::StopTracking(const Image& image)
+    {
+        NG_PROFILE("VulkanDevice::StopTracking()");
+        m_StateTracker.StopTracking(image);
+    }
+
+    void VulkanDevice::StopTracking(const StagingImage& image)
+    {
+        NG_PROFILE("VulkanDevice::StopTracking()");
+        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
+        m_StateTracker.StopTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
+    }
+
+    void VulkanDevice::StopTracking(const Buffer& buffer)
+    {
+        NG_PROFILE("VulkanDevice::StopTracking()");
+        m_StateTracker.StopTracking(buffer);
+    }
+
     void VulkanDevice::MapBuffer(const Buffer& buffer, void*& memory) const
     {
         const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);

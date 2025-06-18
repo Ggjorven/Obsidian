@@ -177,7 +177,7 @@ namespace Nano::Graphics
         inline constexpr RasterState& SetAntialiasedLineEnable(bool enabled) { AntialiasedLineEnable = enabled; return *this; }
         inline constexpr RasterState& SetDepthBias(int value) { DepthBias = value; return *this; }
         inline constexpr RasterState& SetDepthBiasClamp(float value) { DepthBiasClamp = value; return *this; }
-        inline constexpr RasterState& setSlopeScaleDepthBias(float value) { SlopeScaledDepthBias = value; return *this; }
+        inline constexpr RasterState& SetSlopeScaleDepthBias(float value) { SlopeScaledDepthBias = value; return *this; }
     };
 
     struct DepthStencilState
@@ -193,10 +193,10 @@ namespace Nano::Graphics
 
         public:
             // Setters
-            inline constexpr StencilOperationSpecification& setFailOp(StencilOperation operation) { FailOp = operation; return *this; }
-            inline constexpr StencilOperationSpecification& setDepthFailOp(StencilOperation operation) { DepthFailOp = operation; return *this; }
-            inline constexpr StencilOperationSpecification& setPassOp(StencilOperation operation) { PassOp = operation; return *this; }
-            inline constexpr StencilOperationSpecification& setStencilFunc(ComparisonFunc func) { StencilFunc = func; return *this; }
+            inline constexpr StencilOperationSpecification& SetFailOp(StencilOperation operation) { FailOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& SetDepthFailOp(StencilOperation operation) { DepthFailOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& SetPassOp(StencilOperation operation) { PassOp = operation; return *this; }
+            inline constexpr StencilOperationSpecification& SetStencilFunc(ComparisonFunc func) { StencilFunc = func; return *this; }
         };
     public:
         bool DepthTestEnable = true;
