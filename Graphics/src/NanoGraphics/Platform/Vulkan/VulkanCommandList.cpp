@@ -26,7 +26,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanCommandListPool::VulkanCommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs)
-        : m_Swapchain(*reinterpret_cast<VulkanSwapchain*>(&swapchain)), m_Specification(specs)
+        : m_Swapchain(*safe_reinterpret<VulkanSwapchain*>(&swapchain)), m_Specification(specs)
     {
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -54,7 +54,7 @@ namespace Nano::Graphics::Internal
         const VulkanContext& context = m_Swapchain.GetVulkanDevice().GetContext();
 
         VkDevice device = context.GetVulkanLogicalDevice().GetVkDevice();
-        VkCommandBuffer commandBuffer = (*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
+        VkCommandBuffer commandBuffer = (*safe_reinterpret<VulkanCommandList*>(&list)).GetVkCommandBuffer();
         m_Swapchain.GetVulkanDevice().GetContext().Destroy([device, commandPool = m_CommandPool, commandBuffer]() mutable
         { 
             vkFreeCommandBuffers(device, commandPool, 1ul, &commandBuffer);
@@ -68,7 +68,7 @@ namespace Nano::Graphics::Internal
 
         for (auto& list : lists)
         {
-            VkCommandBuffer commandBuffer = (*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
+            VkCommandBuffer commandBuffer = (*safe_reinterpret<VulkanCommandList*>(&list)).GetVkCommandBuffer();
             commandBuffers.push_back(commandBuffer);
         }
 
@@ -81,7 +81,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanCommandListPool::ResetList(CommandList& list) const
     {
-        vkResetCommandBuffer((*reinterpret_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer(), 0);
+        vkResetCommandBuffer((*safe_reinterpret<VulkanCommandList*>(&list)).GetVkCommandBuffer(), 0);
     }
 
     void VulkanCommandListPool::ResetAll() const
@@ -93,7 +93,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanCommandList::VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs)
-        : m_Pool(*reinterpret_cast<VulkanCommandListPool*>(&pool)), m_Specification(specs)
+        : m_Pool(*safe_reinterpret<VulkanCommandListPool*>(&pool)), m_Specification(specs)
     {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -196,7 +196,7 @@ namespace Nano::Graphics::Internal
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkTimelineSemaphore();
             info.stageMask = m_WaitStage;
-            info.value = swapchain.GetPreviousCommandListWaitValue(*reinterpret_cast<const VulkanCommandList*>(list));
+            info.value = swapchain.GetPreviousCommandListWaitValue(*safe_reinterpret<const VulkanCommandList*>(list));
         }
 
         // Signal semaphores
@@ -274,12 +274,12 @@ namespace Nano::Graphics::Internal
         {
             NG_PROFILE("VulkanCommandList::SetGraphicsState::Renderpass");
 
-            VulkanRenderpass& renderpass = *reinterpret_cast<VulkanRenderpass*>(state.Pass);
+            VulkanRenderpass& renderpass = *safe_reinterpret<VulkanRenderpass*>(state.Pass);
             VulkanFramebuffer* framebuffer = nullptr;
             if (state.Frame)
-                framebuffer = reinterpret_cast<VulkanFramebuffer*>(state.Frame);
+                framebuffer = safe_reinterpret<VulkanFramebuffer*>(state.Frame);
             else
-                framebuffer = reinterpret_cast<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetCurrentFrame())));
+                framebuffer = safe_reinterpret<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetCurrentFrame())));
         
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -305,7 +305,7 @@ namespace Nano::Graphics::Internal
             vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
         }
 
-        VulkanGraphicsPipeline& vulkanPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(state.Pipeline);
+        VulkanGraphicsPipeline& vulkanPipeline = *safe_reinterpret<VulkanGraphicsPipeline*>(state.Pipeline);
         // Pipeline
         {
             NG_PROFILE("VulkanCommandList::SetGraphicsState::Pipeline");
@@ -361,7 +361,7 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::BindVertexBuffer()");
         NG_ASSERT((buffer.GetSpecification().IsVertexBuffer), "[VkCommandList] To bind a buffer as a vertex buffer it must have been created with IsVertexBuffer equal to true.");
-        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        const VulkanBuffer& vulkanBuffer = *safe_reinterpret<const VulkanBuffer*>(&buffer);
 
         VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
         VkDeviceSize vkOffsets = 0;
@@ -373,7 +373,7 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::BindIndexBuffer()");
         NG_ASSERT((buffer.GetSpecification().IsIndexBuffer), "[VkCommandList] To bind a buffer as an index buffer it must have been created with IsIndexBuffer equal to true.");
-        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        const VulkanBuffer& vulkanBuffer = *safe_reinterpret<const VulkanBuffer*>(&buffer);
 
         VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
 
@@ -389,8 +389,8 @@ namespace Nano::Graphics::Internal
 
         SetWaitStage(VK_PIPELINE_STAGE_2_TRANSFER_BIT);
 
-        VulkanImage& vulkanDst = *reinterpret_cast<VulkanImage*>(&dst);
-        VulkanImage& vulkanSrc = *reinterpret_cast<VulkanImage*>(&src);
+        VulkanImage& vulkanDst = *safe_reinterpret<VulkanImage*>(&dst);
+        VulkanImage& vulkanSrc = *safe_reinterpret<VulkanImage*>(&src);
 
         ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
         ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
@@ -463,9 +463,9 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::CopyImage()");
 
-        VulkanStagingImage& srcVulkanStagingImage = *reinterpret_cast<VulkanStagingImage*>(&src);
-        VulkanBuffer& srcVulkanBuffer = reinterpret_cast<VulkanStagingImage*>(&src)->GetVulkanBuffer();
-        VulkanImage& dstVulkanImage = *reinterpret_cast<VulkanImage*>(&dst);
+        VulkanStagingImage& srcVulkanStagingImage = *safe_reinterpret<VulkanStagingImage*>(&src);
+        VulkanBuffer& srcVulkanBuffer = safe_reinterpret<VulkanStagingImage*>(&src)->GetVulkanBuffer();
+        VulkanImage& dstVulkanImage = *safe_reinterpret<VulkanImage*>(&dst);
 
         ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
         ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
@@ -478,7 +478,7 @@ namespace Nano::Graphics::Internal
         );
 
         // Enforce permanent state
-        //ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        //ResolvePermanentState(*safe_reinterpret<Buffer*>(&srcVulkanBuffer));
         //ResolvePermanentState(dst, dstSubresource);
 
         VkBufferImageCopy2 copyInfo = {};
@@ -495,7 +495,7 @@ namespace Nano::Graphics::Internal
         copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
         copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*safe_reinterpret<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(dst, dstSubresource, ResourceState::CopyDst);
         CommitBarriers();
 
@@ -510,7 +510,7 @@ namespace Nano::Graphics::Internal
         vkCmdCopyBufferToImage2(m_CommandBuffer, &copyBufferToImageInfo);
 
         // Update back to permanent state
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*reinterpret_cast<Buffer*>(&srcVulkanBuffer));
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*safe_reinterpret<Buffer*>(&srcVulkanBuffer));
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst, dstSubresource);
         CommitBarriers();
     }
@@ -523,8 +523,8 @@ namespace Nano::Graphics::Internal
         //ResolvePermanentState(src);
         //ResolvePermanentState(dst);
 
-        VulkanBuffer& dstVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&dst);
-        VulkanBuffer& srcVulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&src);
+        VulkanBuffer& dstVulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&dst);
+        VulkanBuffer& srcVulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&src);
 
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(src, ResourceState::CopySrc);
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(dst, ResourceState::CopyDst);
@@ -590,7 +590,7 @@ namespace Nano::Graphics::Internal
                 }
 
                 // Add descriptor
-                VulkanBindingSet& vulkanSet = *reinterpret_cast<VulkanBindingSet*>(sets[i].Set);
+                VulkanBindingSet& vulkanSet = *safe_reinterpret<VulkanBindingSet*>(sets[i].Set);
                 std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.back()).push_back(vulkanSet.GetVkDescriptorSet());
             }
         }

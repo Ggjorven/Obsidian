@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Maths/Structs.hpp"
@@ -58,8 +59,8 @@ namespace Nano::Graphics::Internal
 		inline const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 
 		inline uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
-		inline Image& GetImage(uint8_t frame) { return *reinterpret_cast<Image*>(&m_Images[frame].Get()); }
-		inline const Image& GetImage(uint8_t frame) const { return *reinterpret_cast<const Image*>(&m_Images[frame].Get()); }
+		inline Image& GetImage(uint8_t frame) { return *safe_reinterpret<Image*>(&m_Images[frame].Get()); }
+		inline const Image& GetImage(uint8_t frame) const { return *safe_reinterpret<const Image*>(&m_Images[frame].Get()); }
 		
 		// Internal getters
 		inline VkSwapchainKHR GetVkSwapchain() const { return m_Swapchain; }

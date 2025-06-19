@@ -226,7 +226,7 @@ namespace Nano::Graphics::Internal
             NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
 
             Image& image = *imageBarrier.ImagePtr;
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(imageBarrier.ImagePtr);
+            VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(imageBarrier.ImagePtr);
 
             VkImageMemoryBarrier2 barrier2 = {};
             barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -255,7 +255,7 @@ namespace Nano::Graphics::Internal
             const ResourceStateMapping& after = ResourceStateToMapping(bufferBarrier.StateAfter);
 
             Buffer& buffer = *bufferBarrier.BufferPtr;
-            VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
+            VulkanBuffer& vulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&buffer);
 
             VkBufferMemoryBarrier2 barrier2 = {};
             barrier2.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;

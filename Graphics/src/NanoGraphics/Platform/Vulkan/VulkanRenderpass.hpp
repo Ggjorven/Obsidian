@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
@@ -41,7 +42,7 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const RenderpassSpecification& GetSpecification() const { return m_Specification; }
 
-        inline Framebuffer& GetFramebuffer(uint8_t frame) { return *reinterpret_cast<Framebuffer*>(&m_Framebuffers[frame]); }
+        inline Framebuffer& GetFramebuffer(uint8_t frame) { return *safe_reinterpret<Framebuffer*>(&m_Framebuffers[frame]); }
 
         // Internal getters
         inline VkRenderPass GetVkRenderPass() const { return m_Renderpass; }

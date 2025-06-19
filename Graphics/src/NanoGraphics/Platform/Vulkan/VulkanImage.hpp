@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NanoGraphics/Core/Core.hpp"
+
 #include "NanoGraphics/Maths/Structs.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"

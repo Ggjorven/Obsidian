@@ -114,7 +114,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT((specs.Size != 0), "[VkBuffer] Size must not equal 0.");
 
-        const VulkanDevice& vulkanDevice = *reinterpret_cast<const VulkanDevice*>(&device);
+        const VulkanDevice& vulkanDevice = *safe_reinterpret<const VulkanDevice*>(&device);
 
         // Validation checks
         if constexpr (VulkanContext::Validation)

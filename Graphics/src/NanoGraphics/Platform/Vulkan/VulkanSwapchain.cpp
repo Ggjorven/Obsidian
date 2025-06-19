@@ -26,7 +26,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         #if defined(NG_PLATFORM_DESKTOP)
             VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
@@ -98,7 +98,7 @@ namespace Nano::Graphics::Internal
     void VulkanSwapchain::FreePool(CommandListPool& pool) const
     {
         VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
-        VkCommandPool commandPool = (*reinterpret_cast<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
+        VkCommandPool commandPool = (*safe_reinterpret<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
         m_Device.GetContext().Destroy([device, commandPool]() mutable
         {
             vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
@@ -230,7 +230,7 @@ namespace Nano::Graphics::Internal
 
             if (m_Images[i].IsConstructed())
             {
-                m_Device.DestroySubresourceViews(*reinterpret_cast<Image*>(&m_Images[i].Get()));
+                m_Device.DestroySubresourceViews(*safe_reinterpret<Image*>(&m_Images[i].Get()));
                 m_Images[i]->SetInternalData(imageSpec, swapchainImages[i]);
             }
             else

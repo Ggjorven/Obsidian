@@ -1,6 +1,7 @@
 #include "ngpch.h"
 #include "VulkanContext.hpp"
 
+#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 

@@ -25,7 +25,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanRenderpass::VulkanRenderpass(const Device& device, const RenderpassSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         Nano::Memory::StaticVector<VkAttachmentDescription2, 2> attachments;
         std::optional<VkAttachmentReference2> colourReference;
@@ -105,10 +105,10 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT((m_Framebuffers.size() < m_Framebuffers.max_size()), "[VkRenderpass] Can't create more framebuffers than backbuffers/swapchain images.");
 
-        VulkanFramebuffer framebuffer(*reinterpret_cast<Renderpass*>(this), specs);
+        VulkanFramebuffer framebuffer(*safe_reinterpret<Renderpass*>(this), specs);
 
         m_Framebuffers.push_back(std::move(framebuffer));
-        return *reinterpret_cast<Framebuffer*>(&m_Framebuffers.back());
+        return *safe_reinterpret<Framebuffer*>(&m_Framebuffers.back());
     }
 
     void VulkanRenderpass::ResizeFramebuffers()

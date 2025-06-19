@@ -20,7 +20,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanFramebuffer::VulkanFramebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
-        : m_Renderpass(reinterpret_cast<const VulkanRenderpass*>(&renderpass)), m_Specification(specs)
+        : m_Renderpass(safe_reinterpret<const VulkanRenderpass*>(&renderpass)), m_Specification(specs)
     {
         Create();
     }
@@ -75,7 +75,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanFramebuffer::Resize()
     {
-        m_Renderpass->GetVulkanDevice().DestroyFramebuffer(*reinterpret_cast<Framebuffer*>(this));
+        m_Renderpass->GetVulkanDevice().DestroyFramebuffer(*safe_reinterpret<Framebuffer*>(this));
         Create();
     }
 
@@ -91,7 +91,7 @@ namespace Nano::Graphics::Internal
 
         if (m_Specification.ColourAttachment.IsValid())
         {
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.ColourAttachment.ImagePtr);
+            VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(m_Specification.ColourAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.ColourAttachment.ImagePtr->GetSpecification();
 
             width = std::max(imageSpec.Width >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
@@ -103,7 +103,7 @@ namespace Nano::Graphics::Internal
 
         if (m_Specification.DepthAttachment.IsValid())
         {
-            VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
+            VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
 
             if constexpr (VulkanContext::Validation)

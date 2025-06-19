@@ -20,7 +20,7 @@ namespace Nano::Graphics::Internal
     // Constructors & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanImageSubresourceView::VulkanImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
-        : m_Image(*reinterpret_cast<const VulkanImage*>(&image)), m_Specification(specs)
+        : m_Image(*safe_reinterpret<const VulkanImage*>(&image)), m_Specification(specs)
     {
     }
 
@@ -32,7 +32,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         NG_ASSERT(((specs.Width != 0) && (specs.Height != 0)), "[VkImage] Invalid width/height passed in.");
         NG_ASSERT((specs.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
@@ -96,7 +96,7 @@ namespace Nano::Graphics::Internal
         auto viewPair = m_ImageViews.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(cachekey), 
-            std::forward_as_tuple(*reinterpret_cast<Image*>(this), specs)
+            std::forward_as_tuple(*safe_reinterpret<Image*>(this), specs)
         );
         auto& imageView = std::get<0>(viewPair)->second;
 
@@ -160,7 +160,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanStagingImage::VulkanStagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
+        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
             .SetSize(GetBufferSize())
             .SetCPUAccess(cpuAccessMode)
             .SetPermanentState(specs.PermanentState)
@@ -259,7 +259,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanSampler::VulkanSampler(const Device& device, const SamplerSpecification& specs)
-        : m_Device(*reinterpret_cast<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         VkSamplerCreateInfo samplerInfo = {};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

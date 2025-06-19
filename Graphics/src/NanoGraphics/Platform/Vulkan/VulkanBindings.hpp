@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"

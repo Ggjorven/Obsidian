@@ -65,8 +65,8 @@ namespace Nano::Graphics::Internal
     void VulkanDevice::StartTracking(const StagingImage& image, ResourceState currentState)
     {
         NG_PROFILE("VulkanDevice::StartTracking()");
-        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
-        m_StateTracker.StartTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
+        const VulkanStagingImage& vulkanStagingImage = *safe_reinterpret<const VulkanStagingImage*>(&image);
+        m_StateTracker.StartTracking(*safe_reinterpret<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()), currentState);
     }
 
     void VulkanDevice::StartTracking(const Buffer& buffer, ResourceState currentState)
@@ -84,8 +84,8 @@ namespace Nano::Graphics::Internal
     void VulkanDevice::StopTracking(const StagingImage& image)
     {
         NG_PROFILE("VulkanDevice::StopTracking()");
-        const VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<const VulkanStagingImage*>(&image);
-        m_StateTracker.StopTracking(*reinterpret_cast<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
+        const VulkanStagingImage& vulkanStagingImage = *safe_reinterpret<const VulkanStagingImage*>(&image);
+        m_StateTracker.StopTracking(*safe_reinterpret<const Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
     }
 
     void VulkanDevice::StopTracking(const Buffer& buffer)
@@ -96,27 +96,27 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::MapBuffer(const Buffer& buffer, void*& memory) const
     {
-        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        const VulkanBuffer& vulkanBuffer = *safe_reinterpret<const VulkanBuffer*>(&buffer);
         NG_ASSERT(static_cast<bool>(buffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
         m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
     }
 
     void VulkanDevice::UnmapBuffer(const Buffer& buffer) const
     {
-        const VulkanBuffer& vulkanBuffer = *reinterpret_cast<const VulkanBuffer*>(&buffer);
+        const VulkanBuffer& vulkanBuffer = *safe_reinterpret<const VulkanBuffer*>(&buffer);
         m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
     }
 
     void VulkanDevice::MapStagingImage(const StagingImage& image, void*& memory) const
     {
-        const VulkanBuffer& vulkanBuffer = reinterpret_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
+        const VulkanBuffer& vulkanBuffer = safe_reinterpret<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
         NG_ASSERT(static_cast<bool>(vulkanBuffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
         m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
     }
 
     void VulkanDevice::UnmapStagingImage(const StagingImage& image) const
     {
-        const VulkanBuffer& vulkanBuffer = reinterpret_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
+        const VulkanBuffer& vulkanBuffer = safe_reinterpret<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
         m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
     }
 
@@ -125,10 +125,10 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanDevice::DestroySwapchain(Swapchain& swapchain) const
     {
-        VulkanSwapchain& vulkanSwapchain = *reinterpret_cast<VulkanSwapchain*>(&swapchain);
+        VulkanSwapchain& vulkanSwapchain = *safe_reinterpret<VulkanSwapchain*>(&swapchain);
 
         for (auto& image : vulkanSwapchain.m_Images)
-            DestroySubresourceViews(*reinterpret_cast<Image*>(&image.Get()));
+            DestroySubresourceViews(*safe_reinterpret<Image*>(&image.Get()));
 
         m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore, resizePool = vulkanSwapchain.m_ResizePool]() mutable
         {
@@ -152,7 +152,7 @@ namespace Nano::Graphics::Internal
     {
         DestroySubresourceViews(image);
 
-        VulkanImage& vulkanImage = *reinterpret_cast<VulkanImage*>(&image);
+        VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(&image);
         VkImage vkImage = vulkanImage.GetVkImage();
         VmaAllocation allocation = vulkanImage.GetVmaAllocation();
         m_Context.Destroy([vkImage, allocation, allocator = &m_Allocator]() mutable
@@ -163,7 +163,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroySubresourceViews(Image& image) const
     {
-        VulkanImage& vkImage = *reinterpret_cast<VulkanImage*>(&image);
+        VulkanImage& vkImage = *safe_reinterpret<VulkanImage*>(&image);
 
         std::vector<VkImageView> imageViews;
         imageViews.reserve(vkImage.GetImageViews().size());
@@ -182,13 +182,13 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyStagingImage(StagingImage& stagingImage) const
     {
-        VulkanStagingImage& vulkanStagingImage = *reinterpret_cast<VulkanStagingImage*>(&stagingImage);
-        DestroyBuffer(*reinterpret_cast<Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
+        VulkanStagingImage& vulkanStagingImage = *safe_reinterpret<VulkanStagingImage*>(&stagingImage);
+        DestroyBuffer(*safe_reinterpret<Buffer*>(&vulkanStagingImage.GetVulkanBuffer()));
     }
 
     void VulkanDevice::DestroySampler(Sampler& sampler) const
     {
-        VulkanSampler& vulkanSampler = *reinterpret_cast<VulkanSampler*>(&sampler);
+        VulkanSampler& vulkanSampler = *safe_reinterpret<VulkanSampler*>(&sampler);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkSampler vkSampler = vulkanSampler.GetVkSampler();
@@ -200,7 +200,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyBuffer(Buffer& buffer) const
     {
-        VulkanBuffer& vulkanBuffer = *reinterpret_cast<VulkanBuffer*>(&buffer);
+        VulkanBuffer& vulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&buffer);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
@@ -213,7 +213,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyFramebuffer(Framebuffer& framebuffer) const
     {
-        VulkanFramebuffer& vulkanFramebuffer = *reinterpret_cast<VulkanFramebuffer*>(&framebuffer);
+        VulkanFramebuffer& vulkanFramebuffer = *safe_reinterpret<VulkanFramebuffer*>(&framebuffer);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkFramebuffer vkFramebuffer = vulkanFramebuffer.GetVkFramebuffer();
@@ -225,13 +225,13 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyRenderpass(Renderpass& renderpass) const
     {
-        VulkanRenderpass& vulkanRenderpass = *reinterpret_cast<VulkanRenderpass*>(&renderpass);
+        VulkanRenderpass& vulkanRenderpass = *safe_reinterpret<VulkanRenderpass*>(&renderpass);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkRenderPass vkRenderpass = vulkanRenderpass.GetVkRenderPass();
 
         for (auto& framebuffer : vulkanRenderpass.GetVulkanFramebuffers())
-            DestroyFramebuffer(*reinterpret_cast<Framebuffer*>(&framebuffer));
+            DestroyFramebuffer(*safe_reinterpret<Framebuffer*>(&framebuffer));
 
         m_Context.Destroy([device, vkRenderpass]() mutable
         {
@@ -241,7 +241,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyShader(Shader& shader) const
     {
-        VulkanShader& vulkanShader = *reinterpret_cast<VulkanShader*>(&shader);
+        VulkanShader& vulkanShader = *safe_reinterpret<VulkanShader*>(&shader);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkShaderModule vkShader = vulkanShader.GetVkShaderModule();
@@ -258,7 +258,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyBindingLayout(BindingLayout& layout) const
     {
-        VulkanBindingLayout& vulkanPool = *reinterpret_cast<VulkanBindingLayout*>(&layout);
+        VulkanBindingLayout& vulkanPool = *safe_reinterpret<VulkanBindingLayout*>(&layout);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkDescriptorSetLayout vkLayout = vulkanPool.GetVkDescriptorSetLayout();
@@ -270,7 +270,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::FreeBindingSetPool(BindingSetPool& pool) const
     {
-        VulkanBindingSetPool& vulkanPool = *reinterpret_cast<VulkanBindingSetPool*>(&pool);
+        VulkanBindingSetPool& vulkanPool = *safe_reinterpret<VulkanBindingSetPool*>(&pool);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkDescriptorPool vkPool = vulkanPool.GetVkDescriptorPool();
@@ -282,7 +282,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const
     {
-        VulkanGraphicsPipeline& vulkanGraphicsPipeline = *reinterpret_cast<VulkanGraphicsPipeline*>(&pipeline);
+        VulkanGraphicsPipeline& vulkanGraphicsPipeline = *safe_reinterpret<VulkanGraphicsPipeline*>(&pipeline);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkPipelineLayout vkPipelineLayout = vulkanGraphicsPipeline.GetVkPipelineLayout();
@@ -296,7 +296,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::DestroyComputePipeline(ComputePipeline& pipeline) const
     {
-        VulkanComputePipeline& vulkanComputePipeline = *reinterpret_cast<VulkanComputePipeline*>(&pipeline);
+        VulkanComputePipeline& vulkanComputePipeline = *safe_reinterpret<VulkanComputePipeline*>(&pipeline);
 
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkPipelineLayout vkPipelineLayout = vulkanComputePipeline.GetVkPipelineLayout();
