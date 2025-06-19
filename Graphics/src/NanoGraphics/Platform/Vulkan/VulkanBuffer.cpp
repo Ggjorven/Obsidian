@@ -129,7 +129,7 @@ namespace Nano::Graphics::Internal
 
         // MemoryUsage
         {
-            if (static_cast<bool>((m_Specification.CpuAccess & CpuAccessMode::Read)) && static_cast<bool>((m_Specification.CpuAccess & CpuAccessMode::Write))
+            if ((static_cast<bool>((m_Specification.CpuAccess & CpuAccessMode::Read)) && static_cast<bool>((m_Specification.CpuAccess & CpuAccessMode::Write)))
                 || static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
                 memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
             else if (static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Read))

@@ -84,7 +84,7 @@ namespace Nano::Graphics::Internal
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
-		std::array<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferCount> m_Images = { };
+		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferUpperLimit> m_Images = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_SwapchainPresentableSemaphores = { };
 

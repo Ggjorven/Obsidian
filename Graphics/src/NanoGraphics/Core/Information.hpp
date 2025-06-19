@@ -68,5 +68,8 @@ namespace Nano::Graphics::Information
     
     // Frames In Flight
     inline constexpr const uint8_t BackBufferCount = 3;
+    inline constexpr const uint8_t BackBufferUpperLimit = 6;
+
+    static_assert((BackBufferUpperLimit >= BackBufferCount), "BackBufferCount must be less or equal to the upper limit.");
 
 }

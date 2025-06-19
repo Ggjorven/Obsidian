@@ -45,7 +45,7 @@ namespace Nano::Graphics::Internal
 			for (auto& image : m_Images)
 				image.Construct(device, imageSpec);
 		}
-		constexpr ~DummySwapchain() = default;
+		~DummySwapchain() = default;
 
 		// Destruction methods
 		inline constexpr void FreePool(CommandListPool& pool) const { (void)pool; }

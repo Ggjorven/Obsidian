@@ -155,8 +155,7 @@ namespace Nano::Graphics::Internal
             }
         }
 
-        NG_ASSERT((details.Capabilities.minImageCount <= Information::BackBufferCount), "[VkSwapchain] BackBufferCount is less than the minimum amount of Swapchain images.");
-        NG_ASSERT((Information::BackBufferCount <= details.Capabilities.maxImageCount), "[VkSwapchain] BackBufferCount is more than the maximum amount of Swapchain images.");
+        NG_ASSERT((details.Capabilities.maxImageCount == 0) || (Information::BackBufferUpperLimit <= details.Capabilities.maxImageCount), "[VkSwapchain] BackBufferCount is more than the maximum amount of Swapchain images.");
 
         // Get current transform?
         VkSurfaceTransformFlagsKHR preTransform;
@@ -210,10 +209,12 @@ namespace Nano::Graphics::Internal
         }
 
         uint32_t imageCount = 0;
-        std::array<VkImage, Information::BackBufferCount> swapchainImages = { };
+        Nano::Memory::StaticVector<VkImage, Information::BackBufferUpperLimit> swapchainImages = { };
 
         VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, nullptr));
-        NG_ASSERT((imageCount == Information::BackBufferCount), "[VkSwapchain] Swapchain image count doesn't match requested BackBufferCount");
+        NG_ASSERT((imageCount <= Information::BackBufferUpperLimit), "[VkSwapchain] More images provided than we allow.");
+        swapchainImages.resize(imageCount);
+        m_Images.resize(imageCount);
         VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, swapchainImages.data()));
 
         for (uint32_t i = 0; i < imageCount; i++)

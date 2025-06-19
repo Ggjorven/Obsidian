@@ -81,7 +81,7 @@ namespace Nano::Graphics
         inline constexpr ScissorRect(int minX, int maxX, int minY, int maxY) 
             : MinX(minX), MaxX(maxX), MinY(minY), MaxY(maxY) {}
         inline explicit ScissorRect(const Viewport& viewport)
-            : MinX(static_cast<int>((std::floorf(viewport.MinX)))), MaxX(static_cast<int>((std::ceilf(viewport.MaxX)))), MinY(static_cast<int>((std::floorf(viewport.MinY)))), MaxY(static_cast<int>((std::ceilf(viewport.MaxY)))) {}
+            : MinX(static_cast<int>((std::floor(viewport.MinX)))), MaxX(static_cast<int>((std::ceil(viewport.MaxX)))), MinY(static_cast<int>((std::floor(viewport.MinY)))), MaxY(static_cast<int>((std::ceil(viewport.MaxY)))) {}
         constexpr ~ScissorRect() = default;
 
         // Operators
