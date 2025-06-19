@@ -276,7 +276,8 @@ namespace Nano::Graphics::Internal
             barrier2.subresourceRange.layerCount = 1;
 
             // Set all the images
-            std::array<VkImageMemoryBarrier2, Information::BackBufferCount> barriers = { };
+            Nano::Memory::StaticVector<VkImageMemoryBarrier2, Information::BackBufferUpperLimit> barriers = { };
+            barriers.resize(m_Images.size());
             for (size_t i = 0; i < m_Images.size(); i++)
             {
                 barriers[i] = barrier2;

@@ -240,7 +240,7 @@ namespace Nano::Graphics::Internal
 		VkPipelineShaderStageCreateInfo computeShaderInfo = {};
 		computeShaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		computeShaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		computeShaderInfo.module = reinterpret_cast<const VulkanShader*>(&specs.ComputeShader)->GetVkShaderModule();
+		computeShaderInfo.module = reinterpret_cast<const VulkanShader*>(specs.ComputeShader)->GetVkShaderModule();
 		computeShaderInfo.pName = specs.ComputeShader->GetSpecification().MainName.data();
 
 		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
