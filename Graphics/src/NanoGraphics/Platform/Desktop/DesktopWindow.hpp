@@ -58,7 +58,7 @@ namespace Nano::Graphics::Internal
 		inline bool IsMinimized() const { return ((m_Specification.Width == 0) || (m_Specification.Height == 0)); }
 
 		inline void* GetNativeWindow() { return static_cast<void*>(m_Window); }
-		inline WindowSpecification& GetSpecification() { return m_Specification; }
+		inline const WindowSpecification& GetSpecification() const { return m_Specification; }
 
 		inline const Input& GetInput() const { return m_Input; }
 

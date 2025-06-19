@@ -44,6 +44,9 @@ private:
     const Window& m_Window;
     CameraData m_Camera = {};
 
+    Maths::Vec2<float> m_MousePosition;
+    bool m_WasMouseDown = false;
+
     Maths::Vec3<float> m_Position = { 0.0f, 0.0f, 0.0f };
     float m_Zoom = 1.0f;
     float m_Rotation = 0.0f; // Optional: for rotating the camera

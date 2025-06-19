@@ -338,7 +338,7 @@ public:
 				initCommand.CopyBuffer(m_IndexBuffer.Get(), stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData), 0);
 			}
 
-			// Uniform (TODO)
+			// Uniform
 			{
 				m_UniformBuffer.Construct(m_Device.Get(), BufferSpecification()
 					.SetSize(sizeof(Camera))
@@ -348,15 +348,12 @@ public:
 				);
 				m_Device->StartTracking(m_UniformBuffer.Get(), ResourceState::Unknown);
 				
-				void* uniformMemory;
-				m_Device->MapBuffer(m_UniformBuffer.Get(), uniformMemory);
+				m_Device->MapBuffer(m_UniformBuffer.Get(), m_UniformMemory);
 
 				m_Camera.Construct(m_Window.Get());
 
-				if (uniformMemory)
-					std::memcpy(static_cast<uint8_t*>(uniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
-
-				m_Device->UnmapBuffer(m_UniformBuffer.Get());
+				if (m_UniformMemory)
+					std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 			}
 
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
@@ -409,6 +406,7 @@ public:
 			// Upload
 			for (auto& bindingSet : m_Set0s)
 			{
+				bindingSet->Upload(m_UniformBuffer.Get(), BufferRange(BufferRange::FullSize, 0), ResourceType::UniformBuffer, 0, 0);
 				bindingSet->Upload(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceType::Image, 1, 0);
 				bindingSet->Upload(m_Sampler.Get(), ResourceType::Sampler, 2, 0);
 			}
@@ -416,6 +414,8 @@ public:
 	}
 	~Application()
 	{
+		m_Device->UnmapBuffer(m_UniformBuffer.Get());
+
 		m_Device->DestroySampler(m_Sampler.Get());
 		m_Device->DestroyImage(m_Image.Get());
 
@@ -441,7 +441,7 @@ public:
 	// Methods
 	void Run()
 	{
-		Nano::Time::Timer<Nano::Time::Period::Milliseconds, float> deltaTimer;
+		Nano::Time::Timer<Nano::Time::Period::Seconds, float> deltaTimer;
 
 		while (m_Window->IsOpen())
 		{
@@ -461,15 +461,13 @@ public:
 			{
 				list.ResetAndOpen();
 				{
-					set0.Upload(m_UniformBuffer.Get(), BufferRange(BufferRange::FullSize, 0), ResourceType::UniformBuffer, 0, 0);
-
 					// Graphics
 					list.SetGraphicsState(GraphicsState()
 						.SetPipeline(m_Pipeline.Get())
 						.SetRenderpass(m_Renderpass.Get())
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
-						.SetColourClear({ (static_cast<float>(m_Window->GetInput().GetCursorPosition().x) / static_cast<float>(m_Window->GetSize().x)), (static_cast<float>(m_Window->GetInput().GetCursorPosition().y) / static_cast<float>(m_Window->GetSize().y)), 0.0f, 1.0f })
+						.SetColourClear({ 0.0f, 0.0f, 0.0f, 1.0f })
 						.AddBindingSet(0, set0)
 					);
 
@@ -539,13 +537,8 @@ private:
 	{
 		m_Camera->OnUpdate(deltaTime);
 
-		void* uniformMemory;
-		m_Device->MapBuffer(m_UniformBuffer.Get(), uniformMemory);
-
-		if (uniformMemory)
-			std::memcpy(static_cast<uint8_t*>(uniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
-
-		m_Device->UnmapBuffer(m_UniformBuffer.Get());
+		if (m_UniformMemory)
+			std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 	}
 
 private:
@@ -568,7 +561,8 @@ private:
 
 	Nano::Memory::DeferredConstruct<Buffer> m_VertexBuffer = {};
 	Nano::Memory::DeferredConstruct<Buffer> m_IndexBuffer = {};
-
+	
+	void* m_UniformMemory;
 	Nano::Memory::DeferredConstruct<Buffer> m_UniformBuffer = {};
 	Nano::Memory::DeferredConstruct<Camera> m_Camera = {};
 
