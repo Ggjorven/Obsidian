@@ -12,6 +12,8 @@
 #include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
 
+#include <Nano/Nano.hpp>
+
 #include <type_traits>
 
 namespace Nano::Graphics
@@ -59,8 +61,12 @@ namespace Nano::Graphics::Internal
 		inline const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 
 		inline uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
-		inline Image& GetImage(uint8_t frame) { return m_Images[frame].Get(); }
-		inline const Image& GetImage(uint8_t frame) const { return m_Images[frame].Get(); }
+		inline uint32_t GetAcquiredImage() const { return m_AcquiredImage; }
+
+		inline Image& GetImage(uint8_t index) { return m_Images[index].Get(); }
+		inline const Image& GetImage(uint8_t index) const { return m_Images[index].Get(); }
+
+		inline uint32_t GetImageCount() const { return static_cast<uint32_t>(m_Images.size()); }
 		
 		// Internal getters
 		inline VkSwapchainKHR GetVkSwapchain() const { return m_Swapchain; }
@@ -68,9 +74,7 @@ namespace Nano::Graphics::Internal
 		inline VkSemaphore GetVkTimelineSemaphore() const { return m_TimelineSemaphore; }
 
 		inline VkSemaphore GetVkImageAvailableSemaphore(uint32_t frame) const { return m_ImageAvailableSemaphores[frame]; }
-		inline VkSemaphore GetVkSwapchainPresentableSemaphore(uint32_t frame) const { return m_SwapchainPresentableSemaphores[frame]; }
-
-		inline uint32_t GetAcquiredImage() const { return m_AcquiredImage; }
+		inline VkSemaphore GetVkSwapchainPresentableSemaphore(uint32_t index) const { return m_SwapchainPresentableSemaphores[index]; }
 
 		inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
 
@@ -87,7 +91,7 @@ namespace Nano::Graphics::Internal
 
 		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Image, true>, Information::BackBufferUpperLimit> m_Images = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
-		std::array<VkSemaphore, Information::BackBufferCount> m_SwapchainPresentableSemaphores = { };
+		Nano::Memory::StaticVector<VkSemaphore, Information::BackBufferUpperLimit> m_SwapchainPresentableSemaphores = { };
 
 		VkSemaphore m_TimelineSemaphore = VK_NULL_HANDLE;
 		uint64_t m_CurrentTimelineValue = 0;

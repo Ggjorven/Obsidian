@@ -138,10 +138,9 @@ namespace Nano::Graphics::Internal
             vkDestroySurfaceKHR(instance, surface, VulkanAllocator::GetCallbacks());
 
             for (size_t i = 0; i < imageSemaphores.size(); i++)
-            {
                 vkDestroySemaphore(device, imageSemaphores[i], VulkanAllocator::GetCallbacks());
+            for (size_t i = 0; i < swapchainPresentableSemaphores.size(); i++)
                 vkDestroySemaphore(device, swapchainPresentableSemaphores[i], VulkanAllocator::GetCallbacks());
-            }
 
             vkDestroySemaphore(device, timelineSemaphore, VulkanAllocator::GetCallbacks());
         });

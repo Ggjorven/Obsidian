@@ -45,8 +45,10 @@ namespace Nano::Graphics
         inline Image(const Device& device, const ImageSpecification& specs) { m_Image.Construct(device, specs); }
 
     private:
+#if defined(NG_API_VULKAN)
         // Private constructor for swapchain
         inline Image(const Device& device) { m_Image.Construct(device); }
+#endif
 
         // Helper getter
         inline Type& APICasterGet() { return m_Image.Get(); }

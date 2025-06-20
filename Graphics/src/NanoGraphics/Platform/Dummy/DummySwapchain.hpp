@@ -5,6 +5,7 @@
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 
@@ -28,7 +29,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// DummySwapchain
 	////////////////////////////////////////////////////////////////////////////////////
-	class DummySwapchain : public Traits::NoMove, public Traits::NoCopy
+	class DummySwapchain
 	{
 	public:
 		// Constructor & Destructor
@@ -62,8 +63,9 @@ namespace Nano::Graphics::Internal
 			// Update images
 			for (auto& image : m_Images)
 			{
-				image->m_Specification.Width = width;
-				image->m_Specification.Height = height;
+				DummyImage& dummyImage = *api_cast<DummyImage*>(&image);
+				dummyImage.m_Specification.Width = width;
+				dummyImage.m_Specification.Height = height;
 			}
 		}
 
@@ -74,13 +76,17 @@ namespace Nano::Graphics::Internal
 		inline constexpr const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 
 		inline constexpr uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
+		inline constexpr uint32_t GetAcquiredImage() const { return m_CurrentFrame; }
+
 		inline Image& GetImage(uint8_t frame) { return *reinterpret_cast<Image*>(&m_Images[frame].Get()); }
 		inline const Image& GetImage(uint8_t frame) const { return *reinterpret_cast<const Image*>(&m_Images[frame].Get()); }
+
+		inline constexpr uint32_t GetImageCount() const { return static_cast<uint32_t>(m_Images.size()); }
 
 	private:
 		SwapchainSpecification m_Specification;
 	
-		std::array<Nano::Memory::DeferredConstruct<DummyImage, true>, Information::BackBufferCount> m_Images = { };
+		std::array<Nano::Memory::DeferredConstruct<Image, true>, Information::BackBufferCount> m_Images = { };
 
 		uint32_t m_CurrentFrame = 0;
 	};

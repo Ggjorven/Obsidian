@@ -176,7 +176,7 @@ public:
 			.SetDebugName("Renderpass")
 		);
 
-		for (size_t i = 0; i < Information::BackBufferCount; i++)
+		for (size_t i = 0; i < m_Swapchain->GetImageCount(); i++)
 		{
 			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, m_Renderpass->GetSpecification().DebugName);
 			(void)m_Renderpass->CreateFramebuffer(FramebufferSpecification()

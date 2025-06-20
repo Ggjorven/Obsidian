@@ -56,18 +56,27 @@ namespace Nano::Graphics::Internal
         {
             VkSemaphoreCreateInfo semaphoreInfo = {};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
             for (size_t i = 0; i < m_ImageAvailableSemaphores.size(); i++)
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
-                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
             
                 if constexpr (VulkanContext::Validation)
                 {
                     if (!m_Specification.DebugName.empty())
-                    {
                         m_Device.GetContext().SetDebugName(m_ImageAvailableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("ImageAvailable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
+                }
+            }
+
+            m_SwapchainPresentableSemaphores.resize(m_Images.size());
+            for (size_t i = 0; i < m_SwapchainPresentableSemaphores.size(); i++)
+            {
+                VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
+
+                if constexpr (VulkanContext::Validation)
+                {
+                    if (!m_Specification.DebugName.empty())
                         m_Device.GetContext().SetDebugName(m_SwapchainPresentableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("Presentable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
-                    }
                 }
             }
 
@@ -155,7 +164,9 @@ namespace Nano::Graphics::Internal
             }
         }
 
-        NG_ASSERT((details.Capabilities.maxImageCount == 0) || (Information::BackBufferUpperLimit <= details.Capabilities.maxImageCount), "[VkSwapchain] BackBufferCount is more than the maximum amount of Swapchain images.");
+        uint32_t desiredNumberOfSwapchainImages = details.Capabilities.minImageCount + 1;
+        if ((details.Capabilities.maxImageCount > 0) && (desiredNumberOfSwapchainImages > details.Capabilities.maxImageCount))
+            desiredNumberOfSwapchainImages = details.Capabilities.maxImageCount; // Fall back to max image count if desired exceeds it.
 
         // Get current transform?
         VkSurfaceTransformFlagsKHR preTransform;
@@ -180,7 +191,7 @@ namespace Nano::Graphics::Internal
         swapchainCI.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         swapchainCI.pNext = nullptr;
         swapchainCI.surface = m_Surface;
-        swapchainCI.minImageCount = static_cast<uint32_t>(Information::BackBufferCount);
+        swapchainCI.minImageCount = desiredNumberOfSwapchainImages;
         swapchainCI.imageFormat = FormatToVkFormat(m_Specification.RequestedFormat);
         swapchainCI.imageColorSpace = ColourSpaceToVkColorSpaceKHR(m_Specification.RequestedColourSpace);
         swapchainCI.imageExtent = { swapchainExtent.width, swapchainExtent.height };
@@ -345,7 +356,7 @@ namespace Nano::Graphics::Internal
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &m_SwapchainPresentableSemaphores[m_CurrentFrame];
+        presentInfo.pWaitSemaphores = &m_SwapchainPresentableSemaphores[m_AcquiredImage];
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &m_Swapchain;
         presentInfo.pImageIndices = &m_AcquiredImage;

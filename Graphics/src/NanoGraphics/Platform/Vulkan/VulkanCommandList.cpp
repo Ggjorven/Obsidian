@@ -212,7 +212,7 @@ namespace Nano::Graphics::Internal
         {
             VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetCurrentFrame());
+            info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetAcquiredImage());
             info.stageMask = m_WaitStage;
             info.value = 0ull;
         }
@@ -279,7 +279,7 @@ namespace Nano::Graphics::Internal
             if (state.Frame)
                 framebuffer = api_cast<VulkanFramebuffer*>(state.Frame);
             else
-                framebuffer = api_cast<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetCurrentFrame())));
+                framebuffer = api_cast<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage())));
         
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

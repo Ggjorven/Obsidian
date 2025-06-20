@@ -48,8 +48,12 @@ namespace Nano::Graphics
         inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain->GetSpecification(); }
 
         inline uint32_t GetCurrentFrame() const { return m_Swapchain->GetCurrentFrame(); }
+        inline uint32_t GetAcquiredImage() const { return m_Swapchain->GetAcquiredImage(); }
+
         inline Image& GetImage(uint8_t frame) { return m_Swapchain->GetImage(frame); }
         inline const Image& GetImage(uint8_t frame) const { return m_Swapchain->GetImage(frame); }
+
+        inline uint32_t GetImageCount() const { return m_Swapchain->GetImageCount(); }
 
     public: //private:
         // Constructor
