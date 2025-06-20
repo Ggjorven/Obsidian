@@ -26,7 +26,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanSwapchain::VulkanSwapchain(const Device& device, const SwapchainSpecification& specs)
-        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         #if defined(NG_PLATFORM_DESKTOP)
             VK_VERIFY(glfwCreateWindowSurface(m_Device.GetContext().GetVkInstance(), static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()), VulkanAllocator::GetCallbacks(), &m_Surface));
@@ -98,7 +98,7 @@ namespace Nano::Graphics::Internal
     void VulkanSwapchain::FreePool(CommandListPool& pool) const
     {
         VkDevice device = m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice();
-        VkCommandPool commandPool = (*safe_reinterpret<VulkanCommandListPool*>(&pool)).GetVkCommandPool();
+        VkCommandPool commandPool = api_cast<VulkanCommandListPool*>(&pool)->GetVkCommandPool();
         m_Device.GetContext().Destroy([device, commandPool]() mutable
         {
             vkDestroyCommandPool(device, commandPool, VulkanAllocator::GetCallbacks());
@@ -228,19 +228,23 @@ namespace Nano::Graphics::Internal
                 .SetPermanentState(ResourceState::Present)
                 .SetDebugName(debugName);
 
+            VulkanImage& vkImage = *api_cast<VulkanImage*>(&m_Images[i].Get());
+
             if (m_Images[i].IsConstructed())
             {
-                m_Device.DestroySubresourceViews(*safe_reinterpret<Image*>(&m_Images[i].Get()));
-                m_Images[i]->SetInternalData(imageSpec, swapchainImages[i]);
+                m_Device.DestroySubresourceViews(m_Images[i].Get());
+                vkImage.SetInternalData(imageSpec, swapchainImages[i]);
             }
             else
             {
-                m_Images[i].Construct(m_Device, imageSpec, swapchainImages[i]);
+                //m_Images[i].Construct(*api_cast<Device*>(&m_Device));
+                new (m_Images[i].GetInternalBytes()) Image(*api_cast<const Device*>(&m_Device));
+
+                vkImage.SetInternalData(imageSpec, swapchainImages[i]);
             }
 
-
             ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
-            (void)m_Images[i]->GetSubresourceView(imageViewSpec, ImageDimension::Image2D, colourFormat, 0, ImageSubresourceViewType::AllAspects); // Note: Makes sure to already lazy initialize the image view
+            (void)vkImage.GetSubresourceView(imageViewSpec, ImageDimension::Image2D, colourFormat, 0, ImageSubresourceViewType::AllAspects); // Note: Makes sure to already lazy initialize the image view
         
             if constexpr (VulkanContext::Validation)
             {
@@ -281,7 +285,7 @@ namespace Nano::Graphics::Internal
             for (size_t i = 0; i < m_Images.size(); i++)
             {
                 barriers[i] = barrier2;
-                barriers[i].image = m_Images[i]->GetVkImage();
+                barriers[i].image = api_cast<VulkanImage*>(&m_Images[i].Get())->GetVkImage();
             }
 
             VkDependencyInfo dependencyInfo = {};

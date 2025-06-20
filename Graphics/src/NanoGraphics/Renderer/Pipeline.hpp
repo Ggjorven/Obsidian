@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/PipelineSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanPipeline.hpp"
@@ -32,13 +33,17 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs)
-            : m_GraphicsPipeline(device, specs) {}
+        inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs) { m_GraphicsPipeline.Construct(device, specs); }
 
     private:
-        Type m_GraphicsPipeline;
+        // Helper getter
+        inline Type& APICasterGet() { return m_GraphicsPipeline.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_GraphicsPipeline = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -59,13 +64,17 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline ComputePipeline(const Device& device, const ComputePipelineSpecification& specs)
-            : m_ComputePipeline(device, specs) {}
+        inline ComputePipeline(const Device& device, const ComputePipelineSpecification& specs) { m_ComputePipeline.Construct(device, specs); }
 
     private:
-        Type m_ComputePipeline;
+        // Helper getter
+        inline Type& APICasterGet() { return m_ComputePipeline.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_ComputePipeline = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
 }

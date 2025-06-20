@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanRenderpass.hpp"
@@ -31,24 +32,28 @@ namespace Nano::Graphics
         ~Renderpass() = default;
 
         // Methods
-        inline Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs) { return m_Renderpass.CreateFramebuffer(specs); } // Note: Framebuffers are stored in the Renderpass and will be destroyed when the renderpass is.
+        inline Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs) { return m_Renderpass->CreateFramebuffer(specs); } // Note: Framebuffers are stored in the Renderpass and will be destroyed when the renderpass is.
 
-        inline void ResizeFramebuffers() { return m_Renderpass.ResizeFramebuffers(); }
+        inline void ResizeFramebuffers() { return m_Renderpass->ResizeFramebuffers(); }
 
         // Getters
-        inline const RenderpassSpecification& GetSpecification() const { return m_Renderpass.GetSpecification(); }
+        inline const RenderpassSpecification& GetSpecification() const { return m_Renderpass->GetSpecification(); }
 
-        inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Renderpass.GetFramebuffer(frame); }
+        inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Renderpass->GetFramebuffer(frame); }
 
     public: //private:
         // Constructor
-        inline Renderpass(const Device& device, const RenderpassSpecification& specs)
-            : m_Renderpass(device, specs) {}
+        inline Renderpass(const Device& device, const RenderpassSpecification& specs) { m_Renderpass.Construct(device, specs); }
 
     private:
-        Type m_Renderpass;
+        // Helper getter
+        inline Type& APICasterGet() { return m_Renderpass.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_Renderpass = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
 }

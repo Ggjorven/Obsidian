@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
@@ -17,7 +18,7 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // InputLayout
     ////////////////////////////////////////////////////////////////////////////////////
-    class InputLayout : public Traits::NoCopy
+    class InputLayout
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -32,19 +33,23 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
-            : m_InputLayout(device, attributes) {}
+        inline InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes) { m_InputLayout.Construct(device, attributes); }
 
     private:
-        Type m_InputLayout;
+        // Helper getter
+        inline Type& APICasterGet() { return m_InputLayout.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_InputLayout = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Buffer
     ////////////////////////////////////////////////////////////////////////////////////
-    class Buffer : public Traits::NoCopy
+    class Buffer
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -58,17 +63,21 @@ namespace Nano::Graphics
         ~Buffer() = default;
 
         // Getters
-        inline const BufferSpecification& GetSpecification() const { return m_Buffer.GetSpecification(); }
+        inline const BufferSpecification& GetSpecification() const { return m_Buffer->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Buffer(const Device& device, const BufferSpecification& specs)
-            : m_Buffer(device, specs) {}
+        inline Buffer(const Device& device, const BufferSpecification& specs) { m_Buffer.Construct(device, specs); }
 
     private:
-        Type m_Buffer;
+        // Helper getter
+        inline Type& APICasterGet() { return m_Buffer.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_Buffer = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
 }

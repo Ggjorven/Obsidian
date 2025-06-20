@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
-
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
@@ -85,7 +84,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Vulkan Physical Device
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanPhysicalDevice : public Traits::NoCopy, public Traits::NoMove
+    class VulkanPhysicalDevice
     {
     public:
         // Constructor & Destructor
@@ -120,7 +119,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Vulkan Logical Device
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanLogicalDevice : public Traits::NoCopy, public Traits::NoMove
+    class VulkanLogicalDevice
     {
     public:
         // Constructor & Destructor

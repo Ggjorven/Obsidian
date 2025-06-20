@@ -30,7 +30,7 @@ namespace Nano::Graphics::Internal
 
 			for (auto descriptorLayout : layouts)
 			{
-				VulkanBindingLayout& vulkanLayout = *safe_reinterpret<VulkanBindingLayout*>(descriptorLayout);
+				VulkanBindingLayout& vulkanLayout = *api_cast<VulkanBindingLayout*>(descriptorLayout);
 				descriptorLayouts.push_back(vulkanLayout.GetVkDescriptorSetLayout());
 
 				// PushConstants
@@ -73,15 +73,15 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT(specs.Input, "[VkGraphicsPipeline] No proper inputlayout specified.");
 		NG_ASSERT(specs.Pass, "[VkGraphicsPipeline] No proper renderpass specified.");
 
-		const VulkanDevice& vulkanDevice = *safe_reinterpret<const VulkanDevice*>(&device);
+		const VulkanDevice& vulkanDevice = *api_cast<const VulkanDevice*>(&device);
 
 		auto& blendState = m_Specification.RenderingState.Blend;
 		auto& depthStencilState = m_Specification.RenderingState.DepthStencil;
 		auto& rasterState = m_Specification.RenderingState.Raster;
 
-		VulkanRenderpass& vulkanRenderpass = *safe_reinterpret<VulkanRenderpass*>(m_Specification.Pass);
+		VulkanRenderpass& vulkanRenderpass = *api_cast<VulkanRenderpass*>(m_Specification.Pass);
 		NG_ASSERT(!vulkanRenderpass.GetVulkanFramebuffers().empty(), "[VkGraphicsPipeline] Renderpass passed in with no created framebuffers.");
-		VulkanFramebuffer& vulkanFramebuffer = *safe_reinterpret<VulkanFramebuffer*>(&vulkanRenderpass.GetFramebuffer(0));
+		VulkanFramebuffer& vulkanFramebuffer = *api_cast<VulkanFramebuffer*>(&vulkanRenderpass.GetFramebuffer(0));
 
 		Nano::Memory::StaticVector<VkPipelineShaderStageCreateInfo, 5> shaderStages = { }; // Note: Update when more shaders are added
 
@@ -94,13 +94,13 @@ namespace Nano::Graphics::Internal
 			vertShaderStageInfo.pName = main;
 		};
 
-		if (m_Specification.VertexShader) generateShaderCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, safe_reinterpret<VulkanShader*>(m_Specification.VertexShader)->GetVkShaderModule(), m_Specification.VertexShader->GetSpecification().MainName.data());
-		if (m_Specification.TesselationControlShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, safe_reinterpret<VulkanShader*>(m_Specification.TesselationControlShader)->GetVkShaderModule(), m_Specification.TesselationControlShader->GetSpecification().MainName.data());
-		if (m_Specification.TesselationEvaluationShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, safe_reinterpret<VulkanShader*>(m_Specification.TesselationEvaluationShader)->GetVkShaderModule(), m_Specification.TesselationEvaluationShader->GetSpecification().MainName.data());
-		if (m_Specification.GeometryShader) generateShaderCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, safe_reinterpret<VulkanShader*>(m_Specification.GeometryShader)->GetVkShaderModule(), m_Specification.GeometryShader->GetSpecification().MainName.data());
-		if (m_Specification.FragmentShader) generateShaderCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, safe_reinterpret<VulkanShader*>(m_Specification.FragmentShader)->GetVkShaderModule(), m_Specification.FragmentShader->GetSpecification().MainName.data());
+		if (m_Specification.VertexShader) generateShaderCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, api_cast<VulkanShader*>(m_Specification.VertexShader)->GetVkShaderModule(), m_Specification.VertexShader->GetSpecification().MainName.data());
+		if (m_Specification.TesselationControlShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, api_cast<VulkanShader*>(m_Specification.TesselationControlShader)->GetVkShaderModule(), m_Specification.TesselationControlShader->GetSpecification().MainName.data());
+		if (m_Specification.TesselationEvaluationShader) generateShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, api_cast<VulkanShader*>(m_Specification.TesselationEvaluationShader)->GetVkShaderModule(), m_Specification.TesselationEvaluationShader->GetSpecification().MainName.data());
+		if (m_Specification.GeometryShader) generateShaderCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, api_cast<VulkanShader*>(m_Specification.GeometryShader)->GetVkShaderModule(), m_Specification.GeometryShader->GetSpecification().MainName.data());
+		if (m_Specification.FragmentShader) generateShaderCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, api_cast<VulkanShader*>(m_Specification.FragmentShader)->GetVkShaderModule(), m_Specification.FragmentShader->GetSpecification().MainName.data());
 		
-		VulkanInputLayout& vulkanInputLayout = *safe_reinterpret<VulkanInputLayout*>(m_Specification.Input);
+		VulkanInputLayout& vulkanInputLayout = *api_cast<VulkanInputLayout*>(m_Specification.Input);
 		const auto& bindingDescriptions = vulkanInputLayout.GetBindingDescriptions();
 		const auto& attributeDescriptions = vulkanInputLayout.GetAttributeDescriptions();
 
@@ -235,12 +235,12 @@ namespace Nano::Graphics::Internal
 	{
 		NG_ASSERT(specs.ComputeShader, "[VkComputePipeline] No compute shader passed in to compute pipeline.");
 
-		const VulkanDevice& vulkanDevice = *safe_reinterpret<const VulkanDevice*>(&device);
+		const VulkanDevice& vulkanDevice = *api_cast<const VulkanDevice*>(&device);
 
 		VkPipelineShaderStageCreateInfo computeShaderInfo = {};
 		computeShaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		computeShaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		computeShaderInfo.module = safe_reinterpret<const VulkanShader*>(specs.ComputeShader)->GetVkShaderModule();
+		computeShaderInfo.module = api_cast<const VulkanShader*>(specs.ComputeShader)->GetVkShaderModule();
 		computeShaderInfo.pName = specs.ComputeShader->GetSpecification().MainName.data();
 
 		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());

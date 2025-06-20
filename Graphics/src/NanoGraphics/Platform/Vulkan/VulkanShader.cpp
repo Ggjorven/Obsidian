@@ -66,7 +66,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanShader::VulkanShader(const Device& device, const ShaderSpecification& specs)
-        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs)
+        : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
         std::span<const char> code;
         std::visit([&](auto&& arg)

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
@@ -22,7 +22,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanContext
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanContext : public Traits::NoMove, public Traits::NoCopy
+    class VulkanContext
     {
     public:
         // Settings

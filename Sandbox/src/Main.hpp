@@ -454,7 +454,7 @@ public:
 
 			CommandList& list = m_Lists[m_Swapchain->GetCurrentFrame()].Get();
 			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
-			
+
 			Update(deltaTimer.Restart());
 
 			m_Swapchain->AcquireNextImage();

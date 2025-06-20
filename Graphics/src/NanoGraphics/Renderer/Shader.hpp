@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ShaderSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanShader.hpp"
@@ -33,17 +34,21 @@ namespace Nano::Graphics
         ~Shader() = default;
 
         // Getters
-        inline const ShaderSpecification& GetSpecification() const { return m_Shader.GetSpecification(); }
+        inline const ShaderSpecification& GetSpecification() const { return m_Shader->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Shader(const Device& device, const ShaderSpecification& specs)
-            : m_Shader(device, specs) {}
+        inline Shader(const Device& device, const ShaderSpecification& specs) { m_Shader.Construct(device, specs); }
 
     private:
-        Type m_Shader;
+        // Helper getter
+        inline Type& APICasterGet() { return m_Shader.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_Shader = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -60,14 +65,20 @@ namespace Nano::Graphics
         >;
     public:
         // Constructor & Destructor
-        ShaderCompiler() = default;
+        inline ShaderCompiler() { m_ShaderCompiler.Construct(); }
         ~ShaderCompiler() = default;
 
         // Methods
-        inline std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language = ShadingLanguage::GLSL) { return m_ShaderCompiler.CompileToSPIRV(stage, code, language); }
+        inline std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language = ShadingLanguage::GLSL) { return m_ShaderCompiler->CompileToSPIRV(stage, code, language); }
 
     private:
-        Type m_ShaderCompiler;
+        // Helper getter
+        inline Type& APICasterGet() { return m_ShaderCompiler.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_ShaderCompiler = {};
+
+        friend class APICaster;
     };
 
 }

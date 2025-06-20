@@ -21,7 +21,7 @@ void Camera::OnUpdate(float deltaTime)
     //constexpr const float s_DeltaMovement = 1.0f;
     //constexpr const float s_MouseSensitivity = 0.002625f;
     //constexpr const float s_MouseSensitivity = 0.002725f;
-    constexpr const float s_MouseSensitivity = 0.00275f;
+    constexpr const float s_MouseSensitivity = 0.002775f;
 
     /*
     if (m_Window.GetInput().IsKeyPressed(Key::W))

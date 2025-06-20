@@ -1,8 +1,8 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 #include "NanoGraphics/Renderer/FramebufferSpec.hpp"
 
@@ -27,7 +27,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanRenderpass
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanRenderpass : public Traits::NoCopy
+    class VulkanRenderpass
     {
     public:
         // Constructors & Destructor
@@ -42,7 +42,7 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const RenderpassSpecification& GetSpecification() const { return m_Specification; }
 
-        inline Framebuffer& GetFramebuffer(uint8_t frame) { return *safe_reinterpret<Framebuffer*>(&m_Framebuffers[frame]); }
+        inline Framebuffer& GetFramebuffer(uint8_t frame) { return *api_cast<Framebuffer*>(&m_Framebuffers[frame]); }
 
         // Internal getters
         inline VkRenderPass GetVkRenderPass() const { return m_Renderpass; }

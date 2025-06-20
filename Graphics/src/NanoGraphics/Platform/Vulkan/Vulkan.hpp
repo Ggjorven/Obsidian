@@ -1,7 +1,6 @@
 #pragma once
 
 #if defined(NG_API_VULKAN)
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
-
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ShaderSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
@@ -35,7 +34,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandListPool
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanCommandListPool : public Traits::NoCopy
+	class VulkanCommandListPool
 	{
 	public:
 		// Constructor & Destructor
@@ -68,7 +67,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanCommandList
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanCommandList : public Traits::NoCopy
+	class VulkanCommandList
 	{
 	public:
 		// Constructor & Destructor

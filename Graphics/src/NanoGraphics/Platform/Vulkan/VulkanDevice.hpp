@@ -1,8 +1,8 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
@@ -37,7 +37,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // VulkanDevice
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanDevice : public Traits::NoMove
+    class VulkanDevice
     {
     public:
         // Constructors & Destructor

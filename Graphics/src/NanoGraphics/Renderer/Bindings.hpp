@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
@@ -26,7 +27,7 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // BindingLayout
     ////////////////////////////////////////////////////////////////////////////////////
-    class BindingLayout : public Traits::NoCopy
+    class BindingLayout 
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -40,25 +41,28 @@ namespace Nano::Graphics
         ~BindingLayout() = default;
 
         // Getters
-        inline bool IsBindless() const { return m_BindingLayout.IsBindless(); }
+        inline bool IsBindless() const { return m_BindingLayout->IsBindless(); }
 
     public: //private:
         // Constructor
-        BindingLayout(const Device& device, const BindingLayoutSpecification& specs)
-            : m_BindingLayout(device, specs) {}
-        BindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
-            : m_BindingLayout(device, specs) {}
+        inline BindingLayout(const Device& device, const BindingLayoutSpecification& specs) { m_BindingLayout.Construct(device, specs); }
+        inline BindingLayout(const Device& device, const BindlessLayoutSpecification& specs) { m_BindingLayout.Construct(device, specs); }
+    
+    private:
+        // Helper getter
+        inline Type& APICasterGet() { return m_BindingLayout.Get(); }
 
     private:
-        Type m_BindingLayout;
+        Internal::APIObject<Type> m_BindingLayout = {};
 
         friend class Device;
+        friend class APICaster;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // BindingSet
     ////////////////////////////////////////////////////////////////////////////////////
-    class BindingSet : public Traits::NoCopy
+    class BindingSet
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -72,28 +76,32 @@ namespace Nano::Graphics
         ~BindingSet() = default;
 
         // Methods
-        inline void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(image, subresources, resourceType, slot, arrayIndex); }
-        inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(sampler, resourceType, slot, arrayIndex); }
-        inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet.Upload(buffer, range, resourceType, slot, arrayIndex); }
+        inline void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(image, subresources, resourceType, slot, arrayIndex); }
+        inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(sampler, resourceType, slot, arrayIndex); }
+        inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(buffer, range, resourceType, slot, arrayIndex); }
         
-        inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet.UploadList(uploadables); }
-        inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_BindingSet.UploadList(std::span<const BindingSetUploadable>(uploadables)); }
+        inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet->UploadList(uploadables); }
+        inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_BindingSet->UploadList(std::span<const BindingSetUploadable>(uploadables)); }
 
     public: //private:
         // Constructor
-        inline BindingSet(BindingSetPool& pool)
-            : m_BindingSet(pool) {}
+        inline BindingSet(BindingSetPool& pool) { m_BindingSet.Construct(pool); }
 
     private:
-        Type m_BindingSet;
+        // Helper getter
+        inline Type& APICasterGet() { return m_BindingSet.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_BindingSet = {};
 
         friend class BindingSetPool;
+        friend class APICaster;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // BindingSetPool
     ////////////////////////////////////////////////////////////////////////////////////
-    class BindingSetPool : public Traits::NoCopy
+    class BindingSetPool
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -110,17 +118,21 @@ namespace Nano::Graphics
         inline BindingSet CreateBindingSet() { return BindingSet(*this); } // Note: BindingSets get destroyed by the pool
 
         // Getters
-        inline const BindingSetPoolSpecification& GetSpecification() const { return m_BindingSetPool.GetSpecification(); }
+        inline const BindingSetPoolSpecification& GetSpecification() const { return m_BindingSetPool->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs)
-            : m_BindingSetPool(device, specs) {}
+        inline BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs) { m_BindingSetPool.Construct(device, specs); }
 
     private:
-        Type m_BindingSetPool;
+        // Helper getter
+        inline Type& APICasterGet() { return m_BindingSetPool.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_BindingSetPool;
 
         friend class Device;
+        friend class APICaster;
     };
 
 }

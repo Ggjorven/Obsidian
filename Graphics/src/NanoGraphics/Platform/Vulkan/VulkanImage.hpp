@@ -1,9 +1,8 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
-
 #include "NanoGraphics/Maths/Structs.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
@@ -81,10 +80,11 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanImage
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanImage : public Traits::NoCopy
+	class VulkanImage
 	{
 	public:
 		// Constructors & Destructor
+		VulkanImage(const Device& device);
 		VulkanImage(const Device& device, const ImageSpecification& specs);
 		VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image);
 		~VulkanImage();
@@ -115,7 +115,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanStagingImage
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanStagingImage : public Traits::NoCopy
+	class VulkanStagingImage
 	{
 	public:
 		struct Region
@@ -157,7 +157,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanSampler
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanSampler : public Traits::NoCopy
+	class VulkanSampler
 	{
 	public:
 		// Constructor & Destructor

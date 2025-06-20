@@ -2,6 +2,7 @@
 
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/FramebufferSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanFramebuffer.hpp"
@@ -15,7 +16,7 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // Framebuffer
     ////////////////////////////////////////////////////////////////////////////////////
-    class Framebuffer : public Traits::NoCopy
+    class Framebuffer
     {
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
@@ -29,18 +30,23 @@ namespace Nano::Graphics
         ~Framebuffer() = default;
 
         // Methods
-        inline void Resize() { m_Framebuffer.Resize(); }
+        inline void Resize() { m_Framebuffer->Resize(); }
 
         // Getters
-        inline const FramebufferSpecification& GetSpecification() const { return m_Framebuffer.GetSpecification(); }
+        inline const FramebufferSpecification& GetSpecification() const { return m_Framebuffer->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
-            : m_Framebuffer(renderpass, specs) {}
+        inline Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs) { m_Framebuffer.Construct(renderpass, specs); }
 
     private:
-        Type m_Framebuffer;
+        // Helper getter
+        inline Type& APICasterGet() { return m_Framebuffer.Get(); }
+
+    private:
+        Internal::APIObject<Type> m_Framebuffer = {};
+
+        friend class APICaster;
     };
 
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 
@@ -34,7 +34,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// VulkanSwapchain
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanSwapchain : public Traits::NoMove, public Traits::NoCopy
+	class VulkanSwapchain
 	{
 	public:
 		// Constructor & Destructor
@@ -59,8 +59,8 @@ namespace Nano::Graphics::Internal
 		inline const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 
 		inline uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
-		inline Image& GetImage(uint8_t frame) { return *safe_reinterpret<Image*>(&m_Images[frame].Get()); }
-		inline const Image& GetImage(uint8_t frame) const { return *safe_reinterpret<const Image*>(&m_Images[frame].Get()); }
+		inline Image& GetImage(uint8_t frame) { return m_Images[frame].Get(); }
+		inline const Image& GetImage(uint8_t frame) const { return m_Images[frame].Get(); }
 		
 		// Internal getters
 		inline VkSwapchainKHR GetVkSwapchain() const { return m_Swapchain; }
@@ -85,7 +85,7 @@ namespace Nano::Graphics::Internal
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
-		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<VulkanImage, true>, Information::BackBufferUpperLimit> m_Images = { };
+		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Image, true>, Information::BackBufferUpperLimit> m_Images = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_ImageAvailableSemaphores = { };
 		std::array<VkSemaphore, Information::BackBufferCount> m_SwapchainPresentableSemaphores = { };
 

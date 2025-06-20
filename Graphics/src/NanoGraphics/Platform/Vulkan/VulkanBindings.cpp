@@ -69,7 +69,7 @@ namespace Nano::Graphics::Internal
             layoutBindings.push_back(descriptorSetLayoutBinding);
         }
 
-        Finish(*safe_reinterpret<const VulkanDevice*>(&device), layoutBindings);
+        Finish(*api_cast<const VulkanDevice*>(&device), layoutBindings);
     }
 
     VulkanBindingLayout::VulkanBindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
@@ -96,7 +96,7 @@ namespace Nano::Graphics::Internal
             layoutBindings.push_back(descriptorSetLayoutBinding);
         }
 
-        Finish(*safe_reinterpret<const VulkanDevice*>(&device), layoutBindings);
+        Finish(*api_cast<const VulkanDevice*>(&device), layoutBindings);
     }
 
     VulkanBindingLayout::~VulkanBindingLayout()
@@ -206,7 +206,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanBindingSet::VulkanBindingSet(BindingSetPool& pool)
-        : m_Device(safe_reinterpret<VulkanBindingSetPool*>(&pool)->GetVulkanDevice()), m_DescriptorSet(safe_reinterpret<VulkanBindingSetPool*>(&pool)->CreateDescriptorSet())
+        : m_Device(api_cast<VulkanBindingSetPool*>(&pool)->GetVulkanDevice()), m_DescriptorSet(api_cast<VulkanBindingSetPool*>(&pool)->CreateDescriptorSet())
     {
     }
 
@@ -221,7 +221,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
 
-        VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(&image);
+        VulkanImage& vulkanImage = *api_cast<VulkanImage*>(&image);
         ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
 
         VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
@@ -248,7 +248,7 @@ namespace Nano::Graphics::Internal
         (void)resourceType;
         NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
         
-        VulkanSampler& vulkanSampler = *safe_reinterpret<VulkanSampler*>(&sampler);
+        VulkanSampler& vulkanSampler = *api_cast<VulkanSampler*>(&sampler);
 
         VkDescriptorImageInfo imageInfo = {};
         imageInfo.sampler = vulkanSampler.GetVkSampler();
@@ -269,7 +269,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
-        VulkanBuffer& vulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&buffer);
+        VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
 
         VkDescriptorBufferInfo bufferInfo = {};
@@ -327,7 +327,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
     
-        VulkanImage& vulkanImage = *safe_reinterpret<VulkanImage*>(&image);
+        VulkanImage& vulkanImage = *api_cast<VulkanImage*>(&image);
         ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
 
         VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
@@ -352,7 +352,7 @@ namespace Nano::Graphics::Internal
         (void)resourceType;
         NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
     
-        VulkanSampler& vulkanSampler = *safe_reinterpret<VulkanSampler*>(&sampler);
+        VulkanSampler& vulkanSampler = *api_cast<VulkanSampler*>(&sampler);
 
         VkDescriptorImageInfo& imageInfo = imageInfos.emplace_back();
         imageInfo.sampler = vulkanSampler.GetVkSampler();
@@ -371,7 +371,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
     
-        VulkanBuffer& vulkanBuffer = *safe_reinterpret<VulkanBuffer*>(&buffer);
+        VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
 
         VkDescriptorBufferInfo& bufferInfo = bufferInfos.emplace_back();
@@ -393,12 +393,12 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanBindingSetPool::VulkanBindingSetPool(const Device& device, const BindingSetPoolSpecification& specs)
-        : m_Device(*safe_reinterpret<const VulkanDevice*>(&device)), m_Specification(specs), m_DescriptorSets(static_cast<size_t>(m_Specification.SetAmount))
+        : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs), m_DescriptorSets(static_cast<size_t>(m_Specification.SetAmount))
     {
         NG_ASSERT(m_Specification.Layout, "[VkBindingSetPool] No valid BindingLayout passed in.");
         NG_ASSERT(m_Specification.SetAmount > 0, "[VkBindingSetPool] SetAmount must be non-zero.");
 
-        VulkanBindingLayout& bindingLayout = *safe_reinterpret<VulkanBindingLayout*>(m_Specification.Layout);
+        VulkanBindingLayout& bindingLayout = *api_cast<VulkanBindingLayout*>(m_Specification.Layout);
         bindingLayout.UpdatePoolSizeInfosToMaxSets(specs.SetAmount); // Update the infos.
 
         VkDescriptorPoolCreateInfo poolInfo = {};
@@ -431,7 +431,7 @@ namespace Nano::Graphics::Internal
         if (m_DescriptorSets[0] != VK_NULL_HANDLE) // Note: Early return if already allocated and return from cache
             return m_DescriptorSets[m_CurrentDescriptor++];
 
-        VulkanBindingLayout& bindingLayout = *safe_reinterpret<VulkanBindingLayout*>(m_Specification.Layout);
+        VulkanBindingLayout& bindingLayout = *api_cast<VulkanBindingLayout*>(m_Specification.Layout);
 
         std::vector<VkDescriptorSetLayout> layouts(static_cast<size_t>(m_Specification.SetAmount), bindingLayout.GetVkDescriptorSetLayout());
         std::vector<uint32_t> maxBindings;

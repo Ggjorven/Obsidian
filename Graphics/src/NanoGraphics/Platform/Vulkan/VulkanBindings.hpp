@@ -1,8 +1,8 @@
 #pragma once
 
-#include "NanoGraphics/Core/Core.hpp"
 #include "NanoGraphics/Core/Information.hpp"
 
+#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
