@@ -6,6 +6,33 @@ namespace Nano::Graphics::Internal
 {
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // APICaster
+    ////////////////////////////////////////////////////////////////////////////////////
+    class APICaster
+    {
+    private:
+        template<typename T, typename TInput>
+        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>);
+        template<typename T, typename TInput>
+        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && !requires{ TInput::Type; });
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Casting methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    template<typename T, typename TInput>
+    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>)
+    {
+        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(&input->APICasterGet())));
+    }
+
+    template<typename T, typename TInput>
+    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && !requires{ TInput::Type; })
+    {
+        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(input)));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // APIObject
     ////////////////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -44,32 +71,5 @@ namespace Nano::Graphics::Internal
         // std::aligned_storage is deprecated as of C++23
         alignas(T) std::byte m_Storage[sizeof(T)] = {};
     };
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // APICaster
-    ////////////////////////////////////////////////////////////////////////////////////
-    class APICaster
-    {
-    private:
-        template<typename T, typename TInput>
-        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T> && std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>);
-        template<typename T, typename TInput>
-        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T> && std::is_pointer_v<TInput>) && !requires{ TInput::Type; });
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // Helper methods
-    ////////////////////////////////////////////////////////////////////////////////////
-    template<typename T, typename TInput>
-    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T> && std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>)
-    {
-        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(&input->APICasterGet())));
-    }
-
-    template<typename T, typename TInput>
-    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T> && std::is_pointer_v<TInput>) && !requires{ TInput::Type; })
-    {
-        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(input)));
-    }
 
 }
