@@ -93,6 +93,24 @@ namespace Nano::Graphics::Internal
         inline static VkAllocationCallbacks s_Callbacks = {};
     };
 
+    namespace VkExtension
+    {
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // Extension functions
+        ////////////////////////////////////////////////////////////////////////////////////
+        inline PFN_vkCreateDebugUtilsMessengerEXT   g_vkCreateDebugUtilsMessengerEXT = nullptr;
+        inline PFN_vkDestroyDebugUtilsMessengerEXT  g_vkDestroyDebugUtilsMessengerEXT = nullptr;
+        inline PFN_vkSetDebugUtilsObjectNameEXT     g_vkSetDebugUtilsObjectNameEXT = nullptr;
+
+        inline PFN_vkQueueSubmit2KHR                g_vkQueueSubmit2KHR = nullptr;
+        inline PFN_vkCmdCopyBuffer2KHR              g_vkCmdCopyBuffer2KHR = nullptr;
+        inline PFN_vkCmdCopyImage2KHR               g_vkCmdCopyImage2KHR = nullptr;
+        inline PFN_vkCmdCopyBufferToImage2KHR       g_vkCmdCopyBufferToImage2KHR = nullptr;
+        inline PFN_vkCmdPipelineBarrier2KHR         g_vkCmdPipelineBarrier2KHR = nullptr;
+
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
     // ToString methods
     ////////////////////////////////////////////////////////////////////////////////////

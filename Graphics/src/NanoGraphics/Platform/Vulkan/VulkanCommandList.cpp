@@ -235,7 +235,11 @@ namespace Nano::Graphics::Internal
         submitInfo.signalSemaphoreInfoCount = static_cast<uint32_t>(signalInfos.size());
         submitInfo.pSignalSemaphoreInfos = signalInfos.data();
         
+#if defined(NG_PLATFORM_APPLE)
+        VK_VERIFY(VkExtension::g_vkQueueSubmit2KHR(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
+#else
         VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
+#endif
     }
 
     void VulkanCommandList::WaitTillComplete() const
@@ -451,7 +455,11 @@ namespace Nano::Graphics::Internal
 
         copyInfo.pRegions = &region;
 
+#if defined(NG_PLATFORM_APPLE)
+        VkExtension::g_vkCmdCopyImage2KHR(m_CommandBuffer, &copyInfo);
+#else
         vkCmdCopyImage2(m_CommandBuffer, &copyInfo);
+#endif
 
         // Update back to permanent state
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src, srcSubresource);
@@ -507,7 +515,11 @@ namespace Nano::Graphics::Internal
         copyBufferToImageInfo.regionCount = 1;
         copyBufferToImageInfo.pRegions = &copyInfo;
 
+#if defined(NG_PLATFORM_APPLE)
+        VkExtension::g_vkCmdCopyBufferToImage2KHR(m_CommandBuffer, &copyBufferToImageInfo);
+#else
         vkCmdCopyBufferToImage2(m_CommandBuffer, &copyBufferToImageInfo);
+#endif
 
         // Update back to permanent state
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<Buffer*>(&srcVulkanBuffer));
@@ -530,12 +542,24 @@ namespace Nano::Graphics::Internal
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(dst, ResourceState::CopyDst);
         CommitBarriers();
 
-        VkBufferCopy copyRegion = {};
+        VkBufferCopy2 copyRegion = {};
+        copyRegion.sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2;
         copyRegion.srcOffset = srcOffset;
         copyRegion.dstOffset = dstOffset;
         copyRegion.size = size;
 
-        vkCmdCopyBuffer(m_CommandBuffer, srcVulkanBuffer.GetVkBuffer(), dstVulkanBuffer.GetVkBuffer(), 1, &copyRegion);
+        VkCopyBufferInfo2 copyInfo = {};
+        copyInfo.sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2;
+        copyInfo.srcBuffer = srcVulkanBuffer.GetVkBuffer();
+        copyInfo.dstBuffer = dstVulkanBuffer.GetVkBuffer();
+        copyInfo.regionCount = 1;
+        copyInfo.pRegions = &copyRegion;
+
+#if defined(NG_PLATFORM_APPLE)
+        VkExtension::g_vkCmdCopyBuffer2KHR(m_CommandBuffer, &copyInfo);
+#else
+        vkCmdCopyBuffer2(m_CommandBuffer, &copyInfo);
+#endif
 
         // Update back to permanent state
         m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src);

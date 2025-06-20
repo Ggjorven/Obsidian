@@ -19,10 +19,6 @@ namespace
     ////////////////////////////////////////////////////////////////////////////////////
     static Nano::Graphics::DeviceMessageCallback s_MessageCallback = {};
 
-    static PFN_vkCreateDebugUtilsMessengerEXT   s_vkCreateDebugUtilsMessengerEXT = nullptr;
-    static PFN_vkDestroyDebugUtilsMessengerEXT  s_vkDestroyDebugUtilsMessengerEXT = nullptr;
-    static PFN_vkSetDebugUtilsObjectNameEXT     s_vkSetDebugUtilsObjectNameEXT = nullptr;
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Surface name
     ////////////////////////////////////////////////////////////////////////////////////
@@ -39,31 +35,19 @@ namespace
     ////////////////////////////////////////////////////////////////////////////////////
     // Function wrappers
     ////////////////////////////////////////////////////////////////////////////////////
-    static void GetvkCreateDebugUtilsMessengerEXT(VkInstance instance)
+    static void LoadFunctionPointers(VkInstance instance)
     {
-        if (!s_vkCreateDebugUtilsMessengerEXT)
-        {
-            s_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-            NG_ASSERT(s_vkCreateDebugUtilsMessengerEXT, "Extension not present.");
-        }
-    }
+        using namespace Nano::Graphics::Internal::VkExtension;
+        
+        g_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<decltype(g_vkCreateDebugUtilsMessengerEXT)>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+        g_vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<decltype(g_vkDestroyDebugUtilsMessengerEXT)>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+        g_vkSetDebugUtilsObjectNameEXT = reinterpret_cast<decltype(g_vkSetDebugUtilsObjectNameEXT)>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
 
-    static void GetvkDestroyDebugUtilsMessengerEXT(VkInstance instance)
-    {
-        if (!s_vkDestroyDebugUtilsMessengerEXT)
-        {
-            s_vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-            NG_ASSERT(s_vkDestroyDebugUtilsMessengerEXT, "Extension not present.");
-        }
-    }
-
-    static void GetvkSetDebugUtilsObjectNameEXT(VkInstance instance)
-    {
-        if (!s_vkSetDebugUtilsObjectNameEXT)
-        {
-            s_vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
-            NG_ASSERT(s_vkSetDebugUtilsObjectNameEXT, "Extension not present.");
-        }
+        g_vkQueueSubmit2KHR = reinterpret_cast<decltype(g_vkQueueSubmit2KHR)>(vkGetInstanceProcAddr(instance, "vkQueueSubmit2KHR"));
+        g_vkCmdCopyBuffer2KHR = reinterpret_cast<decltype(g_vkCmdCopyBuffer2KHR)>(vkGetInstanceProcAddr(instance, "vkCmdCopyBuffer2KHR"));
+        g_vkCmdCopyImage2KHR = reinterpret_cast<decltype(g_vkCmdCopyImage2KHR)>(vkGetInstanceProcAddr(instance, "vkCmdCopyImage2KHR"));
+        g_vkCmdCopyBufferToImage2KHR = reinterpret_cast<decltype(g_vkCmdCopyBufferToImage2KHR)>(vkGetInstanceProcAddr(instance, "vkCmdCopyBufferToImage2KHR"));
+        g_vkCmdPipelineBarrier2KHR = reinterpret_cast<decltype(g_vkCmdPipelineBarrier2KHR)>(vkGetInstanceProcAddr(instance, "vkCmdPipelineBarrier2KHR"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +148,7 @@ namespace Nano::Graphics::Internal
         if constexpr (Validation)
         {
             if (m_DebugMessenger)
-                s_vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+                VkExtension::g_vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
         }
 
         vkDestroyInstance(m_Instance, nullptr);
@@ -179,7 +163,7 @@ namespace Nano::Graphics::Internal
             nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
             nameInfo.pObjectName = name.c_str();
 
-            VK_VERIFY(s_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo));
+            VK_VERIFY(VkExtension::g_vkSetDebugUtilsObjectNameEXT(m_LogicalDevice->GetVkDevice(), &nameInfo));
         #else
             (void)object; (void)type; (void)name;
         #endif
@@ -316,13 +300,11 @@ namespace Nano::Graphics::Internal
         if constexpr (Validation)
         {
             // Load extension function pointers
-            GetvkCreateDebugUtilsMessengerEXT(m_Instance);
-            GetvkDestroyDebugUtilsMessengerEXT(m_Instance);
-            GetvkSetDebugUtilsObjectNameEXT(m_Instance);
+            LoadFunctionPointers(m_Instance);
 
             if (validationSupport)
             {
-                VK_VERIFY(s_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger));
+                VK_VERIFY(VkExtension::g_vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo, nullptr, &m_DebugMessenger));
             }
         }
     }

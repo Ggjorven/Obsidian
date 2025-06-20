@@ -132,7 +132,6 @@ project "Graphics"
 			"src/NanoGraphics",
 
 			"%{Dependencies.GLFW.IncludeDir}",
-			"%{Dependencies.glad.IncludeDir}",
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.stb.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",

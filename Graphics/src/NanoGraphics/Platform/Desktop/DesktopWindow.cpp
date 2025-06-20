@@ -14,7 +14,11 @@ namespace Nano::Graphics::Internal
 
         static void GLFWErrorCallBack(int errorCode, const char* description)
         {
+#if !defined(NG_CONFIG_DIST)
             NG_LOG_ERROR("[GLFW]: ({0}), {1}", errorCode, description);
+#else
+            (void)errorCode; (void)description;
+#endif
         }
     }
 

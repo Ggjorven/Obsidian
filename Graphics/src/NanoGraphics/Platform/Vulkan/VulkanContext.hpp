@@ -39,8 +39,11 @@ namespace Nano::Graphics::Internal
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
             #if defined(NG_PLATFORM_MACOS)
-            "VK_KHR_portability_subset"
+            "VK_KHR_portability_subset",
             #endif
+
+            "VK_KHR_synchronization2",
+            "VK_KHR_copy_commands2"
         });
     public:
         // Constructors & Destructor

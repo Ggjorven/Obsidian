@@ -266,12 +266,12 @@ namespace Nano::Graphics::Internal
 
         // Transition to PresentSrc
         {
-            vkResetCommandBuffer(m_ResizeCommand, 0);
+            VK_VERIFY(vkResetCommandBuffer(m_ResizeCommand, 0));
 
             VkCommandBufferBeginInfo beginInfo = {};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            vkBeginCommandBuffer(m_ResizeCommand, &beginInfo);
+            VK_VERIFY(vkBeginCommandBuffer(m_ResizeCommand, &beginInfo));
 
             VkImageMemoryBarrier2 barrier2 = {};
             barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -304,9 +304,14 @@ namespace Nano::Graphics::Internal
             dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
             dependencyInfo.pImageMemoryBarriers = barriers.data();
 
-            vkCmdPipelineBarrier2(m_ResizeCommand, &dependencyInfo);
 
-            vkEndCommandBuffer(m_ResizeCommand);
+#if defined(NG_PLATFORM_APPLE)
+            VkExtension::g_vkCmdPipelineBarrier2KHR(m_ResizeCommand, &dependencyInfo);
+#else
+            vkCmdPipelineBarrier2(m_ResizeCommand, &dependencyInfo);
+#endif
+
+            VK_VERIFY(vkEndCommandBuffer(m_ResizeCommand));
 
             VkCommandBufferSubmitInfo commandBufferInfo = {};
             commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
@@ -316,9 +321,13 @@ namespace Nano::Graphics::Internal
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
             submitInfo.commandBufferInfoCount = 1;
             submitInfo.pCommandBufferInfos = &commandBufferInfo;
+#if !defined(NG_PLATFORM_APPLE)
+            VkExtension::g_vkQueueSubmit2KHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+#else
             vkQueueSubmit2(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
+#endif
             
-            vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics));
+            VK_VERIFY(vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics)));
         }
     }
 

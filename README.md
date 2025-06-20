@@ -33,7 +33,6 @@ Contributions are welcome! Please fork the repository and create a pull request 
 
 ## Third-Party Libraries
 - [GLFW](https://github.com/glfw/glfw) - Windowing and input handling
-- [glad](https://glad.dav1d.de/) - OpenGL function loading
 - [glm](https://github.com/g-truc/glm) - Mathematics library for graphics
 - [tracy](https://github.com/wolfpld/tracy) - Realtime sampling profiler
 - [stb](https://github.com/nothings/stb) - Image loading library with more utilities.

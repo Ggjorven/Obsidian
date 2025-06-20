@@ -4,10 +4,9 @@
 
 #include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
-#include "NanoGraphics/Renderer/FramebufferSpec.hpp"
+#include "NanoGraphics/Renderer/Framebuffer.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanFramebuffer.hpp"
 
 #include <Nano/Nano.hpp>
 
