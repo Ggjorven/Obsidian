@@ -150,6 +150,13 @@ namespace Nano::Graphics::Internal
         VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
         if (!vsync)
         {
+            if constexpr (VulkanContext::Validation)
+            {
+#if defined(NG_PLATFORM_APPLE)
+                m_Device.GetContext().Warn("[VkSwapchain] Having VSync off on apple platforms is not recommended, this may cause screen tearing.");
+#endif
+            }
+
             for (size_t i = 0; i < details.PresentModes.size(); i++)
             {
                 if (details.PresentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -321,7 +328,7 @@ namespace Nano::Graphics::Internal
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
             submitInfo.commandBufferInfoCount = 1;
             submitInfo.pCommandBufferInfos = &commandBufferInfo;
-#if !defined(NG_PLATFORM_APPLE)
+#if defined(NG_PLATFORM_APPLE)
             VkExtension::g_vkQueueSubmit2KHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
 #else
             vkQueueSubmit2(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);

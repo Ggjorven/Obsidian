@@ -281,7 +281,11 @@ namespace Nano::Graphics::Internal
             dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size());
             dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
 
+#if defined(NG_PLATFORM_APPLE)
+            VkExtension::g_vkCmdPipelineBarrier2KHR(cmdBuf, &dependencyInfo);
+#else
             vkCmdPipelineBarrier2(cmdBuf, &dependencyInfo);
+#endif
         }
 
         m_ImageBarriers.clear();

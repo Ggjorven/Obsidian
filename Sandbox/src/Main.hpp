@@ -151,7 +151,11 @@ public:
 			.SetWindow(m_Window.Get())
 			.SetFormat(Format::BGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
+#if defined(NG_PLATFORM_APPLE)
+			.SetVSync(true) // Note: Vulkan via MoltenVK without VSync causes bad screen tearing.
+#else
 			.SetVSync(false)
+#endif
 			.SetDebugName("Swapchain")
 		);
 
@@ -441,7 +445,7 @@ public:
 	// Methods
 	void Run()
 	{
-		Nano::Time::Timer<Nano::Time::Period::Seconds, float> deltaTimer;
+		double lastTime = 0.0;
 
 		while (m_Window->IsOpen())
 		{
@@ -455,7 +459,9 @@ public:
 			CommandList& list = m_Lists[m_Swapchain->GetCurrentFrame()].Get();
 			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
 
-			Update(deltaTimer.Restart());
+			double time = m_Window->GetWindowTime(); // Note: We use m_Window->GetWindowTime() instead of Nano's dedicated timer class because steadyclock on MacOS is very weird and unstable.
+			Update(static_cast<float>(time - lastTime));
+			lastTime = time;
 
 			m_Swapchain->AcquireNextImage();
 			{

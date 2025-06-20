@@ -14,7 +14,7 @@ namespace Nano::Graphics
 	////////////////////////////////////////////////////////////////////////////////////
 	// Window
 	////////////////////////////////////////////////////////////////////////////////////
-	class Window : public Traits::NoCopy
+	class Window
 	{
 	public:
 		using Type = Types::SelectorType<CompileInformation::Platform,
@@ -24,7 +24,6 @@ namespace Nano::Graphics
 		>;
 	public:
 		// Constructor & Destructor
-		Window() = default;
 		inline Window(const WindowSpecification& specs)
 			: m_Window(specs) {}
 		~Window() = default;

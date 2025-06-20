@@ -201,10 +201,9 @@ namespace Nano::Graphics::Internal
     {
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
 
-        VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkBuffer vkBuffer = vulkanBuffer.GetVkBuffer();
         VmaAllocation allocation = vulkanBuffer.GetVmaAllocation();
-        m_Context.Destroy([device, vkBuffer, allocation, allocator = &m_Allocator]() mutable
+        m_Context.Destroy([vkBuffer, allocation, allocator = &m_Allocator]() mutable
         {
             allocator->DestroyBuffer(vkBuffer, allocation);
         });
