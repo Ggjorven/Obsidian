@@ -12,10 +12,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Sampler::Type, VulkanSampler>, "Current Sampler::Type is not VulkanSampler and Vulkan source code is being compiled.");
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructors & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -69,11 +65,6 @@ namespace Nano::Graphics::Internal
                 m_Device.GetContext().SetDebugName(m_Device.GetAllocator().GetUnderlyingMemory(m_Allocation), VK_OBJECT_TYPE_DEVICE_MEMORY, std::format("Memory for: {0}", m_Specification.DebugName));
             }
         }
-    }
-
-    VulkanImage::VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image)
-        : m_Device(device), m_Specification(specs), m_Image(image)
-    {
     }
 
     VulkanImage::~VulkanImage()

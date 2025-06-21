@@ -19,9 +19,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Swapchain Image::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -227,10 +224,10 @@ namespace Nano::Graphics::Internal
         }
 
         uint32_t imageCount = 0;
-        Nano::Memory::StaticVector<VkImage, Information::BackBufferUpperLimit> swapchainImages = { };
+        Nano::Memory::StaticVector<VkImage, Information::MaxImageCount> swapchainImages = { };
 
         VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, nullptr));
-        NG_ASSERT((imageCount <= Information::BackBufferUpperLimit), "[VkSwapchain] More images provided than we allow.");
+        NG_ASSERT((imageCount <= Information::MaxImageCount), "[VkSwapchain] More images provided than we allow.");
         swapchainImages.resize(imageCount);
         m_Images.resize(imageCount);
         VK_VERIFY(vkGetSwapchainImagesKHR(device, m_Swapchain, &imageCount, swapchainImages.data()));
@@ -255,9 +252,7 @@ namespace Nano::Graphics::Internal
             }
             else
             {
-                //m_Images[i].Construct(*api_cast<Device*>(&m_Device));
                 new (m_Images[i].GetInternalBytes()) Image(*api_cast<const Device*>(&m_Device));
-
                 vkImage.SetInternalData(imageSpec, swapchainImages[i]);
             }
 
@@ -298,7 +293,7 @@ namespace Nano::Graphics::Internal
             barrier2.subresourceRange.layerCount = 1;
 
             // Set all the images
-            Nano::Memory::StaticVector<VkImageMemoryBarrier2, Information::BackBufferUpperLimit> barriers = { };
+            Nano::Memory::StaticVector<VkImageMemoryBarrier2, Information::MaxImageCount> barriers = { };
             barriers.resize(m_Images.size());
             for (size_t i = 0; i < m_Images.size(); i++)
             {
@@ -394,7 +389,7 @@ namespace Nano::Graphics::Internal
         }
 
         m_WaitTimelineValues[m_CurrentFrame] = m_CurrentTimelineValue;
-        m_CurrentFrame = (m_CurrentFrame + 1) % Information::BackBufferCount;
+        m_CurrentFrame = (m_CurrentFrame + 1) % Information::FramesInFlight;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

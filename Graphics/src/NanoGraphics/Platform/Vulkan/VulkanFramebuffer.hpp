@@ -28,7 +28,6 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructors & Destructor
-        VulkanFramebuffer() = default;
         VulkanFramebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs);
         ~VulkanFramebuffer();
 

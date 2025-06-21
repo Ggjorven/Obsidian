@@ -13,7 +13,7 @@
 
 using namespace Nano::Graphics;
 
-#if 1
+#if 0
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
@@ -76,11 +76,11 @@ struct VSOutput
     float4 SV_Position : SV_POSITION;
 };
 
-// cbuffer CameraSettings : register(b0, space0)
-// {
-//     float4x4 View;
-//     float4x4 Projection;
-// };
+cbuffer CameraSettings : register(b0, space0)
+{
+    float4x4 View;
+    float4x4 Projection;
+};
 
 VSOutput main(VSInput input)
 {
@@ -88,8 +88,8 @@ VSOutput main(VSInput input)
     output.Position = input.Position;
     output.TexCoord = input.TexCoord;
 
-    // output.SV_Position = mul(Projection, mul(View, float4(input.Position, 1.0)));
-    output.SV_Position = float4(input.Position, 1.0);
+    output.SV_Position = mul(Projection, mul(View, float4(input.Position, 1.0)));
+    //output.SV_Position = float4(input.Position, 1.0);
     return output;
 }
 )";
@@ -247,7 +247,7 @@ public:
 		// BindingPool & Sets
 		m_BindingSetPool0.Construct(m_Device.Get(), BindingSetPoolSpecification()
 			.SetLayout(m_BindingLayoutSet0.Get())
-			.SetSetAmount(Information::BackBufferCount)
+			.SetSetAmount(Information::FramesInFlight)
 			.SetDebugName("BindingSetPool0")
 		);
 		for (size_t i = 0; i < m_Set0s.size(); i++)
@@ -554,7 +554,7 @@ private:
 	Nano::Memory::DeferredConstruct<Swapchain> m_Swapchain = {};
 
 	Nano::Memory::DeferredConstruct<CommandListPool> m_CommandPool = {};
-	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::BackBufferCount> m_Lists = {};
+	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_Lists = {};
 
 	Nano::Memory::DeferredConstruct<Renderpass> m_Renderpass = {};
 
@@ -562,7 +562,7 @@ private:
 	Nano::Memory::DeferredConstruct<BindingLayout> m_BindingLayoutSet0 = {};
 
 	Nano::Memory::DeferredConstruct<BindingSetPool> m_BindingSetPool0 = {};
-	std::array<Nano::Memory::DeferredConstruct<BindingSet>, Information::BackBufferCount> m_Set0s = {};
+	std::array<Nano::Memory::DeferredConstruct<BindingSet>, Information::FramesInFlight> m_Set0s = {};
 	Nano::Memory::DeferredConstruct<GraphicsPipeline> m_Pipeline = {};
 
 	Nano::Memory::DeferredConstruct<Buffer> m_VertexBuffer = {};

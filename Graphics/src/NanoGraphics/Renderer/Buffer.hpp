@@ -33,14 +33,10 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes) { m_InputLayout.Construct(device, attributes); }
+        inline InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes) { m_Impl.Construct(device, attributes); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_InputLayout.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_InputLayout = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -63,18 +59,14 @@ namespace Nano::Graphics
         ~Buffer() = default;
 
         // Getters
-        inline const BufferSpecification& GetSpecification() const { return m_Buffer->GetSpecification(); }
+        inline const BufferSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Buffer(const Device& device, const BufferSpecification& specs) { m_Buffer.Construct(device, specs); }
+        inline Buffer(const Device& device, const BufferSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Buffer.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Buffer = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;

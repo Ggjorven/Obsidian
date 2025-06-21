@@ -37,47 +37,46 @@ namespace Nano::Graphics
         ~CommandList() = default;
 
         // Methods
-        inline void Reset() const { m_CommandList->Reset(); }
+        inline void Reset() const { m_Impl->Reset(); }
 
-        inline void ResetAndOpen() { m_CommandList->ResetAndOpen(); }
-        inline void Open() { m_CommandList->Open(); }
-        inline void Close() { m_CommandList->Close(); }
+        inline void ResetAndOpen() { m_Impl->ResetAndOpen(); }
+        inline void Open() { m_Impl->Open(); }
+        inline void Close() { m_Impl->Close(); }
 
-        inline void Submit(const CommandListSubmitArgs& args) const { return m_CommandList->Submit(args); }
+        inline void Submit(const CommandListSubmitArgs& args) const { return m_Impl->Submit(args); }
 
-        inline void WaitTillComplete() const { m_CommandList->WaitTillComplete(); }
+        inline void WaitTillComplete() const { m_Impl->WaitTillComplete(); }
 
-        inline void CommitBarriers() { m_CommandList->CommitBarriers(); }
+        inline void CommitBarriers() { m_Impl->CommitBarriers(); }
 
         // Object methods
-        inline void SetGraphicsState(const GraphicsState& state) { m_CommandList->SetGraphicsState(state); }
+        inline void SetGraphicsState(const GraphicsState& state) { m_Impl->SetGraphicsState(state); }
+        inline void SetComputeState(const ComputeState& state) { m_Impl->SetComputeState(state); }
 
-        inline void SetViewport(const Viewport& viewport) const { m_CommandList->SetViewport(viewport); }
-        inline void SetScissor(const ScissorRect& scissor) const { m_CommandList->SetScissor(scissor); }
+        inline void Dispatch(uint32_t groupsX, uint32_t groupsY = 1, uint32_t groupsZ = 1) const { m_Impl->Dispatch(groupsX, groupsY, groupsZ); }
 
-        inline void BindVertexBuffer(const Buffer& buffer) const { m_CommandList->BindVertexBuffer(buffer); }
-        inline void BindIndexBuffer(const Buffer& buffer) const { m_CommandList->BindIndexBuffer(buffer); }
+        inline void SetViewport(const Viewport& viewport) const { m_Impl->SetViewport(viewport); }
+        inline void SetScissor(const ScissorRect& scissor) const { m_Impl->SetScissor(scissor); }
 
-        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_CommandList->CopyImage(dst, dstSlice, src, srcSlice); }
-        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { m_CommandList->CopyImage(dst, dstSlice, src, srcSlice); }
-        inline void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_CommandList->CopyBuffer(dst, src, size, srcOffset, dstOffset); }
+        inline void BindVertexBuffer(const Buffer& buffer) const { m_Impl->BindVertexBuffer(buffer); }
+        inline void BindIndexBuffer(const Buffer& buffer) const { m_Impl->BindIndexBuffer(buffer); }
+
+        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_Impl->CopyImage(dst, dstSlice, src, srcSlice); }
+        inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { m_Impl->CopyImage(dst, dstSlice, src, srcSlice); }
+        inline void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_Impl->CopyBuffer(dst, src, size, srcOffset, dstOffset); }
 
         // Draw methods
-        inline void DrawIndexed(const DrawArguments& args) const { m_CommandList->DrawIndexed(args); }
+        inline void DrawIndexed(const DrawArguments& args) const { m_Impl->DrawIndexed(args); }
 
         // Getters
-        inline const CommandListSpecification& GetSpecification() const { return m_CommandList->GetSpecification(); }
+        inline const CommandListSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline CommandList(CommandListPool& pool, const CommandListSpecification& specs) { m_CommandList.Construct(pool, specs); }
+        inline CommandList(CommandListPool& pool, const CommandListSpecification& specs) { m_Impl.Construct(pool, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_CommandList.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_CommandList = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class CommandListPool;
         friend class APICaster;
@@ -101,26 +100,22 @@ namespace Nano::Graphics
 
         // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline CommandList AllocateList(const CommandListSpecification& specs) { return CommandList(*this, specs); }
-        inline void FreeList(CommandList& list) const { m_Pool->FreeList(list); }
-        inline void FreeLists(std::span<CommandList*> lists) const { m_Pool->FreeLists(lists); }
+        inline void FreeList(CommandList& list) const { m_Impl->FreeList(list); }
+        inline void FreeLists(std::span<CommandList*> lists) const { m_Impl->FreeLists(lists); }
 
         // Helper methods
-        inline void ResetList(CommandList& list) const { m_Pool->ResetList(list); }
-        inline void ResetAll() const { m_Pool->ResetAll(); }
+        inline void ResetList(CommandList& list) const { m_Impl->ResetList(list); }
+        inline void ResetAll() const { m_Impl->ResetAll(); }
 
         // Getters
-        inline const CommandListPoolSpecification& GetSpecification() const { return m_Pool->GetSpecification(); }
+        inline const CommandListPoolSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs) { m_Pool.Construct(swapchain, specs); }
+        inline CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs) { m_Impl.Construct(swapchain, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Pool.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Pool = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Swapchain;
         friend class APICaster;

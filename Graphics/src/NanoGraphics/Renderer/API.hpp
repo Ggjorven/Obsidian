@@ -23,7 +23,7 @@ namespace Nano::Graphics::Internal
     template<typename T, typename TInput>
     inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>)
     {
-        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(&input->APICasterGet())));
+        return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(&input->m_Impl)));
     }
 
     template<typename T, typename TInput>

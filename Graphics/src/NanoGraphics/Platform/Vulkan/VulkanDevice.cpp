@@ -14,27 +14,8 @@
 #include "NanoGraphics/Renderer/Shader.hpp"
 #include "NanoGraphics/Renderer/Pipeline.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/VulkanBindings.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanSwapchain.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanRenderpass.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanShader.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanPipeline.hpp"
-
 namespace Nano::Graphics::Internal
 {
-
-    static_assert(std::is_same_v<BindingLayout::Type, VulkanBindingLayout>, "Current BindingLayout::Type is not VulkanBindingLayout and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<StagingImage::Type, VulkanStagingImage>, "Current StagingImage::Type is not VulkanStagingImage and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Buffer::Type, VulkanBuffer>, "Current Buffer::Type is not VulkanBuffer and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Sampler::Type, VulkanSampler>, "Current Sampler::Type is not VulkanSampler and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Framebuffer::Type, VulkanFramebuffer>, "Current Framebuffer::Type is not VulkanFramebuffer and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Renderpass::Type, VulkanRenderpass>, "Current Renderpass::Type is not VulkanRenderpass and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Shader::Type, VulkanShader>, "Current Shader::Type is not VulkanShader and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<GraphicsPipeline::Type, VulkanGraphicsPipeline>, "Current GraphicsPipeline::Type is not VulkanGraphicsPipeline and Vulkan source code is being compiled.");
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
@@ -228,8 +209,8 @@ namespace Nano::Graphics::Internal
         VkDevice device = m_Context.GetVulkanLogicalDevice().GetVkDevice();
         VkRenderPass vkRenderpass = vulkanRenderpass.GetVkRenderPass();
 
-        for (auto& framebuffer : vulkanRenderpass.GetVulkanFramebuffers())
-            DestroyFramebuffer(*api_cast<Framebuffer*>(&framebuffer));
+        for (auto& framebuffer : vulkanRenderpass.GetFramebuffers())
+            DestroyFramebuffer(framebuffer);
 
         m_Context.Destroy([device, vkRenderpass]() mutable
         {

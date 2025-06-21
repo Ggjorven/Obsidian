@@ -13,8 +13,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-
     namespace
     {
 

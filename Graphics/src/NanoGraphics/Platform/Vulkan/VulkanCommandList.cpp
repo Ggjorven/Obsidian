@@ -15,13 +15,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Swapchain::Type, VulkanSwapchain>, "Current Swapchain::Type is not VulkanSwapchain and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<GraphicsPipeline::Type, VulkanGraphicsPipeline>, "Current GraphicsPipeline::Type is not VulkanGraphicsPipeline and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<CommandList::Type, VulkanCommandList>, "Current CommandList::Type is not VulkanCommandList and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<CommandListPool::Type, VulkanCommandListPool>, "Current CommandListPool::Type is not VulkanImage and Vulkan source code is being compiled.");
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +149,7 @@ namespace Nano::Graphics::Internal
         }
 
         m_GraphicsState = GraphicsState();
+        m_ComputeState = ComputeState();
 
         {
             NG_PROFILE("VulkanCommandList::Close::End");
@@ -323,7 +317,7 @@ namespace Nano::Graphics::Internal
 
             for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
             {
-                if (set != nullptr) [[likely]]
+                if (set != nullptr) //[[likely]]
                 {
                     BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Graphics/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
                     break;
@@ -333,6 +327,43 @@ namespace Nano::Graphics::Internal
 
         SetViewport(state.ViewportState);
         SetScissor(state.Scissor);
+    }
+
+    void VulkanCommandList::SetComputeState(const ComputeState& state)
+    {
+        NG_PROFILE("VulkanCommandList::SetComputeState()");
+        m_ComputeState = state;
+
+        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
+
+        VulkanComputePipeline& vulkanPipeline = *api_cast<VulkanComputePipeline*>(state.Pipeline);
+
+        // BindingSets
+        {
+            NG_PROFILE("VulkanCommandList::SetComputeState::BindingSets");
+
+            for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
+            {
+                if (set != nullptr) //[[likely]]
+                {
+                    BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Compute/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
+                    break;
+                }
+            }
+        }
+
+        // Pipeline
+        {
+            NG_PROFILE("VulkanCommandList::SetComputeState::Pipeline");
+
+            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
+        }
+    }
+
+    void VulkanCommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
+    {
+        NG_PROFILE("VulkanCommandList::Dispatch()");
+        vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
     }
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const

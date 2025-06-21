@@ -69,26 +69,26 @@ namespace Nano::Graphics::Internal
 			}
 		}
 
-		inline constexpr void AcquireNextImage() { m_CurrentFrame = (m_CurrentFrame + 1) % Information::BackBufferCount; }
+		inline constexpr void AcquireNextImage() { m_CurrentFrame = (m_CurrentFrame + 1) % Information::FramesInFlight; }
 		inline constexpr void Present() {}
 
 		// Getters
 		inline constexpr const SwapchainSpecification& GetSpecification() const { return m_Specification; }
 
-		inline constexpr uint32_t GetCurrentFrame() const { return m_CurrentFrame; }
-		inline constexpr uint32_t GetAcquiredImage() const { return m_CurrentFrame; }
+		inline constexpr uint8_t GetCurrentFrame() const { return m_CurrentFrame; }
+		inline constexpr uint8_t GetAcquiredImage() const { return m_CurrentFrame; }
 
 		inline Image& GetImage(uint8_t frame) { return *reinterpret_cast<Image*>(&m_Images[frame].Get()); }
 		inline const Image& GetImage(uint8_t frame) const { return *reinterpret_cast<const Image*>(&m_Images[frame].Get()); }
 
-		inline constexpr uint32_t GetImageCount() const { return static_cast<uint32_t>(m_Images.size()); }
+		inline constexpr uint8_t GetImageCount() const { return static_cast<uint8_t>(m_Images.size()); }
 
 	private:
 		SwapchainSpecification m_Specification;
 	
-		std::array<Nano::Memory::DeferredConstruct<Image, true>, Information::BackBufferCount> m_Images = { };
+		std::array<Nano::Memory::DeferredConstruct<Image, true>, Information::FramesInFlight> m_Images = { };
 
-		uint32_t m_CurrentFrame = 0;
+		uint8_t m_CurrentFrame = 0;
 	};
 #endif
 

@@ -17,10 +17,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<Device::Type, VulkanDevice>, "Current Device::Type is not VulkanDevice and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Image::Type, VulkanImage>, "Current Image::Type is not VulkanImage and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<Framebuffer::Type, VulkanFramebuffer>, "Current Framebuffer::Type is not VulkanFramebuffer and Vulkan source code is being compiled.");
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
@@ -105,16 +101,15 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT((m_Framebuffers.size() < m_Framebuffers.max_size()), "[VkRenderpass] Can't create more framebuffers than backbuffers/swapchain images.");
 
-        VulkanFramebuffer framebuffer(*api_cast<Renderpass*>(this), specs);
-
-        m_Framebuffers.push_back(std::move(framebuffer));
-        return *api_cast<Framebuffer*>(&m_Framebuffers.back());
+        Nano::Memory::DeferredConstruct<Framebuffer>& framebuffer = m_Framebuffers.emplace_back();
+        framebuffer.Construct(*api_cast<const Renderpass*>(this), specs);
+        return framebuffer;
     }
 
     void VulkanRenderpass::ResizeFramebuffers()
     {
         for (auto& framebuffer : m_Framebuffers)
-            framebuffer.Resize();
+            framebuffer->Resize();
     }
 
 }

@@ -86,7 +86,6 @@ namespace Nano::Graphics::Internal
 		// Constructors & Destructor
 		VulkanImage(const Device& device);
 		VulkanImage(const Device& device, const ImageSpecification& specs);
-		VulkanImage(const VulkanDevice& device, const ImageSpecification& specs, VkImage image);
 		~VulkanImage();
 
 		// Getters

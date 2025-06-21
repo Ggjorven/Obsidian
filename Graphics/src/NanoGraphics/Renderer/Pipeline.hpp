@@ -33,14 +33,10 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs) { m_GraphicsPipeline.Construct(device, specs); }
+        inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_GraphicsPipeline.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_GraphicsPipeline = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -64,14 +60,10 @@ namespace Nano::Graphics
 
     public: //private:
         // Constructor
-        inline ComputePipeline(const Device& device, const ComputePipelineSpecification& specs) { m_ComputePipeline.Construct(device, specs); }
+        inline ComputePipeline(const Device& device, const ComputePipelineSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_ComputePipeline.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_ComputePipeline = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;

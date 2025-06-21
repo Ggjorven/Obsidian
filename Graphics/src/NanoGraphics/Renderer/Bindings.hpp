@@ -41,19 +41,15 @@ namespace Nano::Graphics
         ~BindingLayout() = default;
 
         // Getters
-        inline bool IsBindless() const { return m_BindingLayout->IsBindless(); }
+        inline bool IsBindless() const { return m_Impl->IsBindless(); }
 
     public: //private:
         // Constructor
-        inline BindingLayout(const Device& device, const BindingLayoutSpecification& specs) { m_BindingLayout.Construct(device, specs); }
-        inline BindingLayout(const Device& device, const BindlessLayoutSpecification& specs) { m_BindingLayout.Construct(device, specs); }
+        inline BindingLayout(const Device& device, const BindingLayoutSpecification& specs) { m_Impl.Construct(device, specs); }
+        inline BindingLayout(const Device& device, const BindlessLayoutSpecification& specs) { m_Impl.Construct(device, specs); }
     
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_BindingLayout.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_BindingLayout = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -76,23 +72,19 @@ namespace Nano::Graphics
         ~BindingSet() = default;
 
         // Methods
-        inline void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(image, subresources, resourceType, slot, arrayIndex); }
-        inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(sampler, resourceType, slot, arrayIndex); }
-        inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_BindingSet->Upload(buffer, range, resourceType, slot, arrayIndex); }
+        inline void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_Impl->Upload(image, subresources, resourceType, slot, arrayIndex); }
+        inline void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_Impl->Upload(sampler, resourceType, slot, arrayIndex); }
+        inline void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex = 0) { m_Impl->Upload(buffer, range, resourceType, slot, arrayIndex); }
         
-        inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_BindingSet->UploadList(uploadables); }
-        inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_BindingSet->UploadList(std::span<const BindingSetUploadable>(uploadables)); }
+        inline void UploadList(std::span<const BindingSetUploadable> uploadables) { m_Impl->UploadList(uploadables); }
+        inline void UploadList(std::initializer_list<BindingSetUploadable> uploadables) { m_Impl->UploadList(std::span<const BindingSetUploadable>(uploadables)); }
 
     public: //private:
         // Constructor
-        inline BindingSet(BindingSetPool& pool) { m_BindingSet.Construct(pool); }
+        inline BindingSet(BindingSetPool& pool) { m_Impl.Construct(pool); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_BindingSet.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_BindingSet = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class BindingSetPool;
         friend class APICaster;
@@ -118,18 +110,14 @@ namespace Nano::Graphics
         inline BindingSet CreateBindingSet() { return BindingSet(*this); } // Note: BindingSets get destroyed by the pool
 
         // Getters
-        inline const BindingSetPoolSpecification& GetSpecification() const { return m_BindingSetPool->GetSpecification(); }
+        inline const BindingSetPoolSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs) { m_BindingSetPool.Construct(device, specs); }
+        inline BindingSetPool(const Device& device, const BindingSetPoolSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_BindingSetPool.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_BindingSetPool;
+        Internal::APIObject<Type> m_Impl;
 
         friend class Device;
         friend class APICaster;

@@ -59,9 +59,6 @@ namespace Nano::Graphics::Internal
 
     }
 
-    static_assert(std::is_same_v<Shader::Type, VulkanShader>, "Current Shader::Type is not VulkanShader and Vulkan source code is being compiled.");
-    static_assert(std::is_same_v<ShaderCompiler::Type, VulkanShaderCompiler>, "Current ShaderCompiler::Type is not VulkanShaderCompiler and Vulkan source code is being compiled.");
-
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////

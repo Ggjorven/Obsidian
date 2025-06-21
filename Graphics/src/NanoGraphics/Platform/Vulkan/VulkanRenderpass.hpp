@@ -41,13 +41,13 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const RenderpassSpecification& GetSpecification() const { return m_Specification; }
 
-        inline Framebuffer& GetFramebuffer(uint8_t frame) { return *api_cast<Framebuffer*>(&m_Framebuffers[frame]); }
+        inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Framebuffers[frame]; }
 
         // Internal getters
         inline VkRenderPass GetVkRenderPass() const { return m_Renderpass; }
 
         inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
-        inline Nano::Memory::StaticVector<VulkanFramebuffer, Information::BackBufferUpperLimit>& GetVulkanFramebuffers() { return m_Framebuffers; }
+        inline Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Framebuffer>, Information::MaxImageCount>& GetFramebuffers() { return m_Framebuffers; }
 
     private:
         const VulkanDevice& m_Device;
@@ -55,7 +55,7 @@ namespace Nano::Graphics::Internal
 
         VkRenderPass m_Renderpass = VK_NULL_HANDLE;
 
-        Nano::Memory::StaticVector<VulkanFramebuffer, Information::BackBufferUpperLimit> m_Framebuffers;
+        Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Framebuffer>, Information::MaxImageCount> m_Framebuffers;
     };
 #endif
 

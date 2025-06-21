@@ -38,23 +38,20 @@ namespace Nano::Graphics
         ~Image() = default;
 
         // Getters
-        inline const ImageSpecification& GetSpecification() const { return m_Image->GetSpecification(); }
+        inline const ImageSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor 
-        inline Image(const Device& device, const ImageSpecification& specs) { m_Image.Construct(device, specs); }
+        inline Image(const Device& device, const ImageSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
 #if defined(NG_API_VULKAN)
         // Private constructor for swapchain
-        inline Image(const Device& device) { m_Image.Construct(device); }
+        inline Image(const Device& device) { m_Impl.Construct(device); }
 #endif
 
-        // Helper getter
-        inline Type& APICasterGet() { return m_Image.Get(); }
-
     private:
-        Internal::APIObject<Type> m_Image = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -79,18 +76,14 @@ namespace Nano::Graphics
         ~StagingImage() = default;
 
         // Getters
-        inline const ImageSpecification& GetSpecification() const { return m_StagingImage->GetSpecification(); }
+        inline const ImageSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor 
-        inline StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccess) { m_StagingImage.Construct(device, specs, cpuAccess); }
+        inline StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccess) { m_Impl.Construct(device, specs, cpuAccess); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_StagingImage.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_StagingImage = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -113,18 +106,14 @@ namespace Nano::Graphics
         ~Sampler() = default;
 
         // Getters
-        inline const SamplerSpecification& GetSpecification() const { return m_Sampler->GetSpecification(); }
+        inline const SamplerSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor 
-        inline Sampler(const Device& device, const SamplerSpecification& specs) { m_Sampler.Construct(device, specs); }
+        inline Sampler(const Device& device, const SamplerSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Sampler.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Sampler = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;

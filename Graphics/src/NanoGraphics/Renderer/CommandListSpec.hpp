@@ -28,6 +28,7 @@ namespace Nano::Graphics
     class Renderpass;
     class Framebuffer;
     class GraphicsPipeline;
+    class ComputePipeline;
     class CommandList;
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -153,6 +154,26 @@ namespace Nano::Graphics
         inline constexpr GraphicsState& SetDepthClear(float depth) { DepthClear = depth; return *this; }
 
         inline GraphicsState& AddBindingSet(uint32_t setID, BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { NG_ASSERT((setID < MaxBindingSets), "[GraphicsState] SetID exceeds max binding sets."); BindingSets[setID] = { &set, dynamicOffsets }; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComputeState
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ComputeState
+    {
+    public:
+        inline constexpr static uint32_t MaxBindingSets = GraphicsState::MaxBindingSets;
+        using BindPair = GraphicsState::BindPair;
+    public:
+        ComputePipeline* Pipeline = nullptr;
+
+        std::array<BindPair, MaxBindingSets> BindingSets = { };
+
+    public:
+        // Setters
+        inline constexpr ComputeState& SetPipeline(ComputePipeline& pipeline) { Pipeline = &pipeline; return *this; }
+
+        inline ComputeState& AddBindingSet(uint32_t setID, BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { NG_ASSERT((setID < MaxBindingSets), "[ComputeState] SetID exceeds max binding sets."); BindingSets[setID] = { &set, dynamicOffsets }; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -32,25 +32,21 @@ namespace Nano::Graphics
         ~Renderpass() = default;
 
         // Methods
-        inline Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs) { return m_Renderpass->CreateFramebuffer(specs); } // Note: Framebuffers are stored in the Renderpass and will be destroyed when the renderpass is.
+        inline Framebuffer& CreateFramebuffer(const FramebufferSpecification& specs) { return m_Impl->CreateFramebuffer(specs); } // Note: Framebuffers are stored in the Renderpass and will be destroyed when the renderpass is.
 
-        inline void ResizeFramebuffers() { return m_Renderpass->ResizeFramebuffers(); }
+        inline void ResizeFramebuffers() { return m_Impl->ResizeFramebuffers(); }
 
         // Getters
-        inline const RenderpassSpecification& GetSpecification() const { return m_Renderpass->GetSpecification(); }
+        inline const RenderpassSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
-        inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Renderpass->GetFramebuffer(frame); }
+        inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Impl->GetFramebuffer(frame); }
 
     public: //private:
         // Constructor
-        inline Renderpass(const Device& device, const RenderpassSpecification& specs) { m_Renderpass.Construct(device, specs); }
+        inline Renderpass(const Device& device, const RenderpassSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Renderpass.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Renderpass = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;

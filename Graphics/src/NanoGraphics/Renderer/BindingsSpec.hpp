@@ -159,7 +159,7 @@ namespace Nano::Graphics
     public:
         BindingLayout* Layout = nullptr;
 
-        uint32_t SetAmount = Information::BackBufferCount;
+        uint32_t SetAmount = Information::FramesInFlight;
 
         std::string_view DebugName = {};
     

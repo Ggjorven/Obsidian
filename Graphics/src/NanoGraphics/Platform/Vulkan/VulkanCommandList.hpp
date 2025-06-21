@@ -89,6 +89,9 @@ namespace Nano::Graphics::Internal
 
 		// Object methods
 		void SetGraphicsState(const GraphicsState& state);
+		void SetComputeState(const ComputeState& state);
+
+		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
 		
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
@@ -123,6 +126,7 @@ namespace Nano::Graphics::Internal
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 
 		GraphicsState m_GraphicsState = {};
+		ComputeState m_ComputeState = {};
 	};
 #endif
 

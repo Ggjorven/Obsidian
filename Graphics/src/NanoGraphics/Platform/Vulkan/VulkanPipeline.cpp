@@ -12,8 +12,6 @@
 namespace Nano::Graphics::Internal
 {
 
-    static_assert(std::is_same_v<GraphicsPipeline::Type, VulkanGraphicsPipeline>, "Current GraphicsPipeline::Type is not VulkanGraphicsPipeline and Vulkan source code is being compiled.");
-
 	namespace
 	{
 
@@ -80,7 +78,7 @@ namespace Nano::Graphics::Internal
 		auto& rasterState = m_Specification.RenderingState.Raster;
 
 		VulkanRenderpass& vulkanRenderpass = *api_cast<VulkanRenderpass*>(m_Specification.Pass);
-		NG_ASSERT(!vulkanRenderpass.GetVulkanFramebuffers().empty(), "[VkGraphicsPipeline] Renderpass passed in with no created framebuffers.");
+		NG_ASSERT(!vulkanRenderpass.GetFramebuffers().empty(), "[VkGraphicsPipeline] Renderpass passed in with no created framebuffers.");
 		VulkanFramebuffer& vulkanFramebuffer = *api_cast<VulkanFramebuffer*>(&vulkanRenderpass.GetFramebuffer(0));
 
 		Nano::Memory::StaticVector<VkPipelineShaderStageCreateInfo, 5> shaderStages = { }; // Note: Update when more shaders are added

@@ -30,21 +30,17 @@ namespace Nano::Graphics
         ~Framebuffer() = default;
 
         // Methods
-        inline void Resize() { m_Framebuffer->Resize(); }
+        inline void Resize() { m_Impl->Resize(); }
 
         // Getters
-        inline const FramebufferSpecification& GetSpecification() const { return m_Framebuffer->GetSpecification(); }
+        inline const FramebufferSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs) { m_Framebuffer.Construct(renderpass, specs); }
+        inline Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs) { m_Impl.Construct(renderpass, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Framebuffer.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Framebuffer = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class APICaster;
     };

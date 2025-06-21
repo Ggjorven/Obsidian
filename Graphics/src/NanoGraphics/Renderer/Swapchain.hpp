@@ -35,36 +35,32 @@ namespace Nano::Graphics
 
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline CommandListPool AllocateCommandListPool(const CommandListPoolSpecification& specs) { return CommandListPool(*this, specs); }
-        inline void FreePool(CommandListPool& pool) { m_Swapchain->FreePool(pool); }
+        inline void FreePool(CommandListPool& pool) { m_Impl->FreePool(pool); }
 
         // Methods
-        inline void Resize(uint32_t width, uint32_t height) { m_Swapchain->Resize(width, height); }
-        inline void Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace) { m_Swapchain->Resize(width, height, vsync, colourFormat, colourSpace); }
+        inline void Resize(uint32_t width, uint32_t height) { m_Impl->Resize(width, height); }
+        inline void Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace) { m_Impl->Resize(width, height, vsync, colourFormat, colourSpace); }
 
-        inline void AcquireNextImage() { m_Swapchain->AcquireNextImage(); }
-        inline void Present() { m_Swapchain->Present(); }
+        inline void AcquireNextImage() { m_Impl->AcquireNextImage(); }
+        inline void Present() { m_Impl->Present(); }
 
         // Getters
-        inline const SwapchainSpecification& GetSpecification() const { return m_Swapchain->GetSpecification(); }
+        inline const SwapchainSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
-        inline uint32_t GetCurrentFrame() const { return m_Swapchain->GetCurrentFrame(); }
-        inline uint32_t GetAcquiredImage() const { return m_Swapchain->GetAcquiredImage(); }
+        inline uint8_t GetCurrentFrame() const { return m_Impl->GetCurrentFrame(); }
+        inline uint8_t GetAcquiredImage() const { return m_Impl->GetAcquiredImage(); }
 
-        inline Image& GetImage(uint8_t frame) { return m_Swapchain->GetImage(frame); }
-        inline const Image& GetImage(uint8_t frame) const { return m_Swapchain->GetImage(frame); }
+        inline Image& GetImage(uint8_t frame) { return m_Impl->GetImage(frame); }
+        inline const Image& GetImage(uint8_t frame) const { return m_Impl->GetImage(frame); }
 
-        inline uint32_t GetImageCount() const { return m_Swapchain->GetImageCount(); }
+        inline uint8_t GetImageCount() const { return m_Impl->GetImageCount(); }
 
     public: //private:
         // Constructor
-        inline Swapchain(const Device& device, const SwapchainSpecification& specs) { m_Swapchain.Construct(device, specs); }
+        inline Swapchain(const Device& device, const SwapchainSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Swapchain.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Swapchain = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;

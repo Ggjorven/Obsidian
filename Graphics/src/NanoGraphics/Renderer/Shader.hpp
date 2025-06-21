@@ -34,18 +34,14 @@ namespace Nano::Graphics
         ~Shader() = default;
 
         // Getters
-        inline const ShaderSpecification& GetSpecification() const { return m_Shader->GetSpecification(); }
+        inline const ShaderSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor
-        inline Shader(const Device& device, const ShaderSpecification& specs) { m_Shader.Construct(device, specs); }
+        inline Shader(const Device& device, const ShaderSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_Shader.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_Shader = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class Device;
         friend class APICaster;
@@ -65,18 +61,14 @@ namespace Nano::Graphics
         >;
     public:
         // Constructor & Destructor
-        inline ShaderCompiler() { m_ShaderCompiler.Construct(); }
+        inline ShaderCompiler() { m_Impl.Construct(); }
         ~ShaderCompiler() = default;
 
         // Methods
-        inline std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language = ShadingLanguage::GLSL) { return m_ShaderCompiler->CompileToSPIRV(stage, code, language); }
+        inline std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToSPIRV(stage, code, language); }
 
     private:
-        // Helper getter
-        inline Type& APICasterGet() { return m_ShaderCompiler.Get(); }
-
-    private:
-        Internal::APIObject<Type> m_ShaderCompiler = {};
+        Internal::APIObject<Type> m_Impl = {};
 
         friend class APICaster;
     };

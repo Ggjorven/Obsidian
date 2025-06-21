@@ -58,7 +58,7 @@ namespace Nano::Graphics::Internal
     private:
         RenderpassSpecification m_Specification;
 
-        Nano::Memory::StaticVector<DummyFramebuffer, Information::BackBufferCount> m_Framebuffers;
+        Nano::Memory::StaticVector<DummyFramebuffer, Information::FramesInFlight> m_Framebuffers;
     };
 #endif
 
