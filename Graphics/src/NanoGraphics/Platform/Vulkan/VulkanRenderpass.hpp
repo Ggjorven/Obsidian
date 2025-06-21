@@ -42,6 +42,7 @@ namespace Nano::Graphics::Internal
         inline const RenderpassSpecification& GetSpecification() const { return m_Specification; }
 
         inline Framebuffer& GetFramebuffer(uint8_t frame) { return m_Framebuffers[frame]; }
+        inline const Framebuffer& GetFramebuffer(uint8_t frame) const { return m_Framebuffers[frame]; }
 
         // Internal getters
         inline VkRenderPass GetVkRenderPass() const { return m_Renderpass; }

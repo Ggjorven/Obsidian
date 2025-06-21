@@ -2,6 +2,7 @@
 #include "NanoGraphics/Core/Window.hpp"
 
 #include "NanoGraphics/Renderer/Device.hpp"
+#include "NanoGraphics/Renderer/ImGuiRenderer.hpp"
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
@@ -161,10 +162,15 @@ public:
 
 		// Commandlists
 		m_CommandPool.Construct(m_Swapchain.Get(), CommandListPoolSpecification().SetDebugName("CommandPool"));
-		for (size_t i = 0; i < m_Lists.size(); i++)
+		for (size_t i = 0; i < m_RenderpassLists.size(); i++)
 		{
-			std::string debugName = std::format("CommandList({0}) for: {1}", i, m_CommandPool->GetSpecification().DebugName);
-			m_Lists[i].Construct(m_CommandPool.Get(), CommandListSpecification().SetDebugName(debugName));
+			std::string debugName = std::format("RenderpassList({0}) for: {1}", i, m_CommandPool->GetSpecification().DebugName);
+			m_RenderpassLists[i].Construct(m_CommandPool.Get(), CommandListSpecification().SetDebugName(debugName));
+		}
+		for (size_t i = 0; i < m_ImGuiLists.size(); i++)
+		{
+			std::string debugName = std::format("ImguiList({0}) for: {1}", i, m_CommandPool->GetSpecification().DebugName);
+			m_ImGuiLists[i].Construct(m_CommandPool.Get(), CommandListSpecification().SetDebugName(debugName));
 		}
 
 		// Renderpass & Framebuffers
@@ -190,6 +196,32 @@ public:
 				.SetDebugName(debugName)
 			);
 		}
+
+		// Imgui Renderpass & Framebuffers
+		m_ImguiPass.Construct(m_Device.Get(), RenderpassSpecification()
+			.SetBindpoint(PipelineBindpoint::Graphics)
+
+			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
+			.SetColourLoadOperation(LoadOperation::Load)
+			.SetColourStoreOperation(StoreOperation::Store)
+			.SetColourStartState(ResourceState::Present)
+			.SetColourEndState(ResourceState::Present)
+
+			.SetDebugName("ImguiPass")
+		);
+
+		for (size_t i = 0; i < m_Swapchain->GetImageCount(); i++)
+		{
+			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, m_ImguiPass->GetSpecification().DebugName);
+			(void)m_ImguiPass->CreateFramebuffer(FramebufferSpecification()
+				.SetColourAttachment(FramebufferAttachment()
+					.SetImage(m_Swapchain->GetImage(static_cast<uint8_t>(i)))
+				)
+				.SetDebugName(debugName)
+			);
+		}
+
+		ImGuiRenderer::Init(m_Device.Get(), m_Swapchain.Get(), m_ImguiPass.Get());
 
 		// Shaders
 		ShaderCompiler compiler;
@@ -418,6 +450,8 @@ public:
 	}
 	~Application()
 	{
+		ImGuiRenderer::Destroy();
+
 		m_Device->UnmapBuffer(m_UniformBuffer.Get());
 
 		m_Device->DestroySampler(m_Sampler.Get());
@@ -433,6 +467,7 @@ public:
 
 		m_Device->DestroyBindingLayout(m_BindingLayoutSet0.Get());
 
+		m_Device->DestroyRenderpass(m_ImguiPass.Get());
 		m_Device->DestroyRenderpass(m_Renderpass.Get());
 
 		m_Swapchain->FreePool(m_CommandPool.Get());
@@ -456,7 +491,8 @@ public:
 
 			FreeQueue();
 
-			CommandList& list = m_Lists[m_Swapchain->GetCurrentFrame()].Get();
+			CommandList& renderpassList = m_RenderpassLists[m_Swapchain->GetCurrentFrame()].Get();
+			CommandList& imguiList = m_ImGuiLists[m_Swapchain->GetCurrentFrame()].Get();
 			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
 
 			double time = m_Window->GetWindowTime(); // Note: We use m_Window->GetWindowTime() instead of Nano's dedicated timer class because steadyclock on MacOS is very weird and unstable.
@@ -465,10 +501,12 @@ public:
 
 			m_Swapchain->AcquireNextImage();
 			{
-				list.ResetAndOpen();
+				// Main pass
 				{
+					renderpassList.ResetAndOpen();
+
 					// Graphics
-					list.SetGraphicsState(GraphicsState()
+					renderpassList.SetGraphicsState(GraphicsState()
 						.SetPipeline(m_Pipeline.Get())
 						.SetRenderpass(m_Renderpass.Get())
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
@@ -478,22 +516,52 @@ public:
 					);
 
 					// Rendering
-					list.BindVertexBuffer(m_VertexBuffer.Get());
-					list.BindIndexBuffer(m_IndexBuffer.Get());
+					renderpassList.BindVertexBuffer(m_VertexBuffer.Get());
+					renderpassList.BindIndexBuffer(m_IndexBuffer.Get());
 
-					list.DrawIndexed(DrawArguments()
+					renderpassList.DrawIndexed(DrawArguments()
 						.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
 						.SetInstanceCount(1)
 					);
-				}
-				list.Close();
 
-				// Submission
-				list.Submit(CommandListSubmitArgs()
-					.SetQueue(CommandQueue::Graphics)
-					.SetWaitForSwapchainImage(true)
-					.SetOnFinishMakeSwapchainPresentable(true)
-				);
+					renderpassList.Close();
+
+					// Submission
+					renderpassList.Submit(CommandListSubmitArgs()
+						.SetQueue(CommandQueue::Graphics)
+						.SetWaitForSwapchainImage(true)
+						.SetOnFinishMakeSwapchainPresentable(false)
+					);
+				}
+
+				// Imgui pass
+				{
+					imguiList.ResetAndOpen();
+
+					// Imgui
+					imguiList.SetGraphicsState(GraphicsState()
+						.SetPipeline(m_Pipeline.Get())
+						.SetRenderpass(m_ImguiPass.Get())
+						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
+						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
+					);
+
+					// Rendering
+					ImGuiRenderer::Begin();
+
+					ImGui::ShowMetricsWindow();
+
+					ImGuiRenderer::End(imguiList);
+
+					imguiList.Close();
+
+					imguiList.Submit(CommandListSubmitArgs()
+						.SetQueue(CommandQueue::Graphics)
+						.SetWaitOnLists({ &renderpassList })
+						.SetWaitForSwapchainImage(false)
+						.SetOnFinishMakeSwapchainPresentable(true)
+					);
+				}
 			}
 			m_Swapchain->Present();
 		}
@@ -519,11 +587,15 @@ private:
 		switch (msgType)
 		{
 		case DeviceMessageType::Warn:
+		{
 			NG_LOG_WARN("Device Warning: {0}", message);
 			break;
+		}
 		case DeviceMessageType::Error:
+		{
 			NG_LOG_ERROR("Device Error: {0}", message);
 			break;
+		}
 
 		default:
 			break;
@@ -554,9 +626,11 @@ private:
 	Nano::Memory::DeferredConstruct<Swapchain> m_Swapchain = {};
 
 	Nano::Memory::DeferredConstruct<CommandListPool> m_CommandPool = {};
-	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_Lists = {};
+	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_RenderpassLists = {};
+	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_ImGuiLists = {};
 
 	Nano::Memory::DeferredConstruct<Renderpass> m_Renderpass = {};
+	Nano::Memory::DeferredConstruct<Renderpass> m_ImguiPass = {};
 
 	Nano::Memory::DeferredConstruct<InputLayout> m_InputLayout = {};
 	Nano::Memory::DeferredConstruct<BindingLayout> m_BindingLayoutSet0 = {};

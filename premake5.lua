@@ -115,7 +115,14 @@ Dependencies =
 	Nano = 
 	{
 		IncludeDir = "%{wks.location}/vendor/Nano/Nano/Nano/include"
-	}
+	},
+
+	-- Extra
+	ImGui =
+	{
+		LibName = "ImGui",
+		IncludeDir = "%{wks.location}/vendor/ImGui/ImGui"
+	},
 }
 
 ------------------------------------------------------------------------------
@@ -178,6 +185,7 @@ workspace "NanoGraphics"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
+	include "vendor/ImGui" -- Extra
 group ""
 
 group "NanoGraphics"

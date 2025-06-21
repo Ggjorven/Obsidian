@@ -56,6 +56,7 @@ project "Sandbox"
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.ImGui.IncludeDir}", -- Extra
 	}
 
 	links
@@ -86,6 +87,7 @@ project "Sandbox"
 		{
 			"%{Dependencies.GLFW.LibName}",
 			"%{Dependencies.Tracy.LibName}",
+			"%{Dependencies.ImGui.LibName}",
 		}
 
 		if gfxapi == "vulkan" then
@@ -148,6 +150,7 @@ project "Sandbox"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.ImGui.IncludeDir}", -- Extra
 		}
 
 		if gfxapi == "vulkan" then

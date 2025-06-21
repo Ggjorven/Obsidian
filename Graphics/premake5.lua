@@ -61,12 +61,14 @@ project "Graphics"
 		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.ImGui.IncludeDir}", -- Extra
 	}
 
 	links
 	{
 		"%{Dependencies.GLFW.LibName}",
 		"%{Dependencies.Tracy.LibName}",
+		"%{Dependencies.ImGui.LibName}", -- Extra
 	}
 
 	filter "system:windows"
@@ -136,6 +138,7 @@ project "Graphics"
 			"%{Dependencies.stb.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.ImGui.IncludeDir}", -- Extra
 		}
 		
 		if gfxapi == "vulkan" then
