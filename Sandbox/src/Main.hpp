@@ -13,7 +13,7 @@
 
 using namespace Nano::Graphics;
 
-#if 0
+#if 1
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
