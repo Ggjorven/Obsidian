@@ -115,7 +115,7 @@ namespace Nano::Graphics::Internal
             bool stateExpanded = false;
             if (currentState.SubresourceStates.empty()) // If we don't have any knowledge of previous subresource states
             {
-                if constexpr (VulkanContext::Validation)
+                if constexpr (Information::Validation)
                 {
                     if (currentState.State == ResourceState::Unknown)
                         m_Device.GetContext().Error("[VkStateTracker] No previous subresource state was set and currenstate is Unknown. This is not allowed.");
@@ -134,7 +134,7 @@ namespace Nano::Graphics::Internal
                     size_t subresourceIndex = ImageSubresourceSpecification::SubresourceIndex(mipLevel, arraySlice, imageSpec);
                     auto priorState = currentState.SubresourceStates[subresourceIndex];
 
-                    if constexpr (VulkanContext::Validation)
+                    if constexpr (Information::Validation)
                     {
                         if (priorState == ResourceState::Unknown && !stateExpanded)
                             m_Device.GetContext().Error("[VkStateTracker] Subresource state was set to Unknown. This is not allowed.");

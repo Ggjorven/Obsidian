@@ -23,7 +23,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanRenderpass>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyRenderpass>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyRenderpass>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyRenderpass>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyRenderpass>
         >;

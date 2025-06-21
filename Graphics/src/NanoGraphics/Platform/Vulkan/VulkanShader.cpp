@@ -81,7 +81,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateShaderModule(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, VulkanAllocator::GetCallbacks(), &m_Shader));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(m_Shader, VK_OBJECT_TYPE_SHADER_MODULE, std::string(m_Specification.DebugName));

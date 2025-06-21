@@ -28,7 +28,7 @@ namespace Nano::Graphics::Internal
         
         VK_VERIFY(vkCreateCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Swapchain.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(m_Specification.DebugName));
@@ -96,7 +96,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::format("CommandList \"{0}\" from: {1}", m_Specification.DebugName, m_Pool.GetSpecification().DebugName));

@@ -103,7 +103,7 @@ namespace Nano::Graphics::Internal
             VulkanImage& vulkanImage = *api_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
 
-            if constexpr (VulkanContext::Validation)
+            if constexpr (Information::Validation)
             {
                 if (width != 0 || height != 0) // Validation checks
                 {
@@ -131,7 +131,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateFramebuffer(m_Renderpass->GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &framebufferInfo, VulkanAllocator::GetCallbacks(), &m_Framebuffer));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Renderpass->GetVulkanDevice().GetContext().SetDebugName(m_Framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, std::string(m_Specification.DebugName));

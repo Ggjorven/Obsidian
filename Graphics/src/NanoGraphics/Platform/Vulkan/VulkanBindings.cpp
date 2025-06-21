@@ -179,7 +179,7 @@ namespace Nano::Graphics::Internal
                 m_PoolSizeInfo.emplace_back(type, count);
         }
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!GetDebugName().empty())
                 device.GetContext().SetDebugName(m_Layout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, std::string(GetDebugName()));
@@ -408,7 +408,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateDescriptorPool(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_DescriptorPool));
     
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(m_DescriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, std::string(m_Specification.DebugName));
@@ -462,7 +462,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkAllocateDescriptorSets(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, m_DescriptorSets.data()));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
             {

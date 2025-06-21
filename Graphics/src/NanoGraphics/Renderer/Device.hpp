@@ -14,6 +14,7 @@
 #include "NanoGraphics/Renderer/Pipeline.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
 #include "NanoGraphics/Platform/Dummy/DummyDevice.hpp"
 
 #include <Nano/Nano.hpp>
@@ -31,7 +32,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanDevice>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyDevice>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::Dx12Device>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyDevice>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyDevice>
         >;

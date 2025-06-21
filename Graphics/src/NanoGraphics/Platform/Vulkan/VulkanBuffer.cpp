@@ -115,7 +115,7 @@ namespace Nano::Graphics::Internal
         const VulkanDevice& vulkanDevice = *api_cast<const VulkanDevice*>(&device);
 
         // Validation checks
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (m_Specification.IsIndexBuffer)
             {
@@ -177,7 +177,7 @@ namespace Nano::Graphics::Internal
 
                 size *= m_Specification.DynamicElements;
 
-                if constexpr (VulkanContext::Validation)
+                if constexpr (Information::Validation)
                 {
                     if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
                     {
@@ -194,7 +194,7 @@ namespace Nano::Graphics::Internal
 
         m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, size, bufferUsage, 0);
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
             {

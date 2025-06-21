@@ -28,7 +28,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandList>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyCommandList>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyCommandList>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyCommandList>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyCommandList>
         >;
@@ -90,7 +90,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanCommandListPool>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyCommandListPool>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyCommandListPool>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyCommandListPool>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyCommandListPool>
         >;

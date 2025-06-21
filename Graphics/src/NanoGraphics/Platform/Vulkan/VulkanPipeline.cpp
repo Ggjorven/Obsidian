@@ -211,7 +211,7 @@ namespace Nano::Graphics::Internal
 
 		VK_VERIFY(vkCreateGraphicsPipelines(vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice(), vulkanDevice.GetAllocator().GetPipelineCache(), 1, &pipelineInfo, VulkanAllocator::GetCallbacks(), &m_Pipeline));
 		
-		if constexpr (VulkanContext::Validation)
+		if constexpr (Information::Validation)
 		{
 			if (!m_Specification.DebugName.empty())
 			{

@@ -78,6 +78,9 @@ namespace Nano::Graphics::Internal
 
 		// Object methods
 		inline constexpr void SetGraphicsState(const GraphicsState& state) { (void)state; }
+		inline constexpr void SetComputeState(const ComputeState& state) { (void)state; }
+
+		inline constexpr void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const { (void)groupsX; (void)groupsY; (void)groupsZ; }
 
 		inline constexpr void SetViewport(const Viewport& viewport) const { (void)viewport; }
 		inline constexpr void SetScissor(const ScissorRect& scissor) const { (void)scissor; }

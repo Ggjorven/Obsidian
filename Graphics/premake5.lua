@@ -38,17 +38,18 @@ project "Graphics"
 	-- Rendering API specfic selections
 	if gfxapi == "vulkan" then
         defines { "NG_API_VULKAN" }
-		removefiles { "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
+		removefiles { "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
 		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
-    elseif gfxapi == "d3d12" then
-        defines { "NG_API_D3D12" }
+    elseif gfxapi == "dx12" then
+        defines { "NG_API_DX12" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
+		includedirs { "%{Dependencies.DX12.IncludeDir}" }
 	elseif gfxapi == "metal" then
         defines { "NG_API_METAL" }
-		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Dummy/**" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Dummy/**" }
 	elseif gfxapi == "dummy" then
         defines { "NG_API_DUMMY" }
-		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/D3D12/**", "src/NanoGraphics/Platform/Metal/**" }
+		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Metal/**" }
     end
 
 	includedirs
@@ -87,6 +88,14 @@ project "Graphics"
 			{
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
+			}
+		elseif gfxapi == "dx12" then
+			links
+			{
+				"d3d12",
+				"dxgi",
+				"dxguid",
+				"d3dcompiler"
 			}
 		end
 

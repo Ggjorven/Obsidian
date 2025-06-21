@@ -58,7 +58,7 @@ namespace Nano::Graphics::Internal
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_ImageAvailableSemaphores[i]));
             
-                if constexpr (VulkanContext::Validation)
+                if constexpr (Information::Validation)
                 {
                     if (!m_Specification.DebugName.empty())
                         m_Device.GetContext().SetDebugName(m_ImageAvailableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("ImageAvailable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
@@ -70,7 +70,7 @@ namespace Nano::Graphics::Internal
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
 
-                if constexpr (VulkanContext::Validation)
+                if constexpr (Information::Validation)
                 {
                     if (!m_Specification.DebugName.empty())
                         m_Device.GetContext().SetDebugName(m_SwapchainPresentableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("Presentable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
@@ -86,7 +86,7 @@ namespace Nano::Graphics::Internal
 
             VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_TimelineSemaphore));
         
-            if constexpr (VulkanContext::Validation)
+            if constexpr (Information::Validation)
             {
                 if (!m_Specification.DebugName.empty())
                     m_Device.GetContext().SetDebugName(m_TimelineSemaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Timeline Semaphore for: {0}", m_Specification.DebugName));
@@ -147,7 +147,7 @@ namespace Nano::Graphics::Internal
         VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
         if (!vsync)
         {
-            if constexpr (VulkanContext::Validation)
+            if constexpr (Information::Validation)
             {
 #if defined(NG_PLATFORM_APPLE)
                 m_Device.GetContext().Warn("[VkSwapchain] Having VSync off on apple platforms is not recommended, this may cause screen tearing.");
@@ -217,7 +217,7 @@ namespace Nano::Graphics::Internal
         if (oldSwapchain)
             vkDestroySwapchainKHR(device, oldSwapchain, VulkanAllocator::GetCallbacks()); // Destroys old swapchain images
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(m_Swapchain, VK_OBJECT_TYPE_SWAPCHAIN_KHR, std::string(m_Specification.DebugName));
@@ -259,7 +259,7 @@ namespace Nano::Graphics::Internal
             ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
             (void)vkImage.GetSubresourceView(imageViewSpec, ImageDimension::Image2D, colourFormat, 0, ImageSubresourceViewType::AllAspects); // Note: Makes sure to already lazy initialize the image view
         
-            if constexpr (VulkanContext::Validation)
+            if constexpr (Information::Validation)
             {
                 if (!m_Specification.DebugName.empty())
                     m_Device.GetContext().SetDebugName(swapchainImages[i], VK_OBJECT_TYPE_IMAGE, debugName);

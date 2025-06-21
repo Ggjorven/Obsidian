@@ -10,3 +10,6 @@
 [submodule "vendor/Nano/Nano"]
 	path = vendor/Nano/Nano
 	url = https://github.com/Ggjorven/Nano.git
+[submodule "vendor/DirectX/DirectX-Headers"]
+	path = vendor/DirectX/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git

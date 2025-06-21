@@ -9,7 +9,7 @@ newoption
     allowed = 
 	{
         { "vulkan", "Vulkan graphics API (windows, linux, macosx)" },
-        { "d3d12", "DirectX 12 (windows)" },
+        { "dx12", "DirectX 12 (windows)" },
         { "metal", "Metal (macosx)" },
         { "dummy", "No GraphicsAPI, passthrough function calls. (windows, linux, macosx)" },
     }
@@ -70,12 +70,10 @@ if gfxapi == "vulkan" then
 	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
 
 -- DirectX12
-elseif gfxapi == "d3d12" then
+elseif gfxapi == "dx12" then
 	if platform ~= "windows" then
 		error("The DirectX12 Graphics API is not supported on the current platform.")
 	end
-	
-	error("D3D12 is currently not supported.")
 
 -- Metal
 elseif gfxapi == "metal" then
@@ -115,7 +113,12 @@ Dependencies =
 	Nano = 
 	{
 		IncludeDir = "%{wks.location}/vendor/Nano/Nano/Nano/include"
-	}
+	},
+
+	DX12 = 
+	{
+		IncludeDir = "%{wks.location}/vendor/DirectX/DirectX-Headers/include"
+	},
 }
 
 ------------------------------------------------------------------------------

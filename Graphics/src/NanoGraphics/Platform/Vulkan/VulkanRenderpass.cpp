@@ -83,7 +83,7 @@ namespace Nano::Graphics::Internal
         
         VK_VERIFY(vkCreateRenderPass2(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &renderpassInfo, VulkanAllocator::GetCallbacks(), &m_Renderpass));
     
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(m_Renderpass, VK_OBJECT_TYPE_RENDER_PASS, std::string(m_Specification.DebugName));

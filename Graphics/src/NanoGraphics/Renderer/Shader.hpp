@@ -25,7 +25,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanShader>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyShader>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyShader>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyShader>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyShader>
         >;
@@ -55,7 +55,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanShaderCompiler>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyShaderCompiler>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyShaderCompiler>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyShaderCompiler>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyShaderCompiler>
         >;
