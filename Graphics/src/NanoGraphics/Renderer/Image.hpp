@@ -6,20 +6,21 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanImage.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
 #include "NanoGraphics/Platform/Dummy/DummyImage.hpp"
 
 #include <Nano/Nano.hpp>
 
 namespace Nano::Graphics::Internal
 {
-    class VulkanSwapchain; // TODO: Make it nicer
+    class VulkanSwapchain;
+    class Dx12Swapchain;
 }
 
 namespace Nano::Graphics
 {
 
     class Device;
-    class ImageSubresourceView;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Image
@@ -29,7 +30,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanImage>,
-            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyImage>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::Dx12Image>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyImage>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyImage>
         >;
@@ -45,8 +46,8 @@ namespace Nano::Graphics
         inline Image(const Device& device, const ImageSpecification& specs) { m_Impl.Construct(device, specs); }
 
     private:
-#if defined(NG_API_VULKAN)
-        // Private constructor for swapchain
+#if defined(NG_API_VULKAN) || defined(NG_API_DX12)
+        // Private constructor for swapchains
         inline Image(const Device& device) { m_Impl.Construct(device); }
 #endif
 
@@ -56,7 +57,10 @@ namespace Nano::Graphics
         friend class Device;
         friend class APICaster;
 
-        friend class Internal::VulkanSwapchain; // TODO: Make it nicer
+        // Note: We have API friend classes since Swapchain images don't need to be created
+        // They just need to be set inside of a class as a wrapper type.
+        friend class Internal::VulkanSwapchain;
+        friend class Internal::Dx12Swapchain;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -118,6 +122,5 @@ namespace Nano::Graphics
         friend class Device;
         friend class APICaster;
     };
-
 
 }

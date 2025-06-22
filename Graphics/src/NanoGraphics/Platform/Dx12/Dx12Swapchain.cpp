@@ -7,6 +7,7 @@
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12CommandList.hpp"
 
@@ -33,7 +34,7 @@ namespace Nano::Graphics::Internal
 			swapchainDesc.Height = specs.WindowTarget->GetSize().y;
 			swapchainDesc.Format = FormatToDx12FormatMapping(specs.RequestedFormat).RTVFormat;
 			swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-			swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // Modern preferred mode
+			swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 			swapchainDesc.SampleDesc.Count = 1;
 
 			#if defined(NG_PLATFORM_DESKTOP)
@@ -46,6 +47,43 @@ namespace Nano::Graphics::Internal
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
 			tempSwapchain->Release(); // Release the temp
+		}
+
+		// Images
+		{
+			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+			heapDesc.NumDescriptors = Information::FramesInFlight;
+			heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+			ID3D12DescriptorHeap* heap;
+			m_Device.GetContext().GetD3D12Device()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap));
+
+			UINT descriptorSize = m_Device.GetContext().GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(heap->GetCPUDescriptorHandleForHeapStart());
+
+			for (size_t i = 0; i < m_Images.size(); i++)
+			{
+				new (m_Images[i].GetInternalBytes()) Image(device);
+
+				std::string debugName = std::format("Swapchain image for: {0}", m_Specification.DebugName);
+				ImageSpecification specs = ImageSpecification()
+					.SetImageFormat(m_Specification.RequestedFormat)
+					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
+					.SetIsRenderTarget(true)
+					.SetDebugName(debugName);
+				
+				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
+
+				ID3D12Resource* resource;
+				m_Swapchain->GetBuffer(i, IID_PPV_ARGS(&resource));
+
+				dxImage.SetInternalData(specs, resource, heap, handle);
+				handle.Offset(descriptorSize, 1);
+
+				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
+				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
+			}
 		}
 
 		// Synchronization objects

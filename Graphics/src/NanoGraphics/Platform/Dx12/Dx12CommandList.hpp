@@ -4,10 +4,9 @@
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
-#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
-#include "NanoGraphics/Renderer/Image.hpp"
+#include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
@@ -16,6 +15,11 @@
 namespace Nano::Graphics
 {
 	class Swapchain;
+	class Image;
+	class StagingImage;
+	class Buffer;
+	class Renderpass;
+	class CommandList;
 	class CommandListPool;
 }
 

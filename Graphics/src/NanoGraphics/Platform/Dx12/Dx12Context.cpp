@@ -126,9 +126,10 @@ namespace Nano::Graphics::Internal
             queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
             DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Graphics)])));
+            queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+            DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Compute)])));
 
-            // TODO: Different queues for Compute, Graphics, Present
-            m_Queues[static_cast<size_t>(CommandQueue::Compute)] = m_Queues[static_cast<size_t>(CommandQueue::Graphics)];
+            // Note: DX12 doesn't really have a Present queue, so we use the graphics queue
             m_Queues[static_cast<size_t>(CommandQueue::Present)] = m_Queues[static_cast<size_t>(CommandQueue::Graphics)];
         }
 

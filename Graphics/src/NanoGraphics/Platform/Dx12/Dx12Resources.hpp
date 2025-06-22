@@ -105,9 +105,21 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // Helper structs
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct Dx12DescriptorHeap
+    {
+    public:
+        ID3D12DescriptorHeap* Heap = nullptr;
+        CD3DX12_CPU_DESCRIPTOR_HANDLE Offset = {};
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const Dx12FormatMapping& FormatToDx12FormatMapping(Format format) { NG_ASSERT((static_cast<size_t>(format) < g_FormatMappings.size()), "Format value exceeds mappings."); return g_FormatMappings[static_cast<size_t>(format)]; }
+
+
 #endif
 
 }

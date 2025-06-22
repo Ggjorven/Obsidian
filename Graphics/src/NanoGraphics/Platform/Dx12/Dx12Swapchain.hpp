@@ -4,7 +4,6 @@
 
 #include "NanoGraphics/Maths/Structs.hpp"
 
-#include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"

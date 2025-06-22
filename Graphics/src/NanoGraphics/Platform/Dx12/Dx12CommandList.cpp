@@ -15,14 +15,40 @@
 namespace Nano::Graphics::Internal
 {
 
+    namespace
+    {
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // Helper method
+        ////////////////////////////////////////////////////////////////////////////////////
+        D3D12_COMMAND_LIST_TYPE CommandQueueToD3D12CommandListType(CommandQueue queue)
+        {
+            switch (queue)
+            {
+            case CommandQueue::Graphics:
+            case CommandQueue::Present:
+                return D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+            case CommandQueue::Compute:
+                return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+            default:
+                NG_UNREACHABLE();
+                break;
+            }
+
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+
+    }
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
 	Dx12CommandListPool::Dx12CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs)
 		: m_Swapchain(*api_cast<Dx12Swapchain*>(&swapchain)), m_Specification(specs)
 	{
-        // TODO: Set queue type
-		DX_VERIFY(m_Swapchain.GetDx12Device().GetContext().GetD3D12Device()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocator)));
+		DX_VERIFY(m_Swapchain.GetDx12Device().GetContext().GetD3D12Device()->CreateCommandAllocator(CommandQueueToD3D12CommandListType(specs.Queue), IID_PPV_ARGS(&m_CommandAllocator)));
 	
         if constexpr (Information::Validation)
         {
@@ -69,8 +95,7 @@ namespace Nano::Graphics::Internal
     Dx12CommandList::Dx12CommandList(CommandListPool& pool, const CommandListSpecification& specs)
         : m_Pool(*api_cast<Dx12CommandListPool*>(&pool)), m_Specification(specs)
     {
-        // TODO: Set queue type
-        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_Pool.GetD3D12CommandAllocator(), nullptr, IID_PPV_ARGS(&m_CommandList)));
+        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator(), nullptr, IID_PPV_ARGS(&m_CommandList)));
         DX_VERIFY(m_CommandList->Close());
 
         if constexpr (Information::Validation)
@@ -112,8 +137,7 @@ namespace Nano::Graphics::Internal
                 waitOn = arg;
         }, args.WaitOnLists);
 
-        // TODO: Get queue from pool specification
-        auto queue = m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12CommandQueue(args.Queue);
+        auto queue = m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12CommandQueue(m_Pool.GetSpecification().Queue);
         for (auto list : waitOn)
         {
             DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));

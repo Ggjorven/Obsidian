@@ -8,6 +8,8 @@
 #include "NanoGraphics/Renderer/Device.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12Context.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Swapchain.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -91,6 +93,9 @@ namespace Nano::Graphics::Internal
         for (size_t i = 0; i < valuesAndEvents.size(); i++)
             events[i] = valuesAndEvents[i].second;
 
+        for (uint8_t i = 0; i < dxSwapchain.GetImageCount(); i++)
+            DestroyImage(dxSwapchain.GetImage(i));
+
         m_Context.Destroy([swapchain = dxSwapchain.GetDXGISwapChain(), events = std::move(events)]()
         {
             for (const auto& event : events)
@@ -102,10 +107,22 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyImage(Image& image) const
     {
+        Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
+
+        DestroySubresourceViews(image);
+        m_Context.Destroy([resource = dxImage.GetD3D12Resource()]()
+        {
+            resource->Release();
+        });
     }
 
     void Dx12Device::DestroySubresourceViews(Image& image) const
     {
+        Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
+
+        // Note: We don't have to destroy image views on DX12
+
+        dxImage.GetImageViews().clear();
     }
 
     void Dx12Device::DestroyStagingImage(StagingImage& stagingImage) const

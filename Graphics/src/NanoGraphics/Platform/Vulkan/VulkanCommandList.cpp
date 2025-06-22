@@ -215,7 +215,7 @@ namespace Nano::Graphics::Internal
 #if defined(NG_PLATFORM_APPLE)
         VK_VERIFY(VkExtension::g_vkQueueSubmit2KHR(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
 #else
-        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
+        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(m_Pool.GetSpecification().Queue), 1, &submitInfo, nullptr));
 #endif
     }
 

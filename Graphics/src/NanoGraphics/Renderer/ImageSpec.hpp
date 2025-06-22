@@ -122,6 +122,14 @@ namespace Nano::Graphics
         StencilOnly
     };
 
+    enum class ImageSubresourceViewUsage : uint8_t
+    {
+        SRV = 0,
+        UAV,
+        RTV,
+        DSV, 
+    };
+
     using MipLevel = uint32_t;
     using ArraySlice = uint32_t;
 

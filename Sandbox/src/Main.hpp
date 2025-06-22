@@ -43,10 +43,18 @@ public:
 
 		// Commandpools & Commandlists
 		for (auto& pool : m_CommandPools)
-			pool.Construct(m_Swapchain.Get(), CommandListPoolSpecification());
+			pool.Construct(m_Swapchain.Get(), CommandListPoolSpecification()
+				.SetQueue(CommandQueue::Graphics)
+				.SetDebugName("CommandPool")
+			);
 
 		for (size_t i = 0; i < m_CommandLists.size(); i++)
-			m_CommandLists[i].Construct(m_CommandPools[i].Get(), CommandListSpecification());
+		{
+			std::string debugName = std::format("CommandList for: {0}", m_CommandPools[i]->GetSpecification().DebugName);
+			m_CommandLists[i].Construct(m_CommandPools[i].Get(), CommandListSpecification()
+				.SetDebugName(debugName)
+			);
+		}
 	}
 	~Application()
 	{

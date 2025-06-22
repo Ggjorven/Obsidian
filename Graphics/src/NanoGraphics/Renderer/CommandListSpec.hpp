@@ -62,10 +62,12 @@ namespace Nano::Graphics
     struct CommandListPoolSpecification
     {
     public:
+        CommandQueue Queue = CommandQueue::Graphics;
         std::string_view DebugName = {};
 
     public:
         // Setters
+        inline constexpr CommandListPoolSpecification& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
         inline constexpr CommandListPoolSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
     };
 
@@ -75,8 +77,6 @@ namespace Nano::Graphics
     struct CommandListSubmitArgs
     {
     public:
-        CommandQueue Queue = CommandQueue::Graphics;
-        
         std::variant<std::vector<const CommandList*>, std::span<const CommandList*>> WaitOnLists = {};
         
         bool WaitForSwapchainImage = false;
@@ -84,7 +84,6 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr CommandListSubmitArgs& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(std::vector<const CommandList*>&& ownedLists) { WaitOnLists = std::move(ownedLists); return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(const std::vector<const CommandList*>& ownedLists) { WaitOnLists = ownedLists; return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(std::initializer_list<const CommandList*> ownedLists) { WaitOnLists = ownedLists; return *this; }
