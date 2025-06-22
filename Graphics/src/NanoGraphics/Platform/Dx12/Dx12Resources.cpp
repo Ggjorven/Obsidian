@@ -1,0 +1,16 @@
+#include "ngpch.h"
+#include "Dx12Resources.hpp"
+
+#include "NanoGraphics/Core/Logging.hpp"
+#include "NanoGraphics/Core/Information.hpp"
+#include "NanoGraphics/Utils/Profiler.hpp"
+
+namespace Nano::Graphics::Internal
+{
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// ...
+	////////////////////////////////////////////////////////////////////////////////////
+	
+
+}

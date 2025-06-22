@@ -9,38 +9,8 @@
 
 #include "NanoGraphics/Platform/Dx12/Dx12Context.hpp"
 
-#include <type_traits>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-
 namespace Nano::Graphics::Internal
 {
-
-    namespace
-    {
-
-        ////////////////////////////////////////////////////////////////////////////////////
-        // Conversion functions
-        ////////////////////////////////////////////////////////////////////////////////////
-        static constexpr auto GetDx12FeatureLevel() -> decltype(std::to_underlying(D3D_FEATURE_LEVEL_12_1))
-        {
-            NANO_ASSERT((std::get<0>(Dx12Context::Version) == 12), "[Dx12Device] Dx12Version must start with 12.");
-            
-            switch (std::get<1>(Dx12Context::Version))
-            {
-            case 0:         return D3D_FEATURE_LEVEL_12_0;
-            case 1:         return D3D_FEATURE_LEVEL_12_1;
-            case 2:         return D3D_FEATURE_LEVEL_12_2;
-
-            default:
-                break;
-            }
-
-            return D3D_FEATURE_LEVEL_12_0;
-        }
-
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
@@ -48,16 +18,10 @@ namespace Nano::Graphics::Internal
     Dx12Device::Dx12Device(const DeviceSpecification& specs)
         : m_Context(specs.MessageCallback, specs.DestroyCallback)
     {
-        DX_VERIFY(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_Device)));
-        m_Context.InitMessageQueue(m_Device);
     }
 
     Dx12Device::~Dx12Device()
     {
-        m_Context.Destroy([device = m_Device]()
-        {
-            device->Release();
-        });
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -120,6 +84,20 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12Device::DestroySwapchain(Swapchain& swapchain) const
     {
+        Dx12Swapchain& dxSwapchain = *api_cast<Dx12Swapchain*>(&swapchain);
+
+        std::array<HANDLE, Information::FramesInFlight> events;
+        const auto& valuesAndEvents = dxSwapchain.GetValuesAndEvents();
+        for (size_t i = 0; i < valuesAndEvents.size(); i++)
+            events[i] = valuesAndEvents[i].second;
+
+        m_Context.Destroy([swapchain = dxSwapchain.GetDXGISwapChain(), events = std::move(events)]()
+        {
+            for (const auto& event : events)
+                CloseHandle(event);
+
+            swapchain->Release();
+        });
     }
 
     void Dx12Device::DestroyImage(Image& image) const

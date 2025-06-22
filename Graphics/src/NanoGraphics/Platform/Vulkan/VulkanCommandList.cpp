@@ -72,12 +72,7 @@ namespace Nano::Graphics::Internal
         });
     }
 
-    void VulkanCommandListPool::ResetList(CommandList& list) const
-    {
-        vkResetCommandBuffer((*api_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer(), 0);
-    }
-
-    void VulkanCommandListPool::ResetAll() const
+    void VulkanCommandListPool::Reset() const
     {
         vkResetCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 0);
     }
@@ -110,18 +105,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanCommandList::Reset() const
-    {
-        NG_PROFILE("VulkanCommandList::Reset()");
-        vkResetCommandBuffer(m_CommandBuffer, 0);
-    }
-
-    void VulkanCommandList::ResetAndOpen()
-    {
-        Reset();
-        Open();
-    }
-
     void VulkanCommandList::Open()
     {
         NG_PROFILE("VulkanCommandList::Open()");

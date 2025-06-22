@@ -397,7 +397,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     uint64_t VulkanSwapchain::GetPreviousCommandListWaitValue(const VulkanCommandList& commandList) const
     {
-        NG_ASSERT(m_CommandListSemaphoreValues.contains(&commandList), "[VkSwapchain] Commandlist is not known in current Swapchain.");
+        NG_ASSERT(m_CommandListSemaphoreValues.contains(&commandList), "[VkSwapchain] CommandList is not known in current Swapchain.");
         return m_CommandListSemaphoreValues.at(&commandList);
     }
 

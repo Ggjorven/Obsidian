@@ -1,8 +1,10 @@
 #pragma once
 
 #include "NanoGraphics/Core/Information.hpp"
+#include "NanoGraphics/Core/Logging.hpp"
 
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
+#include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
@@ -30,21 +32,32 @@ namespace Nano::Graphics::Internal
         ~Dx12Context();
 
         // Methods
-        void Warn(const std::string& message);
-        void Error(const std::string& message);
+        void Warn(const std::string& message) const;
+        void Error(const std::string& message) const;
+        void OutputMessages() const;
 
-        void Destroy(DeviceDestroyFn fn);
+        void Destroy(DeviceDestroyFn fn) const;
 
         // Internal methods
-        void InitMessageQueue(ID3D12Device* device);
+        void SetDebugName(ID3D12Object* object, std::string name) const;
+        void SetDebugName(ID3D12Object* object, const std::wstring& name) const;
 
-        void SetDebugName(ID3D12Object* object, const std::wstring& name);
+        // Internal getters
+        inline ID3D12Device* GetD3D12Device() const { return m_Device; }
+        inline IDXGIFactory7* GetIDXGIFactory() const { return m_Factory; }
+        inline ID3D12CommandQueue* GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }
 
     private:
+        DeviceDestroyCallback m_DestroyCallback;
+
+        IDXGIFactory7* m_Factory = nullptr;
+        IDXGIAdapter1* m_Adapter = nullptr; // Physical device
+        ID3D12Device* m_Device = nullptr; // Logical device
+
         ID3D12Debug* m_DebugController = nullptr;
         ID3D12InfoQueue* m_MessageQueue = nullptr;
-        
-        DeviceDestroyCallback m_DestroyCallback;
+
+        std::array<ID3D12CommandQueue*, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};
     };
 #endif
 

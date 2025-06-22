@@ -8,6 +8,7 @@
 
 #include <windows.h>
 #include <directx/d3d12.h>
+#include <dxgi1_6.h>
 
 namespace Nano::Graphics::Internal
 {
@@ -26,6 +27,9 @@ namespace Nano::Graphics::Internal
     #else
         #define DX_VERIFY(expr) expr
     #endif
+
+    #define DX_SUCCESS(expr) SUCCEEDED(expr)
+    #define DX_FAILED(expr) FAILED(expr)
 
     ////////////////////////////////////////////////////////////////////////////////////
     // ToString methods

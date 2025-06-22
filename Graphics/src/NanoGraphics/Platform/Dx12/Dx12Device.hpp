@@ -92,7 +92,6 @@ namespace Nano::Graphics::Internal
 
     private:
         Dx12Context m_Context;
-        ID3D12Device* m_Device = nullptr;
     };
 #endif
 

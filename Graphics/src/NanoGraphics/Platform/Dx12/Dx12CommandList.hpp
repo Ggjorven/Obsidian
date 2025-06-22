@@ -1,45 +1,41 @@
 #pragma once
 
+#include "NanoGraphics/Core/Information.hpp"
+
+#include "NanoGraphics/Maths/Structs.hpp"
+
 #include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
-#include "NanoGraphics/Renderer/ShaderSpec.hpp"
-#include "NanoGraphics/Renderer/ImageSpec.hpp"
-#include "NanoGraphics/Renderer/CommandListSpec.hpp"
+#include "NanoGraphics/Renderer/SwapchainSpec.hpp"
+#include "NanoGraphics/Renderer/Image.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
-#include <array>
+#include <utility>
 
 namespace Nano::Graphics
 {
 	class Swapchain;
-	class Image;
-	class StagingImage;
-	class Buffer;
-	class Renderpass;
-	class CommandList;
 	class CommandListPool;
 }
 
 namespace Nano::Graphics::Internal
 {
 
-	class VulkanDevice;
-	class VulkanSwapchain;
-	class VulkanCommandList;
-	class VulkanCommandListPool;
+	class Dx12Swapchain;
+	class Dx12CommandList;
+	class Dx12CommandListPool;
 
-#if defined(NG_API_VULKAN)
+#if defined(NG_API_DX12)
 	////////////////////////////////////////////////////////////////////////////////////
-	// VulkanCommandListPool
+	// Dx12CommandListPool
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanCommandListPool
+	class Dx12CommandListPool
 	{
 	public:
 		// Constructor & Destructor
-		VulkanCommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs);
-		~VulkanCommandListPool();
+		Dx12CommandListPool(Swapchain& swapchain, const CommandListPoolSpecification& specs);
+		~Dx12CommandListPool();
 
 		// Methods
 		void FreeList(CommandList& list) const;
@@ -50,28 +46,26 @@ namespace Nano::Graphics::Internal
 		// Getters
 		inline const CommandListPoolSpecification& GetSpecification() const { return m_Specification; }
 
-		// Internal Getters
-		inline VulkanSwapchain& GetVulkanSwapchain() { return m_Swapchain; }
-		inline const VulkanSwapchain& GetVulkanSwapchain() const { return m_Swapchain; }
+		// Internal getters
+		inline Dx12Swapchain& GetDx12Swapchain() const { return m_Swapchain; }
 
-		inline VkCommandPool GetVkCommandPool() const { return m_CommandPool; }
+		inline ID3D12CommandAllocator* GetD3D12CommandAllocator() const { return m_CommandAllocator; }
 
 	private:
-		VulkanSwapchain& m_Swapchain;
+		Dx12Swapchain& m_Swapchain;
 		CommandListPoolSpecification m_Specification;
 
-		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
+		ID3D12CommandAllocator* m_CommandAllocator = nullptr;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////
-	// VulkanCommandList
+	// Dx12CommandList
 	////////////////////////////////////////////////////////////////////////////////////
-	class VulkanCommandList
+	class Dx12CommandList
 	{
 	public:
-		// Constructor & Destructor
-		VulkanCommandList(CommandListPool& pool, const CommandListSpecification& specs);
-		~VulkanCommandList();
+		Dx12CommandList(CommandListPool& pool, const CommandListSpecification& specs);
+		~Dx12CommandList();
 
 		// Methods
 		void Open();
@@ -88,7 +82,7 @@ namespace Nano::Graphics::Internal
 		void SetComputeState(const ComputeState& state);
 
 		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
-		
+
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
 
@@ -106,20 +100,13 @@ namespace Nano::Graphics::Internal
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
 
 		// Internal Getters
-		inline VkCommandBuffer GetVkCommandBuffer() const { return m_CommandBuffer; }
+		inline ID3D12GraphicsCommandList* GetID3D12GraphicsCommandList() const { return m_CommandList; }
 
 	private:
-		// Private methods
-		void SetWaitStage(VkPipelineStageFlags2 waitStage);
-
-		void BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
-
-	private:
-		VulkanCommandListPool& m_Pool;
+		Dx12CommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
 
-		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
-		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
+		ID3D12GraphicsCommandList* m_CommandList = nullptr;
 
 		GraphicsState m_GraphicsState = {};
 		ComputeState m_ComputeState = {};

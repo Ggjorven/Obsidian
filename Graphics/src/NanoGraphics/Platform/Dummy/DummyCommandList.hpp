@@ -42,8 +42,7 @@ namespace Nano::Graphics::Internal
 		inline constexpr void FreeList(CommandList& list) const { (void)list; }
 		inline constexpr void FreeLists(std::span<CommandList*> lists) const { (void)lists; }
 
-		inline constexpr void ResetList(CommandList& list) const { (void)list; }
-		inline constexpr void ResetAll() const {}
+		inline constexpr void Reset() const {}
 
 		// Getters
 		inline constexpr const CommandListPoolSpecification& GetSpecification() const { return m_Specification; }
@@ -64,9 +63,6 @@ namespace Nano::Graphics::Internal
 		inline constexpr ~DummyCommandList() = default;
 
 		// Methods
-		inline constexpr void Reset() const {}
-
-		inline constexpr void ResetAndOpen() {}
 		inline constexpr void Open() {}
 		inline constexpr void Close() {}
 
