@@ -53,13 +53,15 @@ namespace Nano::Graphics::Internal
 		// Internal getters
 		inline Dx12Swapchain& GetDx12Swapchain() const { return m_Swapchain; }
 
-		inline ID3D12CommandAllocator* GetD3D12CommandAllocator() const { return m_CommandAllocator; }
+		inline DxPtr<ID3D12CommandAllocator> GetD3D12CommandAllocator() const { return m_CommandAllocator; }
 
 	private:
 		Dx12Swapchain& m_Swapchain;
 		CommandListPoolSpecification m_Specification;
 
-		ID3D12CommandAllocator* m_CommandAllocator = nullptr;
+		DxPtr<ID3D12CommandAllocator> m_CommandAllocator = nullptr;
+
+		friend class Dx12Swapchain;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -114,6 +116,8 @@ namespace Nano::Graphics::Internal
 
 		GraphicsState m_GraphicsState = {};
 		ComputeState m_ComputeState = {};
+
+		friend class Dx12CommandListPool;
 	};
 #endif
 

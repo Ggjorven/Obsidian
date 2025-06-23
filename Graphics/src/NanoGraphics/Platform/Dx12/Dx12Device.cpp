@@ -96,13 +96,14 @@ namespace Nano::Graphics::Internal
         for (uint8_t i = 0; i < dxSwapchain.GetImageCount(); i++)
             DestroyImage(dxSwapchain.GetImage(i));
 
-        m_Context.Destroy([swapchain = dxSwapchain.GetDXGISwapChain(), events = std::move(events)]()
+        m_Context.Destroy([swapchain = dxSwapchain.GetDXGISwapChain(), fence = dxSwapchain.GetD3D12Fence(), events = std::move(events)]() // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
         {
             for (const auto& event : events)
                 CloseHandle(event);
-
-            swapchain->Release();
         });
+
+        dxSwapchain.m_Swapchain = nullptr;
+        dxSwapchain.m_Fence = nullptr;
     }
 
     void Dx12Device::DestroyImage(Image& image) const
@@ -110,10 +111,9 @@ namespace Nano::Graphics::Internal
         Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
 
         DestroySubresourceViews(image);
-        m_Context.Destroy([resource = dxImage.GetD3D12Resource()]()
-        {
-            resource->Release();
-        });
+        m_Context.Destroy([resource = dxImage.GetD3D12Resource()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+        dxImage.m_Resource = nullptr;
     }
 
     void Dx12Device::DestroySubresourceViews(Image& image) const

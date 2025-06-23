@@ -156,7 +156,7 @@ namespace Nano::Graphics::Internal
             Heap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
             ~Heap();
 
-            // Methods
+            // Methods // TODO: Have a custom index to allow growing without making a handle invalid.
             CD3DX12_CPU_DESCRIPTOR_HANDLE CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
             CD3DX12_CPU_DESCRIPTOR_HANDLE CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
             CD3DX12_CPU_DESCRIPTOR_HANDLE CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);

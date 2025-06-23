@@ -49,21 +49,16 @@ namespace Nano::Graphics::Internal
 		: m_Swapchain(*api_cast<Dx12Swapchain*>(&swapchain)), m_Specification(specs)
 	{
 		DX_VERIFY(m_Swapchain.GetDx12Device().GetContext().GetD3D12Device()->CreateCommandAllocator(CommandQueueToD3D12CommandListType(specs.Queue), IID_PPV_ARGS(&m_CommandAllocator)));
-        m_CommandAllocator->AddRef();
 
         if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
-                m_Swapchain.GetDx12Device().GetContext().SetDebugName(m_CommandAllocator, std::string(m_Specification.DebugName));
+                m_Swapchain.GetDx12Device().GetContext().SetDebugName(m_CommandAllocator.Get(), std::string(m_Specification.DebugName));
         }
     }
 
 	Dx12CommandListPool::~Dx12CommandListPool()
 	{
-		m_Swapchain.GetDx12Device().GetContext().Destroy([commandAllocator = m_CommandAllocator]() 
-		{
-			commandAllocator->Release();
-		});
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -73,10 +68,9 @@ namespace Nano::Graphics::Internal
 	{
         Dx12CommandList& dxCommandList = *api_cast<Dx12CommandList*>(&list);
 
-        m_Swapchain.GetDx12Device().GetContext().Destroy([commandList = dxCommandList.GetID3D12GraphicsCommandList()]()
-        {
-            commandList->Release();
-        });
+        m_Swapchain.GetDx12Device().GetContext().Destroy([commandList = dxCommandList.GetID3D12GraphicsCommandList()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+        dxCommandList.m_CommandList = nullptr;
 	}
 
 	void Dx12CommandListPool::FreeLists(std::span<CommandList*> lists) const
@@ -96,8 +90,7 @@ namespace Nano::Graphics::Internal
     Dx12CommandList::Dx12CommandList(CommandListPool& pool, const CommandListSpecification& specs)
         : m_Pool(*api_cast<Dx12CommandListPool*>(&pool)), m_Specification(specs)
     {
-        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator(), nullptr, IID_PPV_ARGS(&m_CommandList)));
-        m_CommandList->AddRef();
+        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator().Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
         DX_VERIFY(m_CommandList->Close());
 
         if constexpr (Information::Validation)
@@ -117,7 +110,7 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::Open()
     {
         NG_PROFILE("Dx12CommandList::Open()");
-        DX_VERIFY(m_CommandList->Reset(m_Pool.GetD3D12CommandAllocator(), nullptr));
+        DX_VERIFY(m_CommandList->Reset(m_Pool.GetD3D12CommandAllocator().Get(), nullptr));
     }
 
     void Dx12CommandList::Close()
@@ -142,14 +135,14 @@ namespace Nano::Graphics::Internal
         auto queue = m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12CommandQueue(m_Pool.GetSpecification().Queue);
         for (auto list : waitOn)
         {
-            DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));
+            DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));
         }
         
         ID3D12CommandList* lists[] = { m_CommandList };
         queue->ExecuteCommandLists(1, lists);
 
         uint64_t signalValue = m_Pool.GetDx12Swapchain().RetrieveCommandListWaitValue(*this);
-        DX_VERIFY(queue->Signal(m_Pool.GetDx12Swapchain().GetD3D12Fence(), signalValue));
+        DX_VERIFY(queue->Signal(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), signalValue));
         
         if (args.OnFinishMakeSwapchainPresentable)
             m_Pool.GetDx12Swapchain().SetPresentableValue(signalValue);

@@ -21,12 +21,11 @@ namespace Nano::Graphics::Internal
 		: m_Device(*api_cast<const Dx12Device*>(&device)), MaxSize(maxSize), Type(type), IsShaderVisible(isShaderVisible)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-		heapDesc.NumDescriptors = Information::FramesInFlight;
+		heapDesc.NumDescriptors = maxSize;
 		heapDesc.Type = Type;
 		heapDesc.Flags = (IsShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 		
 		DX_VERIFY(m_Device.GetContext().GetD3D12Device()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&DescriptorHeap)));
-		DescriptorHeap->AddRef();
 		
 		DescriptorSize = m_Device.GetContext().GetD3D12Device()->GetDescriptorHandleIncrementSize(type);
 		Offset = DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -34,7 +33,7 @@ namespace Nano::Graphics::Internal
 
 	Dx12Resources::Heap::~Heap()
 	{
-		DescriptorHeap->Release();
+		m_Device.GetContext().Destroy([heap = DescriptorHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +41,9 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Resources::Heap::CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
 	{
+		NG_ASSERT((Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12Resources::Heap] Cannot allocate an SRV from a non SRV heap.");
+		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
 		if (dimension == ImageDimension::Unknown)
@@ -120,6 +122,9 @@ namespace Nano::Graphics::Internal
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Resources::Heap::CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
 	{
+		NG_ASSERT((Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12Resources::Heap] Cannot allocate an UAV from a non UAV heap.");
+		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
 		if (dimension == ImageDimension::Unknown)
@@ -178,6 +183,9 @@ namespace Nano::Graphics::Internal
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Resources::Heap::CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
 	{
+		NG_ASSERT((Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV), "[Dx12Resources::Heap] Cannot allocate an RTV from a non RTV heap.");
+		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
 		D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
@@ -235,6 +243,9 @@ namespace Nano::Graphics::Internal
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Resources::Heap::CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly)
 	{
+		NG_ASSERT((Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV), "[Dx12Resources::Heap] Cannot allocate an DSV from a non DSV heap.");
+		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, true);
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
@@ -370,13 +381,15 @@ namespace Nano::Graphics::Internal
 			else
 			{
 				e.Amount -= 1;
-				e.Handle.Offset(DescriptorSize, 1);
+				e.Handle.Offset(1, DescriptorSize);
 			}
 		}
 		else
 		{
+			NG_ASSERT((Count < MaxSize), "[Dx12Resources] Descriptor heap ran out of descriptor.");
+
 			handle = Offset;
-			Offset.Offset(DescriptorSize, 1);
+			Offset.Offset(1, DescriptorSize);
 		}
 
 		return handle;

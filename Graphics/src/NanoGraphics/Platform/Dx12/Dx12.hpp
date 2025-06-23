@@ -10,6 +10,7 @@
 #include <directx/d3d12.h>
 #include <directx/d3dx12.h>
 #include <dxgi1_6.h>
+#include <wrl.h>
 
 namespace Nano::Graphics::Internal
 {
@@ -31,6 +32,12 @@ namespace Nano::Graphics::Internal
 
     #define DX_SUCCESS(expr) SUCCEEDED(expr)
     #define DX_FAILED(expr) FAILED(expr)
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComPtr wrapper
+    ////////////////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    using DxPtr = Microsoft::WRL::ComPtr<T>;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // ToString methods

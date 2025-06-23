@@ -88,10 +88,10 @@ namespace Nano::Graphics::Internal
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
 		// Internal methods
-		void SetInternalData(const ImageSpecification& specs, ID3D12Resource* image);
+		void SetInternalData(const ImageSpecification& specs, DxPtr<ID3D12Resource> image);
 
 		// Internal getters
-		inline ID3D12Resource* GetD3D12Resource() const { return m_Resource; }
+		inline DxPtr<ID3D12Resource> GetD3D12Resource() const { return m_Resource; }
 
 		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown);
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
@@ -100,9 +100,11 @@ namespace Nano::Graphics::Internal
 		const Dx12Device& m_Device;
 		ImageSpecification m_Specification;
 
-		ID3D12Resource* m_Resource = nullptr;
+		DxPtr<ID3D12Resource> m_Resource = nullptr;
 
 		std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash> m_ImageViews = {};
+
+		friend class Dx12Device;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////

@@ -43,22 +43,24 @@ namespace Nano::Graphics::Internal
         void SetDebugName(ID3D12Object* object, const std::wstring& name) const;
 
         // Internal getters
-        inline ID3D12Device* GetD3D12Device() const { return m_Device; }
-        inline IDXGIFactory7* GetIDXGIFactory() const { return m_Factory; }
-        inline ID3D12CommandQueue* GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }
+        bool AllowsTearing() const;
+
+        inline DxPtr<ID3D12Device> GetD3D12Device() const { return m_Device; }
+        inline DxPtr<IDXGIFactory7> GetIDXGIFactory() const { return m_Factory; }
+        inline DxPtr<ID3D12CommandQueue> GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }
 
     private:
         DeviceDestroyCallback m_DestroyCallback;
 
-        IDXGIFactory7* m_Factory = nullptr;
-        IDXGIAdapter1* m_Adapter = nullptr; // Physical device
-        ID3D12Device* m_Device = nullptr; // Logical device
+        DxPtr<IDXGIFactory7> m_Factory = nullptr;
+        DxPtr<IDXGIAdapter1> m_Adapter = nullptr; // Physical device
+        DxPtr<ID3D12Device> m_Device = nullptr; // Logical device
 
-        ID3D12Debug* m_DebugController = nullptr;
-        ID3D12Debug1* m_GPUDebugController = nullptr;
-        ID3D12InfoQueue* m_MessageQueue = nullptr;
+        DxPtr<ID3D12Debug> m_DebugController = nullptr;
+        DxPtr<ID3D12Debug1> m_GPUDebugController = nullptr;
+        DxPtr<ID3D12InfoQueue> m_MessageQueue = nullptr;
 
-        std::array<ID3D12CommandQueue*, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};
+        std::array<DxPtr<ID3D12CommandQueue>, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};
     };
 #endif
 

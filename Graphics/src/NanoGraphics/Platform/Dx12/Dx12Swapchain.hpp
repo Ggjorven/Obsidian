@@ -68,8 +68,8 @@ namespace Nano::Graphics::Internal
 
 		inline uint64_t GetCurrentFenceValue() const { return m_CurrentFenceValue; }
 
-		inline IDXGISwapChain3* GetDXGISwapChain() const { return m_Swapchain; }
-		inline ID3D12Fence* GetD3D12Fence() const { return m_Fence; }
+		inline DxPtr<IDXGISwapChain3> GetDXGISwapChain() const { return m_Swapchain; }
+		inline DxPtr<ID3D12Fence> GetD3D12Fence() const { return m_Fence; }
 
 		inline const std::array<std::pair<uint64_t, HANDLE>, Information::FramesInFlight>& GetValuesAndEvents() const { return m_WaitFenceValuesAndEvents; }
 
@@ -77,7 +77,7 @@ namespace Nano::Graphics::Internal
 		const Dx12Device& m_Device;
 		SwapchainSpecification m_Specification;
 
-		IDXGISwapChain3* m_Swapchain = nullptr;
+		DxPtr<IDXGISwapChain3> m_Swapchain = nullptr;
 
 		// Note: DX12 gives the amount of images requested, so we can use FramesInFlight instead of MaxImages.
 		std::array<Nano::Memory::DeferredConstruct<Image, true>, Information::FramesInFlight> m_Images = { };
@@ -92,6 +92,8 @@ namespace Nano::Graphics::Internal
 
 		uint8_t m_CurrentFrame = 0;
 		uint8_t m_AcquiredFrame = 0;
+
+		friend class Dx12Device;
 	};
 #endif
 

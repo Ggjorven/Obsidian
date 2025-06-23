@@ -89,12 +89,10 @@ namespace Nano::Graphics::Internal
             if constexpr (Information::Validation)
             {
                 DX_VERIFY(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugController)));
-                m_DebugController->AddRef();
                 m_DebugController->EnableDebugLayer();
                 factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 
                 DX_VERIFY(m_DebugController->QueryInterface(IID_PPV_ARGS(&m_GPUDebugController)));
-                m_GPUDebugController->AddRef();
                 m_GPUDebugController->SetEnableGPUBasedValidation(FALSE); // TODO: Set to TRUE
             }
 
@@ -104,8 +102,7 @@ namespace Nano::Graphics::Internal
         // Physical device
         {
             DX_VERIFY(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&m_Factory)));
-            m_Factory->AddRef();
-
+            
             for (UINT i = 0; m_Factory->EnumAdapters1(i, &m_Adapter) != DXGI_ERROR_NOT_FOUND; i++) 
             {
                 DXGI_ADAPTER_DESC1 desc;
@@ -114,7 +111,7 @@ namespace Nano::Graphics::Internal
                 if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) 
                     continue;
 
-                if (DX_SUCCESS(D3D12CreateDevice(m_Adapter, GetDx12FeatureLevel(), __uuidof(ID3D12Device), nullptr)))
+                if (DX_SUCCESS(D3D12CreateDevice(m_Adapter.Get(), GetDx12FeatureLevel(), __uuidof(ID3D12Device), nullptr)))
                     break;
             }
 
@@ -123,8 +120,7 @@ namespace Nano::Graphics::Internal
 
         // Logical device
         {
-            DX_VERIFY(D3D12CreateDevice(m_Adapter, GetDx12FeatureLevel(), IID_PPV_ARGS(&m_Device)));
-            m_Device->AddRef();
+            DX_VERIFY(D3D12CreateDevice(m_Adapter.Get(), GetDx12FeatureLevel(), IID_PPV_ARGS(&m_Device)));
 
             NG_ASSERT(m_Device, "[Dx12Context] Failed to create logical device.");
         }
@@ -133,22 +129,22 @@ namespace Nano::Graphics::Internal
         {
             D3D12_COMMAND_QUEUE_DESC queueDesc = {};
             queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+            queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
             queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+            queueDesc.NodeMask = 0;
 
             DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Graphics)])));
-            m_Queues[static_cast<size_t>(CommandQueue::Graphics)]->AddRef();
 
             queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
             DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Compute)])));
-            m_Queues[static_cast<size_t>(CommandQueue::Compute)]->AddRef();
 
             // Note: DX12 doesn't really have a Present queue, so we use the graphics queue
             m_Queues[static_cast<size_t>(CommandQueue::Present)] = m_Queues[static_cast<size_t>(CommandQueue::Graphics)];
 
             if constexpr (Information::Validation)
             {
-                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Graphics)], "Graphics/Present Queue");
-                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Compute)], "Compute Queue");
+                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Graphics)].Get(), "Graphics/Present Queue");
+                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Compute)].Get(), "Compute Queue");
             }
         }
 
@@ -157,38 +153,25 @@ namespace Nano::Graphics::Internal
             if constexpr (Information::Validation)
             {
                 DX_VERIFY(m_Device->QueryInterface(IID_PPV_ARGS(&m_MessageQueue)));
-                m_MessageQueue->AddRef();
-
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
             
                 NG_ASSERT(m_MessageQueue, "[Dx12Context] Failed to initialize message queue.");
             
-                IterateD3D12Messages(m_MessageQueue);
+                IterateD3D12Messages(m_MessageQueue.Get());
             }
         }
 
         // Set debug names
         if constexpr (Information::Validation)
         {
-            SetDebugName(m_Device, L"Device");
+            SetDebugName(m_Device.Get(), L"Device");
         }
     }
 
     Dx12Context::~Dx12Context()
     {
-        m_Adapter->Release();
-        m_Factory->Release();
-
-        if constexpr (Information::Validation)
-        {
-            m_MessageQueue->Release();
-            m_DebugController->Release();
-            m_GPUDebugController->Release();
-        }
-
-        m_Device->Release();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -220,7 +203,7 @@ namespace Nano::Graphics::Internal
 
     void Dx12Context::OutputMessages() const
     {
-        IterateD3D12Messages(m_MessageQueue);
+        IterateD3D12Messages(m_MessageQueue.Get());
     }
 
     void Dx12Context::Destroy(DeviceDestroyFn fn) const
@@ -248,6 +231,16 @@ namespace Nano::Graphics::Internal
     void Dx12Context::SetDebugName(ID3D12Object* object, const std::wstring& name) const
     {
         object->SetName(name.c_str());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Internal getters
+    ////////////////////////////////////////////////////////////////////////////////////
+    bool Dx12Context::AllowsTearing() const
+    {
+        BOOL allowTearing;
+        DX_VERIFY(m_Factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)));
+        return (allowTearing == TRUE);
     }
 
 }

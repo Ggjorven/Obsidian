@@ -29,26 +29,27 @@ namespace Nano::Graphics::Internal
 		// Swapchain
 		{
 			DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
-			swapchainDesc.BufferCount = static_cast<UINT>(Information::FramesInFlight);
 			swapchainDesc.Width = specs.WindowTarget->GetSize().x;
 			swapchainDesc.Height = specs.WindowTarget->GetSize().y;
 			swapchainDesc.Format = FormatToDx12FormatMapping(specs.RequestedFormat).RTVFormat;
-			swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-			swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 			swapchainDesc.SampleDesc.Count = 1;
+			swapchainDesc.SampleDesc.Quality = 0;
+			swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+			swapchainDesc.BufferCount = static_cast<UINT>(Information::FramesInFlight);
+			swapchainDesc.Scaling = DXGI_SCALING_STRETCH;
+			swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+			swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+			swapchainDesc.Flags = (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
 
 			#if defined(NG_PLATFORM_DESKTOP)
 				HWND hwnd = glfwGetWin32Window(static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()));
 			#endif
 
 			// Note: Fullscreen is currently not a thing.
-			IDXGISwapChain1* tempSwapchain;
-			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
-			tempSwapchain->AddRef();
+			DxPtr<IDXGISwapChain1> tempSwapchain;
+			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present).Get(), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
-			m_Swapchain->AddRef();
-			tempSwapchain->Release(); // Release the temp
 		}
 
 		// Images
@@ -67,9 +68,8 @@ namespace Nano::Graphics::Internal
 				
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
 
-				ID3D12Resource* resource;
+				DxPtr<ID3D12Resource> resource;
 				DX_VERIFY(m_Swapchain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource)));
-				resource->AddRef();
 
 				dxImage.SetInternalData(imageSpecs, resource);
 
@@ -81,7 +81,6 @@ namespace Nano::Graphics::Internal
 		// Synchronization objects
 		{
 			DX_VERIFY(m_Device.GetContext().GetD3D12Device()->CreateFence(m_CurrentFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)));
-			m_Fence->AddRef();
 
 			for (auto& [value, event] : m_WaitFenceValuesAndEvents)
 			{
@@ -109,10 +108,9 @@ namespace Nano::Graphics::Internal
 	void Dx12Swapchain::FreePool(CommandListPool& pool) const
 	{
 		Dx12CommandListPool& dxPool = *api_cast<Dx12CommandListPool*>(&pool);
-		m_Device.GetContext().Destroy([allocator = dxPool.GetD3D12CommandAllocator()]()
-		{
-			allocator->Release();
-		});
+		m_Device.GetContext().Destroy([allocator = dxPool.GetD3D12CommandAllocator()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+		dxPool.m_CommandAllocator = nullptr;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -145,11 +143,8 @@ namespace Nano::Graphics::Internal
 			for (size_t i = 0; i < m_Images.size(); i++)
 				m_Device.DestroyImage(m_Images[i].Get());
 
-			auto a = FormatToDx12FormatMapping(colourFormat).RTVFormat;
-			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, 0));
+			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
 
-			m_Device.GetContext().OutputMessages();
-			
 			for (size_t i = 0; i < m_Images.size(); i++)
 			{
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
@@ -162,8 +157,8 @@ namespace Nano::Graphics::Internal
 					.SetIsRenderTarget(true)
 					.SetDebugName(debugName);
 
-				ID3D12Resource* resource;
-				DX_VERIFY(m_Swapchain->GetBuffer(i, IID_PPV_ARGS(&resource)));
+				DxPtr<ID3D12Resource> resource;
+				DX_VERIFY(m_Swapchain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource)));
 
 				dxImage.SetInternalData(specs, resource);
 
