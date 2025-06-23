@@ -129,6 +129,7 @@ private:
 			break;
 
 		default:
+			NG_LOG_TRACE("Device other: {0}", message);
 			break;
 		}
 	}

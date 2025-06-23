@@ -9,8 +9,17 @@
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
+#include <vector>
+
+namespace Nano::Graphics
+{
+    class Device;
+}
+
 namespace Nano::Graphics::Internal
 {
+
+    class Dx12Device;
 
 #if defined(NG_API_DX12)
 	////////////////////////////////////////////////////////////////////////////////////
@@ -105,21 +114,83 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Helper structs
-    ////////////////////////////////////////////////////////////////////////////////////
-    struct Dx12DescriptorHeap
-    {
-    public:
-        ID3D12DescriptorHeap* Heap = nullptr;
-        CD3DX12_CPU_DESCRIPTOR_HANDLE Offset = {};
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////
     // Helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const Dx12FormatMapping& FormatToDx12FormatMapping(Format format) { NG_ASSERT((static_cast<size_t>(format) < g_FormatMappings.size()), "Format value exceeds mappings."); return g_FormatMappings[static_cast<size_t>(format)]; }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Dx12Resources
+    ////////////////////////////////////////////////////////////////////////////////////
+    class Dx12Resources
+    {
+    public:
+        inline constexpr static uint32_t s_SRVAndUAVStartSize = 16;
+        inline constexpr static uint32_t s_SamplerStartSize = 16;
+        inline constexpr static uint32_t s_DSVStartSize = 16;
+        inline constexpr static uint32_t s_RTVStartSize = 16;
+    public:
+        struct Heap
+        {
+        public:
+            struct Entry
+            {
+            public:
+                uint32_t Amount = 0;
+                CD3DX12_CPU_DESCRIPTOR_HANDLE Handle = {};
+            };
+        public: // TODO: Make private?
+            uint32_t MaxSize; // Amount of descriptors allocateable
+            uint32_t Count = 0; // Amount of descriptors allocated
 
+            uint32_t DescriptorSize = 0; // Size of a descriptor
+            CD3DX12_CPU_DESCRIPTOR_HANDLE Offset = {}; // Current offset into heap
+
+            std::vector<Entry> FreeEntries = {}; // Free'd up descriptors that can be reused.
+            
+            ID3D12DescriptorHeap* DescriptorHeap = nullptr;
+            D3D12_DESCRIPTOR_HEAP_TYPE Type;
+            bool IsShaderVisible;
+
+        public:
+            // Constructor & Destructor
+            Heap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+            ~Heap();
+
+            // Methods
+            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
+            void Free(CD3DX12_CPU_DESCRIPTOR_HANDLE handle);
+
+            void Grow(uint32_t minNewSize);
+
+        private:
+            // Private methods
+            CD3DX12_CPU_DESCRIPTOR_HANDLE GetNextHandle();
+
+        private:
+            const Dx12Device& m_Device;
+        };
+    public:
+        // Constructor & Destructor
+        Dx12Resources(const Device& device);
+        ~Dx12Resources();
+
+        // (Internal) Getters
+        inline Heap& GetSRVAndUAVHeap() const { return m_SRVAndUAVHeap; }
+        inline Heap& GetSamplerHeap() const { return m_SamplerHeap; }
+        inline Heap& GetDSVHeap() const { return m_DSVHeap; }
+        inline Heap& GetRTVHeap() const { return m_RTVHeap; }
+
+    private:
+        const Dx12Device& m_Device;
+
+        mutable Heap m_SRVAndUAVHeap;
+        mutable Heap m_SamplerHeap;
+        mutable Heap m_DSVHeap;
+        mutable Heap m_RTVHeap;
+    };
 #endif
 
 }

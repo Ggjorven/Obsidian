@@ -18,7 +18,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     Dx12Device::Dx12Device(const DeviceSpecification& specs)
-        : m_Context(specs.MessageCallback, specs.DestroyCallback)
+        : m_Context(specs.MessageCallback, specs.DestroyCallback), m_Resources(*api_cast<const Device*>(this))
     {
     }
 
@@ -120,7 +120,11 @@ namespace Nano::Graphics::Internal
     {
         Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
 
-        // Note: We don't have to destroy image views on DX12
+        for (auto& [_, view] : dxImage.GetImageViews())
+        {
+            m_Resources.GetRTVHeap().Free(view.GetHandle());
+            // TODO: Somehow know what type a view is and free them
+        }
 
         dxImage.GetImageViews().clear();
     }

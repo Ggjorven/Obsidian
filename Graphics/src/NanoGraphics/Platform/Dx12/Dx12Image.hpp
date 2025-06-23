@@ -55,7 +55,7 @@ namespace Nano::Graphics::Internal
 		};
 	public:
 		// Constructor & Destructor
-		Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs, CD3DX12_CPU_DESCRIPTOR_HANDLE handle);
+		Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs);
 		~Dx12ImageSubresourceView();
 	
 		// Getters
@@ -89,7 +89,6 @@ namespace Nano::Graphics::Internal
 
 		// Internal methods
 		void SetInternalData(const ImageSpecification& specs, ID3D12Resource* image);
-		void SetInternalData(const ImageSpecification& specs, ID3D12Resource* image, ID3D12DescriptorHeap* rtvHeap, CD3DX12_CPU_DESCRIPTOR_HANDLE offset);
 
 		// Internal getters
 		inline ID3D12Resource* GetD3D12Resource() const { return m_Resource; }
@@ -98,22 +97,10 @@ namespace Nano::Graphics::Internal
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
 	private:
-		// Private methods
-		void CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources) const;
-		void CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources) const;
-		void CreateRTV(Format format, const ImageSubresourceSpecification& subresources) const;
-		void CreateDSV(const ImageSubresourceSpecification& subresources, bool isReadOnly = false) const;
-
-	private:
 		const Dx12Device& m_Device;
 		ImageSpecification m_Specification;
 
 		ID3D12Resource* m_Resource = nullptr;
-
-		Dx12DescriptorHeap m_SRVHeap = {};
-		Dx12DescriptorHeap m_UAVHeap = {};
-		Dx12DescriptorHeap m_RTVHeap = {};
-		Dx12DescriptorHeap m_ShaderVisibleHeap = {};
 
 		std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash> m_ImageViews = {};
 	};

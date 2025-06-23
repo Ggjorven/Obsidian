@@ -49,7 +49,8 @@ namespace Nano::Graphics::Internal
 		: m_Swapchain(*api_cast<Dx12Swapchain*>(&swapchain)), m_Specification(specs)
 	{
 		DX_VERIFY(m_Swapchain.GetDx12Device().GetContext().GetD3D12Device()->CreateCommandAllocator(CommandQueueToD3D12CommandListType(specs.Queue), IID_PPV_ARGS(&m_CommandAllocator)));
-	
+        m_CommandAllocator->AddRef();
+
         if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
@@ -96,6 +97,7 @@ namespace Nano::Graphics::Internal
         : m_Pool(*api_cast<Dx12CommandListPool*>(&pool)), m_Specification(specs)
     {
         DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator(), nullptr, IID_PPV_ARGS(&m_CommandList)));
+        m_CommandList->AddRef();
         DX_VERIFY(m_CommandList->Close());
 
         if constexpr (Information::Validation)

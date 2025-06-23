@@ -55,6 +55,7 @@ namespace Nano::Graphics::Internal
         ID3D12Device* m_Device = nullptr; // Logical device
 
         ID3D12Debug* m_DebugController = nullptr;
+        ID3D12Debug1* m_GPUDebugController = nullptr;
         ID3D12InfoQueue* m_MessageQueue = nullptr;
 
         std::array<ID3D12CommandQueue*, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};

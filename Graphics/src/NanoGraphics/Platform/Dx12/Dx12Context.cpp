@@ -48,11 +48,12 @@ namespace Nano::Graphics::Internal
                 SIZE_T messageLength = 0;
                 infoQueue->GetMessage(i, nullptr, &messageLength);
 
-                std::vector<uint8_t> messageData(messageLength);
-                auto* message = reinterpret_cast<D3D12_MESSAGE*>(messageData.data());
+                std::vector<char> buffer(messageLength);
+                auto* dxMessage = reinterpret_cast<D3D12_MESSAGE*>(buffer.data());
+                infoQueue->GetMessage(i, dxMessage, &messageLength);
 
                 DeviceMessageType messageType = DeviceMessageType::Trace;
-                switch (message->Severity) 
+                switch (dxMessage->Severity)
                 {
                 case D3D12_MESSAGE_SEVERITY_CORRUPTION: messageType = DeviceMessageType::Error;     break;
                 case D3D12_MESSAGE_SEVERITY_ERROR:      messageType = DeviceMessageType::Error;     break;
@@ -65,7 +66,7 @@ namespace Nano::Graphics::Internal
                     break;
                 }
 
-                s_MessageCallback(messageType, message->pDescription);
+                s_MessageCallback(messageType, std::string(dxMessage->pDescription));
             }
 
             infoQueue->ClearStoredMessages();
@@ -88,8 +89,13 @@ namespace Nano::Graphics::Internal
             if constexpr (Information::Validation)
             {
                 DX_VERIFY(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugController)));
+                m_DebugController->AddRef();
                 m_DebugController->EnableDebugLayer();
                 factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+
+                DX_VERIFY(m_DebugController->QueryInterface(IID_PPV_ARGS(&m_GPUDebugController)));
+                m_GPUDebugController->AddRef();
+                m_GPUDebugController->SetEnableGPUBasedValidation(FALSE); // TODO: Set to TRUE
             }
 
             NG_ASSERT(m_DebugController, "[Dx12Context] Failed to create debug controller.");
@@ -98,6 +104,8 @@ namespace Nano::Graphics::Internal
         // Physical device
         {
             DX_VERIFY(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&m_Factory)));
+            m_Factory->AddRef();
+
             for (UINT i = 0; m_Factory->EnumAdapters1(i, &m_Adapter) != DXGI_ERROR_NOT_FOUND; i++) 
             {
                 DXGI_ADAPTER_DESC1 desc;
@@ -116,6 +124,8 @@ namespace Nano::Graphics::Internal
         // Logical device
         {
             DX_VERIFY(D3D12CreateDevice(m_Adapter, GetDx12FeatureLevel(), IID_PPV_ARGS(&m_Device)));
+            m_Device->AddRef();
+
             NG_ASSERT(m_Device, "[Dx12Context] Failed to create logical device.");
         }
 
@@ -126,11 +136,20 @@ namespace Nano::Graphics::Internal
             queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
             DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Graphics)])));
+            m_Queues[static_cast<size_t>(CommandQueue::Graphics)]->AddRef();
+
             queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
             DX_VERIFY(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queues[static_cast<size_t>(CommandQueue::Compute)])));
+            m_Queues[static_cast<size_t>(CommandQueue::Compute)]->AddRef();
 
             // Note: DX12 doesn't really have a Present queue, so we use the graphics queue
             m_Queues[static_cast<size_t>(CommandQueue::Present)] = m_Queues[static_cast<size_t>(CommandQueue::Graphics)];
+
+            if constexpr (Information::Validation)
+            {
+                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Graphics)], "Graphics/Present Queue");
+                SetDebugName(m_Queues[static_cast<size_t>(CommandQueue::Compute)], "Compute Queue");
+            }
         }
 
         // Debug message queue callback
@@ -138,13 +157,14 @@ namespace Nano::Graphics::Internal
             if constexpr (Information::Validation)
             {
                 DX_VERIFY(m_Device->QueryInterface(IID_PPV_ARGS(&m_MessageQueue)));
+                m_MessageQueue->AddRef();
 
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE);
-
-                NG_ASSERT(m_Adapter, "[Dx12Context] Failed to initialize message queue.");
-
+                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+            
+                NG_ASSERT(m_MessageQueue, "[Dx12Context] Failed to initialize message queue.");
+            
                 IterateD3D12Messages(m_MessageQueue);
             }
         }
@@ -165,6 +185,7 @@ namespace Nano::Graphics::Internal
         {
             m_MessageQueue->Release();
             m_DebugController->Release();
+            m_GPUDebugController->Release();
         }
 
         m_Device->Release();
@@ -204,7 +225,9 @@ namespace Nano::Graphics::Internal
 
     void Dx12Context::Destroy(DeviceDestroyFn fn) const
     {
-        m_DestroyCallback(fn);
+        // TODO: Set back to callback
+        fn();
+        //m_DestroyCallback(fn);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

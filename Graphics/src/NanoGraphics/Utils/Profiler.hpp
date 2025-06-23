@@ -13,7 +13,7 @@ namespace Nano::Graphics::Internal
 	// Macros
 	////////////////////////////////////////////////////////////////////////////////////
 	// Settings
-	#define NG_ENABLE_PROFILING 1
+	#define NG_ENABLE_PROFILING 0
 	#define NG_MEM_PROFILING 0
 
 	// Profiling macros

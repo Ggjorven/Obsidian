@@ -44,42 +44,34 @@ namespace Nano::Graphics::Internal
 			// Note: Fullscreen is currently not a thing.
 			IDXGISwapChain1* tempSwapchain;
 			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
+			tempSwapchain->AddRef();
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
+			m_Swapchain->AddRef();
 			tempSwapchain->Release(); // Release the temp
 		}
 
 		// Images
 		{
-			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-			heapDesc.NumDescriptors = Information::FramesInFlight;
-			heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-			ID3D12DescriptorHeap* heap;
-			m_Device.GetContext().GetD3D12Device()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&heap));
-
-			UINT descriptorSize = m_Device.GetContext().GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-			CD3DX12_CPU_DESCRIPTOR_HANDLE handle(heap->GetCPUDescriptorHandleForHeapStart());
-
 			for (size_t i = 0; i < m_Images.size(); i++)
 			{
 				new (m_Images[i].GetInternalBytes()) Image(device);
 
 				std::string debugName = std::format("Swapchain image for: {0}", m_Specification.DebugName);
-				ImageSpecification specs = ImageSpecification()
+				ImageSpecification imageSpecs = ImageSpecification()
 					.SetImageFormat(m_Specification.RequestedFormat)
 					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
+					.SetImageDimension(ImageDimension::Image2D)
 					.SetIsRenderTarget(true)
 					.SetDebugName(debugName);
 				
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
 
 				ID3D12Resource* resource;
-				m_Swapchain->GetBuffer(i, IID_PPV_ARGS(&resource));
+				DX_VERIFY(m_Swapchain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource)));
+				resource->AddRef();
 
-				dxImage.SetInternalData(specs, resource, heap, handle);
-				handle.Offset(descriptorSize, 1);
+				dxImage.SetInternalData(imageSpecs, resource);
 
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
@@ -89,6 +81,7 @@ namespace Nano::Graphics::Internal
 		// Synchronization objects
 		{
 			DX_VERIFY(m_Device.GetContext().GetD3D12Device()->CreateFence(m_CurrentFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)));
+			m_Fence->AddRef();
 
 			for (auto& [value, event] : m_WaitFenceValuesAndEvents)
 			{
@@ -148,9 +141,35 @@ namespace Nano::Graphics::Internal
 
 		// Update swapchain
 		{
-			m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, 0);
+			// Destroy subresources views
+			for (size_t i = 0; i < m_Images.size(); i++)
+				m_Device.DestroyImage(m_Images[i].Get());
 
-			// TODO: Get images
+			auto a = FormatToDx12FormatMapping(colourFormat).RTVFormat;
+			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, 0));
+
+			m_Device.GetContext().OutputMessages();
+			
+			for (size_t i = 0; i < m_Images.size(); i++)
+			{
+				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
+
+				std::string debugName = std::format("Swapchain image for: {0}", m_Specification.DebugName);
+				ImageSpecification specs = ImageSpecification()
+					.SetImageFormat(m_Specification.RequestedFormat)
+					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
+					.SetImageDimension(ImageDimension::Image2D)
+					.SetIsRenderTarget(true)
+					.SetDebugName(debugName);
+
+				ID3D12Resource* resource;
+				DX_VERIFY(m_Swapchain->GetBuffer(i, IID_PPV_ARGS(&resource)));
+
+				dxImage.SetInternalData(specs, resource);
+
+				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
+				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
+			}
 		}
 	}
 

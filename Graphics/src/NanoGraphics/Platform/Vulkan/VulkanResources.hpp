@@ -916,14 +916,6 @@ namespace Nano::Graphics::Internal
 
         return std::numeric_limits<uint8_t>::max();
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // Resolving methods
-    ////////////////////////////////////////////////////////////////////////////////////
-    ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
-    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
-
-    BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
 #endif
 
 }

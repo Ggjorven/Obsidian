@@ -1,5 +1,8 @@
 #pragma once
 
+#include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/BufferSpec.hpp"
+
 #include <Nano/Nano.hpp>
 
 namespace Nano::Graphics::Internal
@@ -71,5 +74,13 @@ namespace Nano::Graphics::Internal
         // std::aligned_storage is deprecated as of C++23
         alignas(T) std::byte m_Storage[sizeof(T)] = {};
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Specification helper methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
+    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
+
+    BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
 
 }

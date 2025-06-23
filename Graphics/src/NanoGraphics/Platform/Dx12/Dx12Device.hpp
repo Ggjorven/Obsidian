@@ -9,6 +9,7 @@
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Context.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -89,9 +90,11 @@ namespace Nano::Graphics::Internal
 
         // Internal getters
         inline const Dx12Context& GetContext() const { return m_Context; }
+        inline const Dx12Resources& GetResources() const { return m_Resources; }
 
     private:
         Dx12Context m_Context;
+        Dx12Resources m_Resources;
     };
 #endif
 

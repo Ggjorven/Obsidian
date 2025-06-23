@@ -15,8 +15,8 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12ImageSubresourceView::Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs, CD3DX12_CPU_DESCRIPTOR_HANDLE handle)
-		: m_Image(*api_cast<const Dx12Image*>(&image)), m_Specification(specs), m_Handle(handle)
+	Dx12ImageSubresourceView::Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
+		: m_Image(*api_cast<const Dx12Image*>(&image)), m_Specification(specs)
 	{
 	}
 
@@ -51,44 +51,59 @@ namespace Nano::Graphics::Internal
 		m_Resource = image;
 	}
 
-	void Dx12Image::SetInternalData(const ImageSpecification& specs, ID3D12Resource* image, ID3D12DescriptorHeap* heap, CD3DX12_CPU_DESCRIPTOR_HANDLE offset)
-	{
-		m_Specification = specs;
-		m_Resource = image;
-
-		m_RTVHeap = { heap, offset };
-	}
-
 	////////////////////////////////////////////////////////////////////////////////////
 	// Internal getters
 	////////////////////////////////////////////////////////////////////////////////////
 	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format)
 	{
-		// TODO: ...
-		return *static_cast<const Dx12ImageSubresourceView*>(nullptr);
-	}
+		// Automatically set the dimension and format if not specified
+		if (dimension == ImageDimension::Unknown)
+			dimension = m_Specification.Dimension;
+		if (format == Format::Unknown)
+			format = m_Specification.ImageFormat;
 
-	////////////////////////////////////////////////////////////////////////////////////
-	// Private methods
-	////////////////////////////////////////////////////////////////////////////////////
-	void Dx12Image::CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources) const
-	{
-		// TODO: ...
-	}
+		// Find the view in map
+		auto cachekey = std::make_tuple(specs, usage, dimension, format);
+		auto it = m_ImageViews.find(cachekey);
+		if (it != m_ImageViews.end())
+			return it->second;
 
-	void Dx12Image::CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources) const
-	{
-		// TODO: ...
-	}
+		// Create new
+		auto viewPair = m_ImageViews.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(cachekey),
+			std::forward_as_tuple(*api_cast<Image*>(this), specs)
+		);
+		auto& imageView = std::get<0>(viewPair)->second;
 
-	void Dx12Image::CreateRTV(Format format, const ImageSubresourceSpecification& subresources) const
-	{
-		// TODO: ...
-	}
+		switch (usage)
+		{
+		case ImageSubresourceViewUsage::SRV:
+		{
+			m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource);
+			break;
+		}
+		case ImageSubresourceViewUsage::UAV:
+		{
+			m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource);
+			break;
+		}
+		case ImageSubresourceViewUsage::RTV:
+		{
+			m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource);
+			break;
+		}
+		case ImageSubresourceViewUsage::DSV:
+		{
+			m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource);
+			break;
+		}
 
-	void Dx12Image::CreateDSV(const ImageSubresourceSpecification& subresources, bool isReadOnly) const
-	{
-		// TODO: ...
+		default:
+			break;
+		}
+
+		return imageView;
 	}
 
 }
