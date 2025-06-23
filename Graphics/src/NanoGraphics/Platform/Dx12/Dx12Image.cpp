@@ -15,13 +15,38 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12ImageSubresourceView::Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs)
-		: m_Image(*api_cast<const Dx12Image*>(&image)), m_Specification(specs)
+	Dx12ImageSubresourceView::Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage)
+		: m_Image(*api_cast<const Dx12Image*>(&image)), m_Specification(specs), m_Usage(usage)
 	{
 	}
 
 	Dx12ImageSubresourceView::~Dx12ImageSubresourceView()
 	{
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Internal getters
+	////////////////////////////////////////////////////////////////////////////////////
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12ImageSubresourceView::GetHandle() const
+	{
+		switch (m_Usage)
+		{
+		case ImageSubresourceViewUsage::SRV:
+		case ImageSubresourceViewUsage::UAV:
+			return m_Image.GetDx12Device().GetResources().GetSRVAndUAVHeap().GetHandleForIndex(m_Index);
+		
+		case ImageSubresourceViewUsage::RTV:
+			return m_Image.GetDx12Device().GetResources().GetRTVHeap().GetHandleForIndex(m_Index);
+
+		case ImageSubresourceViewUsage::DSV:
+			return m_Image.GetDx12Device().GetResources().GetDSVHeap().GetHandleForIndex(m_Index);
+
+		default:
+			NG_UNREACHABLE();
+			break;
+		}
+
+		return {};
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +97,7 @@ namespace Nano::Graphics::Internal
 		auto viewPair = m_ImageViews.emplace(
 			std::piecewise_construct,
 			std::forward_as_tuple(cachekey),
-			std::forward_as_tuple(*api_cast<Image*>(this), specs)
+			std::forward_as_tuple(*api_cast<Image*>(this), specs, usage)
 		);
 		auto& imageView = std::get<0>(viewPair)->second;
 
@@ -80,22 +105,22 @@ namespace Nano::Graphics::Internal
 		{
 		case ImageSubresourceViewUsage::SRV:
 		{
-			imageView.m_Handle = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
 			break;
 		}
 		case ImageSubresourceViewUsage::UAV:
 		{
-			imageView.m_Handle = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
 			break;
 		}
 		case ImageSubresourceViewUsage::RTV:
 		{
-			imageView.m_Handle = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
 			break;
 		}
 		case ImageSubresourceViewUsage::DSV:
 		{
-			imageView.m_Handle = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get());
 			break;
 		}
 

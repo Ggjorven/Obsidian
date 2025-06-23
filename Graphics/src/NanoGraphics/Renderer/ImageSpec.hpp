@@ -9,7 +9,7 @@
 #include <limits>
 #include <string>
 #include <numeric>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -186,7 +186,6 @@ namespace Nano::Graphics
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
-        //std::string_view DebugName = {};
         std::string DebugName = {};
 
     public:
@@ -250,14 +249,15 @@ namespace Nano::Graphics
 
             switch (imageSpecs.Dimension)
             {
-            case ImageDimension::Image1DArray:      //[[falthrough]];
-            case ImageDimension::Image2DArray:      //[[falthrough]];
-            case ImageDimension::ImageCube:         //[[falthrough]];
-            case ImageDimension::ImageCubeArray:    //[[falthrough]];
-            case ImageDimension::Image2DMSArray:    //[[falthrough]];
+            case ImageDimension::Image1DArray:  
+            case ImageDimension::Image2DArray:  
+            case ImageDimension::ImageCube:     
+            case ImageDimension::ImageCubeArray:
+            case ImageDimension::Image2DMSArray:
             {
                 if (BaseArraySlice > 0u || BaseArraySlice + NumArraySlices < imageSpecs.ArraySize)
                     return false;
+                break;
             }
 
             default:
@@ -335,7 +335,7 @@ namespace Nano::Graphics
 
         SamplerReductionType ReductionType = SamplerReductionType::Standard;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -350,7 +350,7 @@ namespace Nano::Graphics
         inline constexpr SamplerSpecification& SetAddressModeW(SamplerAddressMode w) { AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetUVW(SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w) { AddressU = u; AddressV = v; AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetReductionType(SamplerReductionType type) { ReductionType = type; return *this; }
-        inline constexpr SamplerSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline SamplerSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
     };
 

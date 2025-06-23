@@ -24,6 +24,7 @@ namespace Nano::Graphics::Internal
 	class Dx12Image;
 	class Dx12StagingImage;
 	class Dx12Sampler;
+	class Dx12Swapchain;
 
 #if defined(NG_API_DX12)
 	////////////////////////////////////////////////////////////////////////////////////
@@ -55,20 +56,23 @@ namespace Nano::Graphics::Internal
 		};
 	public:
 		// Constructor & Destructor
-		Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs);
+		Dx12ImageSubresourceView(const Image& image, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage);
 		~Dx12ImageSubresourceView();
 	
 		// Getters
 		inline const ImageSubresourceSpecification& GetSpecification() const { return m_Specification; }
+		inline ImageSubresourceViewUsage GetUsage() const { return m_Usage; }
 	
 		// Internal getters
-		inline CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandle() const { return m_Handle; }
+		inline Dx12Resources::Heap::Index GetIndex() const { return m_Index; }
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandle() const;
 	
 	private:
 		const Dx12Image& m_Image;
 		ImageSubresourceSpecification m_Specification;
-	
-		CD3DX12_CPU_DESCRIPTOR_HANDLE m_Handle = {};
+		ImageSubresourceViewUsage m_Usage;
+
+		Dx12Resources::Heap::Index m_Index = {};
 	
 		friend class Dx12Image;
 	};
@@ -91,6 +95,8 @@ namespace Nano::Graphics::Internal
 		void SetInternalData(const ImageSpecification& specs, DxPtr<ID3D12Resource> image);
 
 		// Internal getters
+		inline const Dx12Device& GetDx12Device() const { return m_Device; }
+
 		inline DxPtr<ID3D12Resource> GetD3D12Resource() const { return m_Resource; }
 
 		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown);
@@ -105,6 +111,7 @@ namespace Nano::Graphics::Internal
 		std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash> m_ImageViews = {};
 
 		friend class Dx12Device;
+		friend class Dx12Swapchain;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////

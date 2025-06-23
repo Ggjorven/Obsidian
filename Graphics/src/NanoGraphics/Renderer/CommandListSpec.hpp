@@ -14,9 +14,9 @@
 #include <span>
 #include <cmath>
 #include <array>
+#include <string>
 #include <vector>
 #include <variant>
-#include <string_view>
 #include <initializer_list>
 
 namespace Nano::Graphics
@@ -49,11 +49,11 @@ namespace Nano::Graphics
     struct CommandListSpecification
     {
     public:
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
-        inline constexpr CommandListSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline CommandListSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -63,12 +63,12 @@ namespace Nano::Graphics
     {
     public:
         CommandQueue Queue = CommandQueue::Graphics;
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
         inline constexpr CommandListPoolSpecification& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
-        inline constexpr CommandListPoolSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline CommandListPoolSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

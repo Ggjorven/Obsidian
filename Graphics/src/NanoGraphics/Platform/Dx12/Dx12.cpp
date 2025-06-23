@@ -7,6 +7,4 @@
 namespace Nano::Graphics::Internal
 {
 
-    // TODO: ...
-
 }

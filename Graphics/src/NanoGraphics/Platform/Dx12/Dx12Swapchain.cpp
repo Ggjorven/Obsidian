@@ -58,13 +58,12 @@ namespace Nano::Graphics::Internal
 			{
 				new (m_Images[i].GetInternalBytes()) Image(device);
 
-				std::string debugName = std::format("Swapchain image for: {0}", m_Specification.DebugName);
 				ImageSpecification imageSpecs = ImageSpecification()
 					.SetImageFormat(m_Specification.RequestedFormat)
 					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
 					.SetImageDimension(ImageDimension::Image2D)
 					.SetIsRenderTarget(true)
-					.SetDebugName(debugName);
+					.SetDebugName(std::format("Swapchain image for: {0}", m_Specification.DebugName));
 				
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
 
@@ -75,6 +74,14 @@ namespace Nano::Graphics::Internal
 
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
+			
+				if constexpr (Information::Validation)
+				{
+					if (!m_Specification.DebugName.empty())
+					{
+
+					}
+				}
 			}
 		}
 
@@ -141,7 +148,14 @@ namespace Nano::Graphics::Internal
 		{
 			// Destroy subresources views
 			for (size_t i = 0; i < m_Images.size(); i++)
-				m_Device.DestroyImage(m_Images[i].Get());
+			{	
+				// Note: Instead of calling DestroyImage(), which would also destroy the views and resource
+				// we do it manually since DestroyImage() defers destruction to the callback, and it has to happen
+				// immediately to be able to recreate a swapchain.
+				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
+				m_Device.DestroySubresourceViews(m_Images[i].Get());
+				dxImage.m_Resource = nullptr;
+			}
 
 			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
 
@@ -149,13 +163,12 @@ namespace Nano::Graphics::Internal
 			{
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
 
-				std::string debugName = std::format("Swapchain image for: {0}", m_Specification.DebugName);
 				ImageSpecification specs = ImageSpecification()
 					.SetImageFormat(m_Specification.RequestedFormat)
 					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
 					.SetImageDimension(ImageDimension::Image2D)
 					.SetIsRenderTarget(true)
-					.SetDebugName(debugName);
+					.SetDebugName(std::format("Swapchain image for: {0}", m_Specification.DebugName));
 
 				DxPtr<ID3D12Resource> resource;
 				DX_VERIFY(m_Swapchain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource)));

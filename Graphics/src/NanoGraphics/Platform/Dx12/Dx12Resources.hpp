@@ -132,45 +132,49 @@ namespace Nano::Graphics::Internal
         struct Heap
         {
         public:
+            using Index = uint32_t;
             struct Entry
             {
             public:
                 uint32_t Amount = 0;
-                CD3DX12_CPU_DESCRIPTOR_HANDLE Handle = {};
+                Index IndexForHandle = {};
             };
-        public: // TODO: Make private?
-            uint32_t MaxSize; // Amount of descriptors allocateable
-            uint32_t Count = 0; // Amount of descriptors allocated
-
-            uint32_t DescriptorSize = 0; // Size of a descriptor
-            CD3DX12_CPU_DESCRIPTOR_HANDLE Offset = {}; // Current offset into heap
-
-            std::vector<Entry> FreeEntries = {}; // Free'd up descriptors that can be reused.
-            
-            ID3D12DescriptorHeap* DescriptorHeap = nullptr;
-            D3D12_DESCRIPTOR_HEAP_TYPE Type;
-            bool IsShaderVisible;
-
         public:
             // Constructor & Destructor
             Heap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
             ~Heap();
 
-            // Methods // TODO: Have a custom index to allow growing without making a handle invalid.
-            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            CD3DX12_CPU_DESCRIPTOR_HANDLE CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
-            void Free(CD3DX12_CPU_DESCRIPTOR_HANDLE handle);
+            // Methods
+            Index CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
+            void Free(Index index);
 
             void Grow(uint32_t minNewSize);
 
+            // Getters
+            CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandleForIndex(Index index) const;
+        
         private:
             // Private methods
-            CD3DX12_CPU_DESCRIPTOR_HANDLE GetNextHandle();
+            Index GetNextIndex();
 
         private:
             const Dx12Device& m_Device;
+
+            uint32_t m_MaxSize; // Amount of descriptors allocateable
+            uint32_t m_Count = 0; // Amount of descriptors allocated
+
+            uint32_t m_DescriptorSize = 0; // Size of a descriptor
+            Index m_Offset = {}; // Current offset into heap
+            CD3DX12_CPU_DESCRIPTOR_HANDLE m_Start = {}; // Start of heap
+
+            std::vector<Entry> m_FreeEntries = {}; // Free'd up descriptors that can be reused.
+
+            DxPtr<ID3D12DescriptorHeap> m_DescriptorHeap = nullptr;
+            D3D12_DESCRIPTOR_HEAP_TYPE m_Type;
+            bool m_IsShaderVisible;
         };
     public:
         // Constructor & Destructor

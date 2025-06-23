@@ -50,9 +50,8 @@ public:
 
 		for (size_t i = 0; i < m_CommandLists.size(); i++)
 		{
-			std::string debugName = std::format("CommandList for: {0}", m_CommandPools[i]->GetSpecification().DebugName);
 			m_CommandLists[i].Construct(m_CommandPools[i].Get(), CommandListSpecification()
-				.SetDebugName(debugName)
+				.SetDebugName(std::format("CommandList for: {0}", m_CommandPools[i]->GetSpecification().DebugName))
 			);
 		}
 	}
@@ -129,7 +128,6 @@ private:
 			break;
 
 		default:
-			NG_LOG_TRACE("Device other: {0}", message);
 			break;
 		}
 	}

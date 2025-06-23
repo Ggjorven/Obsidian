@@ -122,8 +122,25 @@ namespace Nano::Graphics::Internal
 
         for (auto& [_, view] : dxImage.GetImageViews())
         {
-            m_Resources.GetRTVHeap().Free(view.GetHandle());
-            // TODO: Somehow know what type a view is and free them
+            switch (view.GetUsage())
+            {
+            case ImageSubresourceViewUsage::SRV:
+            case ImageSubresourceViewUsage::UAV:
+                m_Resources.GetSRVAndUAVHeap().Free(view.GetIndex());
+                break;
+
+            case ImageSubresourceViewUsage::RTV:
+                m_Resources.GetRTVHeap().Free(view.GetIndex());
+                break;
+
+            case ImageSubresourceViewUsage::DSV:
+                m_Resources.GetDSVHeap().Free(view.GetIndex());
+                break;
+
+            default:
+                NG_UNREACHABLE();
+                break;
+            }
         }
 
         dxImage.GetImageViews().clear();

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <numeric>
 #include <limits>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -46,7 +46,7 @@ namespace Nano::Graphics
 
         bool IsInstanced = false;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -59,7 +59,7 @@ namespace Nano::Graphics
 
         inline constexpr VertexAttributeSpecification& SetIsInstanced(bool enabled) { IsInstanced = enabled; return *this; }
 
-        inline constexpr VertexAttributeSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline VertexAttributeSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ namespace Nano::Graphics
 
         CpuAccessMode CpuAccess = CpuAccessMode::None;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -107,7 +107,7 @@ namespace Nano::Graphics
 
         inline constexpr BufferSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
         inline constexpr BufferSpecification& SetCPUAccess(CpuAccessMode access) { CpuAccess = access; return *this; }
-        inline constexpr BufferSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline BufferSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
     };

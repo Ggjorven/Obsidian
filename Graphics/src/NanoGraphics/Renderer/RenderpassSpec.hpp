@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <cmath>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -113,7 +113,7 @@ namespace Nano::Graphics
         ResourceState DepthImageStartState = ResourceState::Unknown;
         ResourceState DepthImageEndState = ResourceState::DepthWrite;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -131,7 +131,7 @@ namespace Nano::Graphics
         inline constexpr RenderpassSpecification& SetDepthStartState(ResourceState state) { DepthImageStartState = state; return *this; }
         inline constexpr RenderpassSpecification& SetDepthEndState(ResourceState state) { DepthImageEndState = state; return *this; }
 
-        inline constexpr RenderpassSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline RenderpassSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
 }

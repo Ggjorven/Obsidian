@@ -252,6 +252,15 @@ namespace Nano::Graphics::Internal
 		pipelineInfo.basePipelineIndex = -1;
 
 		VK_VERIFY(vkCreateComputePipelines(vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice(), vulkanDevice.GetAllocator().GetPipelineCache(), 1, &pipelineInfo, VulkanAllocator::GetCallbacks(), &m_Pipeline));
+	
+		if constexpr (Information::Validation)
+		{
+			if (!m_Specification.DebugName.empty())
+			{
+				vulkanDevice.GetContext().SetDebugName(m_PipelineLayout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, std::format("PipelineLayout for: {0}", m_Specification.DebugName));
+				vulkanDevice.GetContext().SetDebugName(m_Pipeline, VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName);
+			}
+		}
 	}
 
 	VulkanComputePipeline::~VulkanComputePipeline()

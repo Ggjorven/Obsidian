@@ -5,7 +5,7 @@
 #include <Nano/Nano.hpp>
 
 #include <cstdint>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -260,7 +260,7 @@ namespace Nano::Graphics
 
         Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -280,7 +280,7 @@ namespace Nano::Graphics
         inline constexpr GraphicsPipelineSpecification& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
 
         inline GraphicsPipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
-        inline constexpr GraphicsPipelineSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline GraphicsPipelineSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -294,6 +294,15 @@ namespace Nano::Graphics
         Shader* ComputeShader;
 
         Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
+
+        std::string DebugName = {};
+
+    private:
+        // Setters
+        inline constexpr ComputePipelineSpecification& SetComputeShader(Shader& shader) { ComputeShader = &shader; return *this; }
+        inline ComputePipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
+        inline ComputePipelineSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+
     };
 
 }

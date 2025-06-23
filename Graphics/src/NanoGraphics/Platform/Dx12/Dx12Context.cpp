@@ -93,7 +93,7 @@ namespace Nano::Graphics::Internal
                 factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 
                 DX_VERIFY(m_DebugController->QueryInterface(IID_PPV_ARGS(&m_GPUDebugController)));
-                m_GPUDebugController->SetEnableGPUBasedValidation(FALSE); // TODO: Set to TRUE
+                m_GPUDebugController->SetEnableGPUBasedValidation(TRUE);
             }
 
             NG_ASSERT(m_DebugController, "[Dx12Context] Failed to create debug controller.");
@@ -208,9 +208,7 @@ namespace Nano::Graphics::Internal
 
     void Dx12Context::Destroy(DeviceDestroyFn fn) const
     {
-        // TODO: Set back to callback
-        fn();
-        //m_DestroyCallback(fn);
+        m_DestroyCallback(fn);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

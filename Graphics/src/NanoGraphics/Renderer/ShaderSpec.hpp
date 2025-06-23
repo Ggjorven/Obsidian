@@ -6,7 +6,7 @@
 #include <span>
 #include <vector>
 #include <variant>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -59,7 +59,7 @@ namespace Nano::Graphics
         std::string_view MainName = "main";
         std::variant<std::vector<char>, std::span<const char>> SPIRV = {};
         
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -67,7 +67,7 @@ namespace Nano::Graphics
         inline constexpr ShaderSpecification& SetMainName(std::string_view name) { MainName = name; return *this; }
         inline ShaderSpecification& SetSPIRV(std::vector<char>&& ownedSPIRV) { SPIRV = std::move(ownedSPIRV); return *this; }
         inline constexpr ShaderSpecification& SetSPIRV(std::span<const char> viewedSPIRV) { SPIRV = viewedSPIRV; return *this; }
-        inline constexpr ShaderSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline ShaderSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
 }
