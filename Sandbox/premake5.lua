@@ -39,7 +39,7 @@ project "Sandbox"
 		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
     elseif gfxapi == "dx12" then
         defines { "NG_API_DX12" }
-		includedirs { "%{Dependencies.DX12.IncludeDir}" }
+		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}" }
     elseif gfxapi == "metal" then
         defines { "NG_API_METAL" }
     elseif gfxapi == "dummy" then

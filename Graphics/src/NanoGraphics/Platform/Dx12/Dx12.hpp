@@ -6,11 +6,14 @@
 
 #include <Nano/Nano.hpp>
 
-#include <windows.h>
+#include <Windows.h>
+
 #include <directx/d3d12.h>
 #include <directx/d3dx12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
+
+#include <D3D12MemAlloc.h>
 
 namespace Nano::Graphics::Internal
 {
@@ -38,6 +41,38 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     template<typename T>
     using DxPtr = Microsoft::WRL::ComPtr<T>;
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Dx12Allocator
+    ////////////////////////////////////////////////////////////////////////////////////
+    class Dx12Allocator
+    {
+    public:
+        // Constructor & Destructor
+        Dx12Allocator(IDXGIAdapter1* adapter, DxPtr<ID3D12Device> device);
+        ~Dx12Allocator();
+
+        // Buffers
+        DxPtr<D3D12MA::Allocation> AllocateBuffer(DxPtr<ID3D12Resource>& resource, size_t size, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+
+        // Image
+        DxPtr<D3D12MA::Allocation> CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DIMENSION dimension, uint32_t width, uint32_t height, uint32_t depthOrArraySize, uint32_t mipLevels, DXGI_FORMAT format, uint32_t sampleCount, uint32_t sampleQuality, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+
+        // Utils
+        //void MapMemory(VmaAllocation allocation, void*& mapData) const;
+        //void UnmapMemory(VmaAllocation allocation) const;
+        //void SetData(VmaAllocation allocation, void* data, size_t size) const;
+        //void SetMappedData(void* mappedData, void* data, size_t size) const;
+
+        inline static const D3D12MA::ALLOCATION_CALLBACKS* GetCallbacks() { return &s_Callbacks; }
+
+    private:
+        DxPtr<ID3D12Device> m_Device = nullptr;
+
+        DxPtr<D3D12MA::Allocator> m_Allocator = nullptr;
+
+        inline static D3D12MA::ALLOCATION_CALLBACKS s_Callbacks = {};
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // ToString methods

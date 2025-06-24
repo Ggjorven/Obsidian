@@ -45,6 +45,7 @@ namespace Nano::Graphics::Internal
         // Internal getters
         bool AllowsTearing() const;
 
+        inline DxPtr<IDXGIAdapter1> GetD3D12Adapter() const { return m_Adapter; }
         inline DxPtr<ID3D12Device> GetD3D12Device() const { return m_Device; }
         inline DxPtr<IDXGIFactory7> GetIDXGIFactory() const { return m_Factory; }
         inline DxPtr<ID3D12CommandQueue> GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }

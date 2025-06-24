@@ -178,11 +178,15 @@ namespace Nano::Graphics
         uint32_t Width = 0, Height = 0, Depth = 1;
         uint32_t ArraySize = 1;
         uint32_t MipLevels = 1; // Note: Max = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1;
+        
         uint32_t SampleCount = 1;
+        uint32_t SampleQuality = 0;
 
         bool IsShaderResource = false;
         bool IsUnorderedAccessed = false;
         bool IsRenderTarget = false;
+
+        bool IsTypeless = false; // For storage?
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
@@ -202,16 +206,19 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
         inline constexpr ImageSpecification& SetMipLevels(uint32_t mipLevels) { MipLevels = mipLevels; return *this; }
         inline ImageSpecification& SetMipLevelsToMax() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
+        
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
+        inline constexpr ImageSpecification& SetSampleQuality(uint32_t quality) { SampleQuality = quality; return *this; }
         
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
         
         inline constexpr ImageSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
+
+        inline constexpr ImageSpecification& SetIsTypeless(bool enabled) { IsTypeless = enabled; return *this; }
         
-        //inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
-        inline ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
 

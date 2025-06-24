@@ -90,10 +90,12 @@ namespace Nano::Graphics::Internal
 
         // Internal getters
         inline const Dx12Context& GetContext() const { return m_Context; }
+        inline const Dx12Allocator& GetAllocator() const { return m_Allocator; }
         inline const Dx12Resources& GetResources() const { return m_Resources; }
 
     private:
         Dx12Context m_Context;
+        Dx12Allocator m_Allocator;
         Dx12Resources m_Resources;
     };
 #endif

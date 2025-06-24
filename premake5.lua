@@ -119,6 +119,11 @@ Dependencies =
 	{
 		IncludeDir = "%{wks.location}/vendor/DirectX/DirectX-Headers/include"
 	},
+	D3D12MA = 
+	{
+		IncludeDir = "%{wks.location}/vendor/DirectX/D3D12MA/include",
+		LibName = "D3D12MA"
+	},
 }
 
 ------------------------------------------------------------------------------
@@ -181,6 +186,11 @@ workspace "NanoGraphics"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
+
+	if gfxapi == "dx12" then
+		include "vendor/DirectX"
+	end
+
 group ""
 
 group "NanoGraphics"

@@ -22,10 +22,137 @@ namespace Nano::Graphics::Internal
     class Dx12Device;
 
 #if defined(NG_API_DX12)
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ResourceStateMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ResourceStateMapping
+    {
+    public:
+        ResourceState State;
+
+        D3D12_RESOURCE_STATES D3D12States;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ResourceStateMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ResourceStateMapping = std::to_array<ResourceStateMapping>({
+        // State                            D3D12States
+        { ResourceState::Unknown,           D3D12_RESOURCE_STATE_COMMON },
+        { ResourceState::Common,            D3D12_RESOURCE_STATE_COMMON },
+        { ResourceState::StorageBuffer,     D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER },
+        { ResourceState::VertexBuffer,      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER },
+        { ResourceState::IndexBuffer,       D3D12_RESOURCE_STATE_INDEX_BUFFER },
+        { ResourceState::IndirectArgument,  D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT },
+        { ResourceState::ShaderResource,    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE },
+        { ResourceState::UnorderedAccess,   D3D12_RESOURCE_STATE_UNORDERED_ACCESS },
+        { ResourceState::RenderTarget,      D3D12_RESOURCE_STATE_RENDER_TARGET },
+        { ResourceState::DepthWrite,        D3D12_RESOURCE_STATE_DEPTH_WRITE },
+        { ResourceState::DepthRead,         D3D12_RESOURCE_STATE_DEPTH_READ },
+        { ResourceState::StreamOut,         D3D12_RESOURCE_STATE_STREAM_OUT },
+        { ResourceState::CopyDst,           D3D12_RESOURCE_STATE_COPY_DEST },
+        { ResourceState::CopySrc,           D3D12_RESOURCE_STATE_COPY_SOURCE },
+        { ResourceState::Present,           D3D12_RESOURCE_STATE_PRESENT }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ImageDimensionMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ImageDimensionMapping
+    {
+    public:
+        ImageDimension Dimension;
+
+        D3D12_RESOURCE_DIMENSION D3D12Dimension;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ImageDimensionMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ImageDimensionMapping = std::to_array<ImageDimensionMapping>({
+        // Dimension                        D3D12Dimension
+        { ImageDimension::Unknown,          D3D12_RESOURCE_DIMENSION_TEXTURE1D },
+        { ImageDimension::Image1D,          D3D12_RESOURCE_DIMENSION_TEXTURE1D },
+        { ImageDimension::Image1DArray,     D3D12_RESOURCE_DIMENSION_TEXTURE1D },
+        { ImageDimension::Image2D,          D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::Image2DArray,     D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::ImageCube,        D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::ImageCubeArray,   D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::Image2DMS,        D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::Image2DMSArray,   D3D12_RESOURCE_DIMENSION_TEXTURE2D },
+        { ImageDimension::Image3D,          D3D12_RESOURCE_DIMENSION_TEXTURE3D }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // FilterModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct FilterModeMapping
+    {
+    public:
+        FilterMode Filter;
+
+        D3D12_FILTER_TYPE D3D12FilterType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // FilterModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_FilterModeMapping = std::to_array<FilterModeMapping>({
+        // Filter                       D3D12FilterType
+        { FilterMode::None,             D3D12_FILTER_TYPE_POINT },
+        { FilterMode::Nearest,          D3D12_FILTER_TYPE_POINT },
+        { FilterMode::Linear,           D3D12_FILTER_TYPE_LINEAR },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // SamplerAddressModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct SamplerAddressModeMapping
+    {
+    public:
+        SamplerAddressMode AddressMode;
+
+        D3D12_TEXTURE_ADDRESS_MODE D3D12TextureAddressMode;
+    };
+    
+    ////////////////////////////////////////////////////////////////////////////////////
+    // SamplerAddressModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_SamplerAddressModeMapping = std::to_array<SamplerAddressModeMapping>({
+        // AddressMode                      D3D12TextureAddressMode
+        { SamplerAddressMode::Clamp,        D3D12_TEXTURE_ADDRESS_MODE_CLAMP },
+        { SamplerAddressMode::Wrap,         D3D12_TEXTURE_ADDRESS_MODE_WRAP },
+        { SamplerAddressMode::Border,       D3D12_TEXTURE_ADDRESS_MODE_BORDER },
+        { SamplerAddressMode::Mirror,       D3D12_TEXTURE_ADDRESS_MODE_MIRROR },
+        { SamplerAddressMode::MirrorOnce,   D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // SamplerReductionTypeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct SamplerReductionTypeMapping
+    {
+    public:
+        SamplerReductionType ReductionType;
+
+        D3D12_FILTER_REDUCTION_TYPE D3D12ReductionType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // SamplerReductionTypeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_SamplerReductionTypeMapping = std::to_array<SamplerReductionTypeMapping>({
+        // ReductionType                    D3D12ReductionType
+        { SamplerReductionType::Standard,   D3D12_FILTER_REDUCTION_TYPE_STANDARD },
+        { SamplerReductionType::Comparison, D3D12_FILTER_REDUCTION_TYPE_COMPARISON },
+        { SamplerReductionType::Minimum,    D3D12_FILTER_REDUCTION_TYPE_MINIMUM },
+        { SamplerReductionType::Maximum,    D3D12_FILTER_REDUCTION_TYPE_MAXIMUM }
+    });
+
 	////////////////////////////////////////////////////////////////////////////////////
-	// Dx12FormatMapping
+	// FormatMapping
 	////////////////////////////////////////////////////////////////////////////////////
-    struct Dx12FormatMapping
+    struct FormatMapping
     {
     public:
         Format AbstractFormat;
@@ -36,9 +163,9 @@ namespace Nano::Graphics::Internal
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // Dx12FormatMapping array
+    // FormatMapping array
     ////////////////////////////////////////////////////////////////////////////////////
-    inline constexpr const auto g_FormatMappings = std::to_array<Dx12FormatMapping>({
+    inline constexpr const auto g_FormatMapping = std::to_array<FormatMapping>({
         // AbstractFormat               ResourceFormat                      SRVFormat                               RTVFormat
         { Format::Unknown,              DXGI_FORMAT_UNKNOWN,                DXGI_FORMAT_UNKNOWN,                    DXGI_FORMAT_UNKNOWN                },
 
@@ -116,7 +243,28 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Helper methods
     ////////////////////////////////////////////////////////////////////////////////////
-    inline constexpr const Dx12FormatMapping& FormatToDx12FormatMapping(Format format) { NG_ASSERT((static_cast<size_t>(format) < g_FormatMappings.size()), "Format value exceeds mappings."); return g_FormatMappings[static_cast<size_t>(format)]; }
+    inline constexpr const FormatMapping& FormatToFormatMapping(Format format) { NG_ASSERT((static_cast<size_t>(format) < g_FormatMapping.size()), "Format value exceeds mappings."); return g_FormatMapping[static_cast<size_t>(format)]; }
+
+    inline constexpr D3D12_RESOURCE_STATES ResourceStateToD3D12ResourceStates(ResourceState state)
+    {
+        D3D12_RESOURCE_STATES result = D3D12_RESOURCE_STATE_COMMON;
+        std::underlying_type_t<ResourceState> value = std::to_underlying(state);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ResourceStateMapping[static_cast<size_t>(index) + 1].D3D12States;
+        }
+
+        return result;
+    }
+
+    inline constexpr D3D12_RESOURCE_DIMENSION ImageDimensionToD3D12ResourceDimension(ImageDimension dimension) { NG_ASSERT((static_cast<size_t>(dimension) < g_ImageDimensionMapping.size()), "Dimension value exceeds mappings."); return g_ImageDimensionMapping[static_cast<size_t>(dimension)].D3D12Dimension; }
+    inline constexpr D3D12_FILTER_TYPE FilterModeToD3D12FilterType(FilterMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_FilterModeMapping.size()), "Mode value exceeds mappings."); return g_FilterModeMapping[static_cast<size_t>(mode)].D3D12FilterType; }
+    inline constexpr D3D12_TEXTURE_ADDRESS_MODE SamplerAddresModeToD3D12TextureAddressMode(SamplerAddressMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_SamplerAddressModeMapping.size()), "Mode value exceeds mappings."); return g_SamplerAddressModeMapping[static_cast<size_t>(mode)].D3D12TextureAddressMode; }
+    inline constexpr D3D12_FILTER_REDUCTION_TYPE SamplerReductionTypeToD3D12FilterReductionType(SamplerReductionType type) { NG_ASSERT((static_cast<size_t>(type) < g_SamplerReductionTypeMapping.size()), "Type value exceeds mappings."); return g_SamplerReductionTypeMapping[static_cast<size_t>(type)].D3D12ReductionType; }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12Resources
@@ -149,6 +297,7 @@ namespace Nano::Graphics::Internal
             Index CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
             Index CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
             Index CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
+            Index CreateSampler(const D3D12_SAMPLER_DESC& desc);
             void Free(Index index);
 
             void Grow(uint32_t minNewSize);

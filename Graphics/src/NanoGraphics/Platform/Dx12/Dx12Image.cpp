@@ -1,5 +1,5 @@
 #include "ngpch.h"
-#include "Dx12Swapchain.hpp"
+#include "Dx12Image.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Core/Information.hpp"
@@ -7,7 +7,6 @@
 
 #include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
-#include "Dx12Image.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -60,7 +59,37 @@ namespace Nano::Graphics::Internal
 	Dx12Image::Dx12Image(const Device& device, const ImageSpecification& specs)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
-		// TODO: ...
+		D3D12_RESOURCE_DIMENSION dimension = ImageDimensionToD3D12ResourceDimension(specs.Dimension);
+		uint32_t depthOrArraySize = ((specs.Dimension == ImageDimension::Image3D) ? specs.Depth : specs.ArraySize);
+		DXGI_FORMAT format = (specs.IsTypeless ? FormatToFormatMapping(specs.ImageFormat).ResourceFormat : FormatToFormatMapping(specs.ImageFormat).RTVFormat);
+		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+		FormatInfo formatInfo = FormatToFormatInfo(specs.ImageFormat);
+
+		if (!specs.IsShaderResource)
+			flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+		if (specs.IsRenderTarget)
+		{
+			if (formatInfo.HasDepth || formatInfo.HasStencil)
+				flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			else
+				flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+		}
+
+		if (specs.IsUnorderedAccessed)
+			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource,
+			ResourceStateToD3D12ResourceStates(specs.PermanentState),
+			//D3D12_RESOURCE_STATE_COMMON,
+			dimension,
+			specs.Width, specs.Height, depthOrArraySize,
+			specs.MipLevels, 
+			format,
+			specs.SampleCount, specs.SampleQuality,
+			flags,
+			D3D12_HEAP_TYPE_DEFAULT
+		);
 	}
 
 	Dx12Image::~Dx12Image()
@@ -104,31 +133,110 @@ namespace Nano::Graphics::Internal
 		switch (usage)
 		{
 		case ImageSubresourceViewUsage::SRV:
-		{
 			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
 			break;
-		}
 		case ImageSubresourceViewUsage::UAV:
-		{
 			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
 			break;
-		}
 		case ImageSubresourceViewUsage::RTV:
-		{
 			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
 			break;
-		}
 		case ImageSubresourceViewUsage::DSV:
-		{
 			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get());
 			break;
-		}
 
 		default:
 			break;
 		}
 
 		return imageView;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Constructor & Destructor
+	////////////////////////////////////////////////////////////////////////////////////
+	Dx12StagingImage::Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
+		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
+			.SetSize(GetBufferSize())
+			.SetCPUAccess(cpuAccessMode)
+			.SetPermanentState(specs.PermanentState)
+			.SetDebugName(specs.DebugName)
+		) // TODO: Implement everything
+	{
+	}
+
+	Dx12StagingImage::~Dx12StagingImage()
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Private methods
+	////////////////////////////////////////////////////////////////////////////////////
+	std::vector<Dx12StagingImage::Region> Dx12StagingImage::GetSliceRegions() const
+	{
+		return { };
+	}
+
+	size_t Dx12StagingImage::ComputeSliceSize(uint32_t mipLevel) const
+	{
+		return 0;
+	}
+
+	size_t Dx12StagingImage::GetBufferSize() const
+	{
+		return 0;
+	}
+
+	Dx12StagingImage::Region Dx12StagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z)
+	{
+		return {};
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Constructor & Destructor
+	////////////////////////////////////////////////////////////////////////////////////
+	Dx12Sampler::Dx12Sampler(const Device& device, const SamplerSpecification& specs)
+		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
+	{
+		D3D12_SAMPLER_DESC samplerDesc = {};
+
+		UINT reductionType = static_cast<UINT>(SamplerReductionTypeToD3D12FilterReductionType(m_Specification.ReductionType));
+		if (m_Specification.MaxAnisotropy > 1.0f)
+			samplerDesc.Filter = D3D12_ENCODE_ANISOTROPIC_FILTER(reductionType);
+		else
+			samplerDesc.Filter = D3D12_ENCODE_BASIC_FILTER(
+				FilterModeToD3D12FilterType(m_Specification.MinFilter),
+				FilterModeToD3D12FilterType(m_Specification.MagFilter),
+				FilterModeToD3D12FilterType(m_Specification.MipFilter),
+				reductionType
+			);
+
+		samplerDesc.AddressU = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressU);
+		samplerDesc.AddressV = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressV);
+		samplerDesc.AddressW = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressW);
+		samplerDesc.MipLODBias = m_Specification.MipBias;
+		samplerDesc.MaxAnisotropy = std::max(static_cast<UINT>(m_Specification.MaxAnisotropy), 1u);
+		samplerDesc.ComparisonFunc = ((m_Specification.ReductionType == SamplerReductionType::Comparison) ? D3D12_COMPARISON_FUNC_LESS : D3D12_COMPARISON_FUNC_NEVER);
+		samplerDesc.BorderColor[0] = m_Specification.BorderColour.r;
+		samplerDesc.BorderColor[1] = m_Specification.BorderColour.g;
+		samplerDesc.BorderColor[2] = m_Specification.BorderColour.b;
+		samplerDesc.BorderColor[3] = m_Specification.BorderColour.a;
+		samplerDesc.MinLOD = 0.0f;
+		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+		
+		m_SamplerIndex = m_Device.GetResources().GetSamplerHeap().CreateSampler(samplerDesc);
+	}
+
+	Dx12Sampler::~Dx12Sampler()
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Internal getters
+	////////////////////////////////////////////////////////////////////////////////////
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Sampler::GetHandle() const
+	{
+		return m_Device.GetResources().GetSamplerHeap().GetHandleForIndex(m_SamplerIndex);
 	}
 
 }

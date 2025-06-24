@@ -31,7 +31,7 @@ namespace Nano::Graphics::Internal
 			DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
 			swapchainDesc.Width = specs.WindowTarget->GetSize().x;
 			swapchainDesc.Height = specs.WindowTarget->GetSize().y;
-			swapchainDesc.Format = FormatToDx12FormatMapping(specs.RequestedFormat).RTVFormat;
+			swapchainDesc.Format = FormatToFormatMapping(specs.RequestedFormat).RTVFormat;
 			swapchainDesc.SampleDesc.Count = 1;
 			swapchainDesc.SampleDesc.Quality = 0;
 			swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -157,7 +157,7 @@ namespace Nano::Graphics::Internal
 				dxImage.m_Resource = nullptr;
 			}
 
-			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToDx12FormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
+			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToFormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
 
 			for (size_t i = 0; i < m_Images.size(); i++)
 			{

@@ -51,7 +51,7 @@ namespace Nano::Graphics::Internal
 			dimension = specs.Dimension;
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-		viewDesc.Format = FormatToDx12FormatMapping(format == Format::Unknown ? specs.ImageFormat : format).SRVFormat;
+		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).SRVFormat;
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		uint32_t planeSlice = (viewDesc.Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT) ? 1 : 0;
@@ -133,7 +133,7 @@ namespace Nano::Graphics::Internal
 			dimension = specs.Dimension;
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
-		viewDesc.Format = FormatToDx12FormatMapping(format == Format::Unknown ? specs.ImageFormat : format).SRVFormat;
+		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).SRVFormat;
 
 		Index index = GetNextIndex();
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
@@ -192,7 +192,7 @@ namespace Nano::Graphics::Internal
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
 		D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
-		viewDesc.Format = FormatToDx12FormatMapping(format == Format::Unknown ? specs.ImageFormat : format).RTVFormat;
+		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).RTVFormat;
 
 		Index index = GetNextIndex();
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
@@ -253,7 +253,7 @@ namespace Nano::Graphics::Internal
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, true);
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
-		viewDesc.Format = FormatToDx12FormatMapping(specs.ImageFormat).RTVFormat;
+		viewDesc.Format = FormatToFormatMapping(specs.ImageFormat).RTVFormat;
 
 		if (isReadOnly)
 		{
@@ -312,6 +312,17 @@ namespace Nano::Graphics::Internal
 		return index;
 	}
 
+	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateSampler(const D3D12_SAMPLER_DESC& desc)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), "[Dx12Resources::Heap] Cannot allocate a Sampler from a non Sampler heap.");
+
+		Index index = GetNextIndex();
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
+
+		m_Device.GetContext().GetD3D12Device()->CreateSampler(&desc, handle);
+		return index;
+	}
+
 	void Dx12Resources::Heap::Free(Index handle)
 	{
 		m_FreeEntries.emplace_back(1, handle);
@@ -362,6 +373,8 @@ namespace Nano::Graphics::Internal
 		m_Device.GetContext().GetD3D12Device()->CopyDescriptorsSimple(oldSize, m_Start, oldHeap->GetCPUDescriptorHandleForHeapStart(), m_Type);
 
 		// Note: The previous FreeEntries are still valid since we just store an index
+
+		m_Device.GetContext().Destroy([heap = oldHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -397,7 +410,10 @@ namespace Nano::Graphics::Internal
 		else
 		{
 			if (m_Count >= m_MaxSize) [[unlikely]]
+			{
+				m_Device.GetContext().Warn("[Dx12Resources::Heap] Grew descriptor heap, this is untested and may cause previous retrieved descriptors to be invalid and crash.");
 				Grow(m_Count + 1);
+			}
 
 			index = m_Offset;
 			m_Offset += 1;

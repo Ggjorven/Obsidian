@@ -8,6 +8,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Buffer.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
 
 #include <utility>
@@ -15,6 +16,7 @@
 namespace Nano::Graphics
 {
 	class Device;
+	class Image;
 }
 
 namespace Nano::Graphics::Internal
@@ -98,6 +100,7 @@ namespace Nano::Graphics::Internal
 		inline const Dx12Device& GetDx12Device() const { return m_Device; }
 
 		inline DxPtr<ID3D12Resource> GetD3D12Resource() const { return m_Resource; }
+		inline DxPtr<D3D12MA::Allocation> GetD3D12MAAllocation() const { return m_Allocation; }
 
 		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown);
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
@@ -107,6 +110,7 @@ namespace Nano::Graphics::Internal
 		ImageSpecification m_Specification;
 
 		DxPtr<ID3D12Resource> m_Resource = nullptr;
+		DxPtr<D3D12MA::Allocation> m_Allocation = nullptr;
 
 		std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash> m_ImageViews = {};
 
@@ -117,67 +121,70 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Dx12StagingImage
 	////////////////////////////////////////////////////////////////////////////////////
-	//class Dx12StagingImage
-	//{
-	//public:
-	//	struct Region
-	//	{
-	//	public:
-	//		size_t Offset;
-	//		size_t Size;
-	//	};
-	//public:
-	//	// Constructor & Destructor
-	//	VulkanStagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode);
-	//	~VulkanStagingImage();
-	//
-	//	// Getters
-	//	inline const ImageSpecification& GetSpecification() const { return m_Specification; }
-	//
-	//	// Internal getters
-	//	inline VulkanBuffer& GetVulkanBuffer() { return m_Buffer; }
-	//	inline const VulkanBuffer& GetVulkanBuffer() const { return m_Buffer; }
-	//
-	//	VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
-	//
-	//private:
-	//	// Private methods
-	//	std::vector<Region> GetSliceRegions() const;
-	//	size_t ComputeSliceSize(uint32_t mipLevel) const;
-	//
-	//	size_t GetBufferSize() const;
-	//
-	//private:
-	//	const VulkanDevice& m_Device;
-	//	ImageSpecification m_Specification;
-	//
-	//	std::vector<Region> m_SliceRegions = {};
-	//
-	//	VulkanBuffer m_Buffer;
-	//};
+	class Dx12StagingImage
+	{
+	public:
+		struct Region
+		{
+		public:
+			size_t Offset;
+			size_t Size;
+		};
+	public:
+		// Constructor & Destructor
+		Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode);
+		~Dx12StagingImage();
+	
+		// Getters
+		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
+	
+		// Internal getters
+		inline Dx12Buffer& GetDx12Buffer() { return m_Buffer; }
+		inline const Dx12Buffer& GetDx12Buffer() const { return m_Buffer; }
+	
+		Dx12StagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
+	
+	private:
+		// Private methods
+		std::vector<Region> GetSliceRegions() const;
+		size_t ComputeSliceSize(uint32_t mipLevel) const;
+	
+		size_t GetBufferSize() const;
+	
+	private:
+		const Dx12Device& m_Device;
+		ImageSpecification m_Specification;
+	
+		std::vector<Region> m_SliceRegions = {};
+	
+		Dx12Buffer m_Buffer;
+	};
 
 	////////////////////////////////////////////////////////////////////////////////////
 	// Dx12Sampler
 	////////////////////////////////////////////////////////////////////////////////////
-	//class Dx12Sampler
-	//{
-	//public:
-	//	// Constructor & Destructor
-	//	Dx12Sampler(const Device& device, const SamplerSpecification& specs);
-	//	~Dx12Sampler();
-	//
-	//	// Getters
-	//	inline const SamplerSpecification& GetSpecification() const { return m_Specification; }
-	//
-	//	// Internal getters
-	//	inline VkSampler GetVkSampler() const { return m_Sampler; }
-	//
-	//private:
-	//	const VulkanDevice& m_Device;
-	//	SamplerSpecification m_Specification;
-	//
-	//	VkSampler m_Sampler = VK_NULL_HANDLE;
-	//};
+	class Dx12Sampler
+	{
+	public:
+		// Constructor & Destructor
+		Dx12Sampler(const Device& device, const SamplerSpecification& specs);
+		~Dx12Sampler();
+	
+		// Getters
+		inline const SamplerSpecification& GetSpecification() const { return m_Specification; }
+	
+		// Internal getters
+		inline Dx12Resources::Heap::Index GetSamplerIndex() const { return m_SamplerIndex; }
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandle() const;
+	
+	private:
+		const Dx12Device& m_Device;
+		SamplerSpecification m_Specification;
+	
+		Dx12Resources::Heap::Index m_SamplerIndex = {};
+
+		friend class Dx12Device;
+	};
 #endif
 
 }

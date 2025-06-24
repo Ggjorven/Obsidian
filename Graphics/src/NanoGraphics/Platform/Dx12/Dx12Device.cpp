@@ -9,6 +9,7 @@
 
 #include "NanoGraphics/Platform/Dx12/Dx12Context.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Buffer.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Swapchain.hpp"
 
 namespace Nano::Graphics::Internal
@@ -18,7 +19,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     Dx12Device::Dx12Device(const DeviceSpecification& specs)
-        : m_Context(specs.MessageCallback, specs.DestroyCallback), m_Resources(*api_cast<const Device*>(this))
+        : m_Context(specs.MessageCallback, specs.DestroyCallback), m_Allocator(m_Context.GetD3D12Adapter().Get(), m_Context.GetD3D12Device()), m_Resources(*api_cast<const Device*>(this))
     {
     }
 
@@ -111,9 +112,10 @@ namespace Nano::Graphics::Internal
         Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
 
         DestroySubresourceViews(image);
-        m_Context.Destroy([resource = dxImage.GetD3D12Resource()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+        m_Context.Destroy([resource = dxImage.GetD3D12Resource(), allocation = dxImage.GetD3D12MAAllocation()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 
         dxImage.m_Resource = nullptr;
+        dxImage.m_Allocation = nullptr;
     }
 
     void Dx12Device::DestroySubresourceViews(Image& image) const
@@ -148,14 +150,28 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyStagingImage(StagingImage& stagingImage) const
     {
+        Dx12StagingImage& dxStagingImage = *api_cast<Dx12StagingImage*>(&stagingImage);
+
+        DestroyBuffer(*api_cast<Buffer*>(&dxStagingImage.GetDx12Buffer()));
     }
 
     void Dx12Device::DestroySampler(Sampler& sampler) const
     {
+        Dx12Sampler& dxSampler = *api_cast<Dx12Sampler*>(&sampler);
+
+        m_Resources.GetSamplerHeap().Free(dxSampler.GetSamplerIndex());
+
+        dxSampler.m_SamplerIndex = 0;
     }
 
     void Dx12Device::DestroyBuffer(Buffer& buffer) const
     {
+        Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
+
+        m_Context.Destroy([resource = dxBuffer.GetD3D12Resource(), allocation = dxBuffer.GetD3D12MAAllocation()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+        dxBuffer.m_Resource = nullptr;
+        dxBuffer.m_Allocation = nullptr;
     }
 
     void Dx12Device::DestroyFramebuffer(Framebuffer& framebuffer) const
