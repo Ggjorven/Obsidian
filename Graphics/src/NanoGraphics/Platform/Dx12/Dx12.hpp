@@ -54,9 +54,13 @@ namespace Nano::Graphics::Internal
 
         // Buffers
         DxPtr<D3D12MA::Allocation> AllocateBuffer(DxPtr<ID3D12Resource>& resource, size_t size, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+        DxPtr<D3D12MA::Allocation> AllocateBuffer(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+        DxPtr<D3D12MA::Allocation> AllocateBuffer(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12MA::ALLOCATION_DESC allocationDesc) const;
 
         // Image
         DxPtr<D3D12MA::Allocation> CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DIMENSION dimension, uint32_t width, uint32_t height, uint32_t depthOrArraySize, uint32_t mipLevels, DXGI_FORMAT format, uint32_t sampleCount, uint32_t sampleQuality, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+        DxPtr<D3D12MA::Allocation> CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT) const;
+        DxPtr<D3D12MA::Allocation> CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12MA::ALLOCATION_DESC allocationDesc) const;
 
         // Utils
         //void MapMemory(VmaAllocation allocation, void*& mapData) const;

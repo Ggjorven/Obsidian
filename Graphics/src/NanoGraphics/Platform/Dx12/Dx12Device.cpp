@@ -188,6 +188,7 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyInputLayout(InputLayout& layout) const
     {
+        (void)layout;
     }
 
     void Dx12Device::DestroyBindingLayout(BindingLayout& layout) const

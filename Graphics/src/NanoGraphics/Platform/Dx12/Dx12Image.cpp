@@ -11,6 +11,49 @@
 namespace Nano::Graphics::Internal
 {
 
+	namespace
+	{
+
+		////////////////////////////////////////////////////////////////////////////////////
+		// Helper method 
+		////////////////////////////////////////////////////////////////////////////////////
+		D3D12_RESOURCE_DESC ImageSpecificationToD3D12ResourceDesc(const ImageSpecification& specs)
+		{
+			// Note: Copied from Dx12.hpp:CreateImage
+			D3D12_RESOURCE_DESC resourceDesc = {};
+			resourceDesc.Dimension = ImageDimensionToD3D12ResourceDimension(specs.Dimension);
+			resourceDesc.Alignment = 0;
+			resourceDesc.Width = specs.Width;
+			resourceDesc.Height = specs.Height;
+			resourceDesc.DepthOrArraySize = static_cast<UINT16>(((specs.Dimension == ImageDimension::Image3D) ? specs.Depth : specs.ArraySize));
+			resourceDesc.MipLevels = static_cast<UINT16>(specs.MipLevels);
+			resourceDesc.Format = (specs.IsTypeless ? FormatToFormatMapping(specs.ImageFormat).ResourceFormat : FormatToFormatMapping(specs.ImageFormat).RTVFormat);
+			resourceDesc.SampleDesc.Count = specs.SampleCount;
+			resourceDesc.SampleDesc.Quality = specs.SampleQuality;
+			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+			
+			FormatInfo formatInfo = FormatToFormatInfo(specs.ImageFormat);
+
+			if (!specs.IsShaderResource)
+				resourceDesc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+			if (specs.IsRenderTarget)
+			{
+				if (formatInfo.HasDepth || formatInfo.HasStencil)
+					resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+				else
+					resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+			}
+
+			if (specs.IsUnorderedAccessed)
+				resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+			return resourceDesc;
+		}
+
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
@@ -59,37 +102,7 @@ namespace Nano::Graphics::Internal
 	Dx12Image::Dx12Image(const Device& device, const ImageSpecification& specs)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
-		D3D12_RESOURCE_DIMENSION dimension = ImageDimensionToD3D12ResourceDimension(specs.Dimension);
-		uint32_t depthOrArraySize = ((specs.Dimension == ImageDimension::Image3D) ? specs.Depth : specs.ArraySize);
-		DXGI_FORMAT format = (specs.IsTypeless ? FormatToFormatMapping(specs.ImageFormat).ResourceFormat : FormatToFormatMapping(specs.ImageFormat).RTVFormat);
-		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-		FormatInfo formatInfo = FormatToFormatInfo(specs.ImageFormat);
-
-		if (!specs.IsShaderResource)
-			flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-
-		if (specs.IsRenderTarget)
-		{
-			if (formatInfo.HasDepth || formatInfo.HasStencil)
-				flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-			else
-				flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-		}
-
-		if (specs.IsUnorderedAccessed)
-			flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource,
-			ResourceStateToD3D12ResourceStates(specs.PermanentState),
-			//D3D12_RESOURCE_STATE_COMMON,
-			dimension,
-			specs.Width, specs.Height, depthOrArraySize,
-			specs.MipLevels, 
-			format,
-			specs.SampleCount, specs.SampleQuality,
-			flags,
-			D3D12_HEAP_TYPE_DEFAULT
-		);
+		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
 	}
 
 	Dx12Image::~Dx12Image()
@@ -156,12 +169,12 @@ namespace Nano::Graphics::Internal
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
 	Dx12StagingImage::Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
-		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs), m_SliceRegions(GetSliceRegions()), m_Buffer(device, BufferSpecification()
+		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs), m_SubresourceOffsets(GetSubresourceOffsets()), m_Buffer(device, BufferSpecification()
 			.SetSize(GetBufferSize())
 			.SetCPUAccess(cpuAccessMode)
 			.SetPermanentState(specs.PermanentState)
 			.SetDebugName(specs.DebugName)
-		) // TODO: Implement everything
+		)
 	{
 	}
 
@@ -172,24 +185,42 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Private methods
 	////////////////////////////////////////////////////////////////////////////////////
-	std::vector<Dx12StagingImage::Region> Dx12StagingImage::GetSliceRegions() const
+	std::vector<UINT64> Dx12StagingImage::GetSubresourceOffsets() const
 	{
-		return { };
-	}
+		UINT lastSubresource = CalculateSubresource(m_Specification.MipLevels - 1, m_Specification.ArraySize - 1, 0, m_Specification.MipLevels, m_Specification.ArraySize);
+		UINT numSubresources = lastSubresource + 1;
 
-	size_t Dx12StagingImage::ComputeSliceSize(uint32_t mipLevel) const
-	{
-		return 0;
+		std::vector<UINT64> subresourceOffsets;
+		subresourceOffsets.resize(numSubresources);
+
+		D3D12_RESOURCE_DESC resourceDesc = ImageSpecificationToD3D12ResourceDesc(m_Specification);
+
+		UINT64 baseOffset = 0;
+		for (UINT i = 0; i < lastSubresource + 1; i++)
+		{
+			UINT64 subresourceSize;
+			m_Device.GetContext().GetD3D12Device()->GetCopyableFootprints(&resourceDesc, i, 1, 0, nullptr, nullptr, nullptr, &subresourceSize);
+
+			subresourceOffsets[i] = baseOffset;
+			baseOffset += subresourceSize;
+			baseOffset = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT * ((baseOffset + D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1) / D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+		}
+
+		return { };
 	}
 
 	size_t Dx12StagingImage::GetBufferSize() const
 	{
-		return 0;
-	}
+		UINT lastSubresource = CalculateSubresource(m_Specification.MipLevels - 1, m_Specification.ArraySize - 1, 0, m_Specification.MipLevels, m_Specification.ArraySize);
+		NG_ASSERT((lastSubresource < m_SubresourceOffsets.size()), "[Dx12StagingImage] Subresource count doesn't add up.");
+		
+		D3D12_RESOURCE_DESC resourceDesc = ImageSpecificationToD3D12ResourceDesc(m_Specification);
 
-	Dx12StagingImage::Region Dx12StagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z)
-	{
-		return {};
+		// Compute size of last subresource
+		UINT64 lastSubresourceSize;
+		m_Device.GetContext().GetD3D12Device()->GetCopyableFootprints(&resourceDesc, lastSubresource, 1, 0, nullptr, nullptr, nullptr, &lastSubresourceSize);
+		
+		return m_SubresourceOffsets[lastSubresource] + lastSubresourceSize;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////

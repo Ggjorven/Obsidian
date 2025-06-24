@@ -26,19 +26,28 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12InputLayout
     ////////////////////////////////////////////////////////////////////////////////////
-    //class Dx12InputLayout
-    //{
-    //public:
-    //    // Constructor & Destructor
-    //    Dx12InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes);
-    //    ~Dx12InputLayout();
-    //
-    //private:
-    //    // Private methods
-    //    void CalculateOffsetsAndStride();
-    //
-    //private:
-    //};
+    class Dx12InputLayout
+    {
+    public:
+        // Constructor & Destructor
+        Dx12InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes);
+        ~Dx12InputLayout();
+    
+    private:
+        // Private methods
+        void CalculateOffsetsAndStride();
+
+        inline uint32_t GetStride() const { return m_Stride; }
+        inline uint32_t GetNumAttributes() const { return static_cast<uint32_t>(m_Attributes.size()); }
+        inline const VertexAttributeSpecification& GetAttributeSpecification(uint32_t index) const { return m_Attributes.at(index); }
+    
+    private:
+        std::vector<VertexAttributeSpecification> m_Attributes;
+        std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputElements = {};
+
+        // Maps a binding slot to an element stride
+        uint32_t m_Stride = 0;
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12Buffer

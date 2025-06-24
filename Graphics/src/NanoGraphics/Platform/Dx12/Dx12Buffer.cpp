@@ -11,6 +11,74 @@
 namespace Nano::Graphics::Internal
 {
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Constructor & Destructor
+    ////////////////////////////////////////////////////////////////////////////////////
+    Dx12InputLayout::Dx12InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
+        : m_Attributes(attributes.begin(), attributes.end())
+    {
+        CalculateOffsetsAndStride();
+
+        m_InputElements.reserve(attributes.size() * 2);
+        for (uint32_t i = 0; i < m_Attributes.size(); i++)
+        {
+            const VertexAttributeSpecification& attribute = m_Attributes[i];
+            NG_ASSERT((attribute.ArraySize > 0), "[Dx12InputLayout] ArraySize must be larger than 0.");
+
+            const FormatMapping& formatMapping = FormatToFormatMapping(attribute.VertexFormat);
+            const FormatInfo& formatInfo = FormatToFormatInfo(attribute.VertexFormat);
+
+            for (uint32_t semanticIndex = 0; semanticIndex < attribute.ArraySize; semanticIndex++)
+            {
+                D3D12_INPUT_ELEMENT_DESC desc = {};
+                desc.SemanticName = attribute.DebugName.c_str();
+                desc.AlignedByteOffset = attribute.Offset + semanticIndex * formatInfo.BytesPerBlock;
+                desc.Format = formatMapping.SRVFormat;
+                desc.InputSlot = attribute.BufferIndex;
+                desc.SemanticIndex = semanticIndex;
+
+                if (attribute.IsInstanced)
+                {
+                    desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+                    desc.InstanceDataStepRate = 1;
+                }
+                else
+                {
+                    desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                    desc.InstanceDataStepRate = 0;
+                }
+
+                m_InputElements.push_back(desc);
+            }
+        }
+    }
+
+    Dx12InputLayout::~Dx12InputLayout()
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void Dx12InputLayout::CalculateOffsetsAndStride()
+    {
+        uint32_t offset = 0;
+        uint32_t maxOffsetEnd = 0;
+
+        for (auto& attribute : m_Attributes)
+        {
+            if (attribute.Size == VertexAttributeSpecification::AutoSize)
+                attribute.Size = FormatToFormatInfo(attribute.VertexFormat).BytesPerBlock;
+            if (attribute.Offset == VertexAttributeSpecification::AutoOffset)
+                attribute.Offset = offset;
+
+            offset = attribute.Offset + attribute.Size;
+            maxOffsetEnd = std::max(maxOffsetEnd, offset);
+        }
+
+        m_Stride = maxOffsetEnd;
+    }
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////

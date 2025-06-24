@@ -77,9 +77,26 @@ namespace Nano::Graphics::Internal
         allocDesc.CustomPool = nullptr;
         allocDesc.pPrivateData = nullptr;
 
+        return AllocateBuffer(resource, initialState, resourceDesc, allocDesc);
+    }
+
+    DxPtr<D3D12MA::Allocation> Dx12Allocator::AllocateBuffer(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12_HEAP_TYPE heapType) const
+    {
+        ALLOCATION_DESC allocDesc = {};
+        allocDesc.Flags = ALLOCATION_FLAG_NONE;
+        allocDesc.HeapType = heapType;
+        allocDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_NONE;
+        allocDesc.CustomPool = nullptr;
+        allocDesc.pPrivateData = nullptr;
+
+        return AllocateBuffer(resource, initialState, resourceDesc, allocDesc);
+    }
+
+    DxPtr<D3D12MA::Allocation> Dx12Allocator::AllocateBuffer(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12MA::ALLOCATION_DESC allocationDesc) const
+    {
         DxPtr<Allocation> allocation;
-        DX_VERIFY(m_Allocator->CreateResource(&allocDesc, &resourceDesc, initialState, nullptr, &allocation, IID_PPV_ARGS(&resource)));
-        
+        DX_VERIFY(m_Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &allocation, IID_PPV_ARGS(&resource)));
+
         return allocation;
     }
 
@@ -94,7 +111,7 @@ namespace Nano::Graphics::Internal
         resourceDesc.Width = width;
         resourceDesc.Height = height;
         resourceDesc.DepthOrArraySize = static_cast<UINT16>(depthOrArraySize);
-        resourceDesc.MipLevels = static_cast<UINT16>(depthOrArraySize);
+        resourceDesc.MipLevels = static_cast<UINT16>(mipLevels);
         resourceDesc.Format = format;
         resourceDesc.SampleDesc.Count = sampleCount;
         resourceDesc.SampleDesc.Quality = sampleQuality;
@@ -108,8 +125,25 @@ namespace Nano::Graphics::Internal
         allocDesc.CustomPool = nullptr;
         allocDesc.pPrivateData = nullptr;
 
+        return CreateImage(resource, initialState, resourceDesc, allocDesc);
+    }
+
+    DxPtr<D3D12MA::Allocation> Dx12Allocator::CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12_HEAP_TYPE heapType) const
+    {
+        ALLOCATION_DESC allocDesc = {};
+        allocDesc.Flags = ALLOCATION_FLAG_NONE;
+        allocDesc.HeapType = heapType;
+        allocDesc.ExtraHeapFlags = D3D12_HEAP_FLAG_NONE;
+        allocDesc.CustomPool = nullptr;
+        allocDesc.pPrivateData = nullptr;
+
+        return CreateImage(resource, initialState, resourceDesc, allocDesc);
+    }
+
+    DxPtr<D3D12MA::Allocation> Dx12Allocator::CreateImage(DxPtr<ID3D12Resource>& resource, D3D12_RESOURCE_STATES initialState, D3D12_RESOURCE_DESC resourceDesc, D3D12MA::ALLOCATION_DESC allocationDesc) const
+    {
         DxPtr<Allocation> allocation;
-        DX_VERIFY(m_Allocator->CreateResource(&allocDesc, &resourceDesc, initialState, nullptr, &allocation, IID_PPV_ARGS(&resource)));
+        DX_VERIFY(m_Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &allocation, IID_PPV_ARGS(&resource)));
 
         return allocation;
     }

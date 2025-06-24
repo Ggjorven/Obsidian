@@ -124,13 +124,6 @@ namespace Nano::Graphics::Internal
 	class Dx12StagingImage
 	{
 	public:
-		struct Region
-		{
-		public:
-			size_t Offset;
-			size_t Size;
-		};
-	public:
 		// Constructor & Destructor
 		Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode);
 		~Dx12StagingImage();
@@ -142,20 +135,16 @@ namespace Nano::Graphics::Internal
 		inline Dx12Buffer& GetDx12Buffer() { return m_Buffer; }
 		inline const Dx12Buffer& GetDx12Buffer() const { return m_Buffer; }
 	
-		Dx12StagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
-	
 	private:
 		// Private methods
-		std::vector<Region> GetSliceRegions() const;
-		size_t ComputeSliceSize(uint32_t mipLevel) const;
-	
+		std::vector<UINT64> GetSubresourceOffsets() const;
 		size_t GetBufferSize() const;
 	
 	private:
 		const Dx12Device& m_Device;
 		ImageSpecification m_Specification;
 	
-		std::vector<Region> m_SliceRegions = {};
+		std::vector<UINT64> m_SubresourceOffsets = {};
 	
 		Dx12Buffer m_Buffer;
 	};
