@@ -103,6 +103,12 @@ namespace Nano::Graphics::Internal
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
 		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
+	
+		if constexpr (Information::Validation)
+		{
+			if (!m_Specification.DebugName.empty())
+				m_Device.GetContext().SetDebugName(m_Resource.Get(), m_Specification.DebugName);
+		}
 	}
 
 	Dx12Image::~Dx12Image()

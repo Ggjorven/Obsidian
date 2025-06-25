@@ -59,15 +59,16 @@ project "Graphics"
 
 		"%{Dependencies.GLFW.IncludeDir}",
 		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
 	links
 	{
 		"%{Dependencies.GLFW.LibName}",
 		"%{Dependencies.Tracy.LibName}",
+		"%{Dependencies.SPIRVCross.LibName}",
 	}
 
 	filter "system:windows"
@@ -144,9 +145,9 @@ project "Graphics"
 
 			"%{Dependencies.GLFW.IncludeDir}",
 			"%{Dependencies.glm.IncludeDir}",
-			"%{Dependencies.stb.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.SPIRVCross.IncludeDir}",
 		}
 		
 		if gfxapi == "vulkan" then

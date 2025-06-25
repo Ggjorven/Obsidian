@@ -101,10 +101,6 @@ Dependencies =
 	{
 		IncludeDir = "%{wks.location}/vendor/glm/glm"
 	},
-	stb = 
-	{
-		IncludeDir = "%{wks.location}/vendor/stb/include"
-	},
 	Tracy = 
 	{
 		LibName = "Tracy",
@@ -113,6 +109,12 @@ Dependencies =
 	Nano = 
 	{
 		IncludeDir = "%{wks.location}/vendor/Nano/Nano/Nano/include"
+	},
+
+	SPIRVCross = 
+	{
+		LibName = "SPIRVCross",
+		IncludeDir = "%{wks.location}/vendor/SPIRV/SPIRV-Cross" ,
 	},
 
 	DX12 = 
@@ -190,6 +192,8 @@ group "Dependencies"
 	if gfxapi == "dx12" then
 		include "vendor/DirectX"
 	end
+
+	include "vendor/SPIRV"
 
 group ""
 

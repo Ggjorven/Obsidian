@@ -54,9 +54,9 @@ project "Sandbox"
 
 		"%{Dependencies.GLFW.IncludeDir}",
 		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
 	links
@@ -149,6 +149,7 @@ project "Sandbox"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.SPIRVCross.IncludeDir}",
 		}
 
 		if gfxapi == "vulkan" then

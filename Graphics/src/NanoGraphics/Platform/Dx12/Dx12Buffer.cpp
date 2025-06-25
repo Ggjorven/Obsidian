@@ -121,6 +121,12 @@ namespace Nano::Graphics::Internal
             size, initialState,
             flags, heapType
         );
+
+        if constexpr (Information::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+                dxDevice.GetContext().SetDebugName(m_Resource.Get(), m_Specification.DebugName);
+        }
 	}
 
 	Dx12Buffer::~Dx12Buffer()
