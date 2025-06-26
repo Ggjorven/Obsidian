@@ -65,19 +65,19 @@ namespace Nano::Graphics::Internal
     VulkanShader::VulkanShader(const Device& device, const ShaderSpecification& specs)
         : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
-        std::span<const char> code;
+        std::span<const uint32_t> code;
         std::visit([&](auto&& arg)
         {
-            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<char>>)
-                code = const_cast<std::vector<char>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
-            else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const char>>)
+            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<uint32_t>>)
+                code = const_cast<std::vector<uint32_t>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
+            else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const uint32_t>>)
                 code = arg;
         }, specs.SPIRV);
 
         VkShaderModuleCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+        createInfo.codeSize = code.size() * sizeof(uint32_t);
+        createInfo.pCode = code.data();
 
         VK_VERIFY(vkCreateShaderModule(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, VulkanAllocator::GetCallbacks(), &m_Shader));
 
@@ -106,7 +106,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    std::vector<char> VulkanShaderCompiler::CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language)
+    std::vector<uint32_t> VulkanShaderCompiler::CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language)
     {
         NG_ASSERT((!code.empty()), "[VkShaderCompiler] Empty string passed in as shader code.");
 
@@ -126,17 +126,11 @@ namespace Nano::Graphics::Internal
             options.SetHlslIoMapping(true); // Note: Needed for `register(b0, space0)` layout
         }
 
-        shaderc::SpvCompilationResult module = m_Compiler.CompileGlslToSpv(code, ShaderStageToShaderCKind(stage), "", options);
+        shaderc::SpvCompilationResult module = m_Compiler.CompileGlslToSpv(code, ShaderStageToShaderCKind(stage), "", entryPoint.c_str(), options);
 
         NG_ASSERT((module.GetCompilationStatus() == shaderc_compilation_status_success), "[VkShaderCompiler] Error compiling shader: {0}", module.GetErrorMessage());
 
-        // Convert SPIR-V code to vector<char>
-        const uint32_t* data = module.cbegin();
-        const size_t numWords = module.cend() - module.cbegin();
-        const size_t sizeInBytes = numWords * sizeof(uint32_t);
-        const char* bytes = reinterpret_cast<const char*>(data);
-
-        return std::vector<char>(bytes, bytes + sizeInBytes);
+        return std::vector<uint32_t>(module.cbegin(), module.cend());
     }
 
 }

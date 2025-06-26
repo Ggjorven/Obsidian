@@ -11,6 +11,24 @@
 
 using namespace Nano::Graphics;
 
+inline constexpr const std::string_view g_Fragment = R"(
+// Simple HLSL fragment shader
+
+struct PSInput
+{
+    float4 position : SV_POSITION;
+    float2 uv       : TEXCOORD0;
+};
+
+float4 main(PSInput input) : SV_TARGET
+{
+    // Gradient: red on the left, blue on the right
+    float red  = 1.0 - input.uv.x;
+    float blue = input.uv.x;
+    return float4(red, 0.0, blue, 1.0);
+}
+)";
+
 class Application
 {
 public:

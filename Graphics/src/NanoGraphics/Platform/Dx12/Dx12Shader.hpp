@@ -38,11 +38,13 @@ namespace Nano::Graphics::Internal
         // Internal getters
         inline const Dx12Device& GetDx12Device() const { return m_Device; }
 
+        inline D3D12_SHADER_BYTECODE GetD3D12ShaderByteCode() const { return { .pShaderBytecode = m_ByteCodeStorage.data(), .BytecodeLength = m_ByteCodeStorage.size() }; }
+
     private:
         const Dx12Device& m_Device;
         ShaderSpecification m_Specification;
 
-        D3D12_SHADER_BYTECODE m_ByteCode = {};
+        std::vector<uint8_t> m_ByteCodeStorage = { };
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +58,7 @@ namespace Nano::Graphics::Internal
         ~Dx12ShaderCompiler();
 
         // Methods
-        std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language);
+        std::vector<uint32_t> CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language);
 
     private:
         shaderc::Compiler m_Compiler = {};
