@@ -1,13 +1,13 @@
 #include "ngpch.h"
-#include "VulkanStateTracker.hpp"
+#include "StateTracker.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
+#include "NanoGraphics/Core/Information.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
+#include "NanoGraphics/Renderer/Device.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"
 #include "NanoGraphics/Renderer/Buffer.hpp"
-
-#include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -15,29 +15,29 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
-    VulkanStateTracker::VulkanStateTracker(const VulkanDevice& device)
+    StateTracker::StateTracker(const Device& device)
         : m_Device(device)
     {
     }
 
-    VulkanStateTracker::~VulkanStateTracker()
+    StateTracker::~StateTracker()
     {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanStateTracker::Clear() const
+    void StateTracker::Clear() const
     {
         m_ImageStates.clear();
     }
 
-    void VulkanStateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
+    void StateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
     {
-        NG_ASSERT((!Contains(image)), "[VkStateTracker] Started tracking an object that's already being tracked.");
-        
+        NG_ASSERT((!Contains(image)), "[StateTracker] Started tracking an object that's already being tracked.");
+
         m_ImageStates.emplace();
-        VulkanImageState& state = m_ImageStates[&image];
+        ImageState& state = m_ImageStates[&image];
         const ImageSpecification& imageSpec = image.GetSpecification();
         subresources = ResolveImageSubresouce(subresources, imageSpec, false);
 
@@ -58,36 +58,36 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void VulkanStateTracker::StartTracking(const Buffer& buffer, ResourceState currentState) const
+    void StateTracker::StartTracking(const Buffer& buffer, ResourceState currentState) const
     {
-        NG_ASSERT((!Contains(buffer)), "[VkStateTracker] Started tracking an object that's already being tracked.");
+        NG_ASSERT((!Contains(buffer)), "[StateTracker] Started tracking an object that's already being tracked.");
 
         m_BufferStates.emplace();
-        VulkanBufferState& state = m_BufferStates[&buffer];
+        BufferState& state = m_BufferStates[&buffer];
 
         state.State = currentState;
     }
 
-    void VulkanStateTracker::StopTracking(const Image& image)
+    void StateTracker::StopTracking(const Image& image)
     {
         if (Contains(image))
             m_ImageStates.erase(&image);
     }
 
-    void VulkanStateTracker::StopTracking(const Buffer& buffer)
+    void StateTracker::StopTracking(const Buffer& buffer)
     {
         if (Contains(buffer))
             m_BufferStates.erase(&buffer);
     }
 
-    void VulkanStateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
+    void StateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
     {
-        NG_ASSERT(Contains(image), "[VkStateTracker] Using an untracked image is not allowed, call StartTracking() on image.");
+        NG_ASSERT(Contains(image), "[StateTracker] Using an untracked image is not allowed, call StartTracking() on image.");
 
         const ImageSpecification& imageSpec = image.GetSpecification();
         subresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
 
-        VulkanImageState& currentState = m_ImageStates[&image];
+        ImageState& currentState = m_ImageStates[&image];
 
         if (subresources.IsEntireTexture(image.GetSpecification())) // Entire texture
         {
@@ -118,7 +118,8 @@ namespace Nano::Graphics::Internal
                 if constexpr (Information::Validation)
                 {
                     if (currentState.State == ResourceState::Unknown)
-                        m_Device.GetContext().Error("[VkStateTracker] No previous subresource state was set and currenstate is Unknown. This is not allowed.");
+                        NG_LOG_ERROR("[StateTracker] No previous subresource state was set and currenstate is Unknown. This is not allowed.");
+                        //m_Device.GetContext().Error("[StateTracker] No previous subresource state was set and currenstate is Unknown. This is not allowed.");
                 }
 
                 currentState.SubresourceStates.resize(static_cast<size_t>(imageSpec.MipLevels) * imageSpec.ArraySize, currentState.State);
@@ -137,7 +138,8 @@ namespace Nano::Graphics::Internal
                     if constexpr (Information::Validation)
                     {
                         if (priorState == ResourceState::Unknown && !stateExpanded)
-                            m_Device.GetContext().Error("[VkStateTracker] Subresource state was set to Unknown. This is not allowed.");
+                            NG_LOG_ERROR("[StateTracker] Subresource state was set to Unknown. This is not allowed.");
+                            //m_Device.GetContext().Error("[StateTracker] Subresource state was set to Unknown. This is not allowed.");
                     }
 
                     bool transitionNecessary = (priorState != state);
@@ -168,12 +170,12 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void VulkanStateTracker::RequireBufferState(Buffer& buffer, ResourceState state) const
+    void StateTracker::RequireBufferState(Buffer& buffer, ResourceState state) const
     {
-        NG_ASSERT(Contains(buffer), "[VkStateTracker] Using an untracked buffer is not allowed, call StartTracking() on buffer.");
+        NG_ASSERT(Contains(buffer), "[StateTracker] Using an untracked buffer is not allowed, call StartTracking() on buffer.");
 
-        VulkanBufferState& currentState = m_BufferStates[&buffer];
-        
+        BufferState& currentState = m_BufferStates[&buffer];
+
         bool transitionNecessary = (currentState.State != state);
         bool uavNecessary = (static_cast<bool>((state & ResourceState::UnorderedAccess)) != false) && (currentState.EnableUavBarriers || !currentState.FirstUavBarrierPlaced);
 
@@ -205,94 +207,10 @@ namespace Nano::Graphics::Internal
         currentState.State = state;
     }
 
-    void VulkanStateTracker::CommitBarriers(VkCommandBuffer cmdBuf) const
+    void StateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const
     {
-        if (m_ImageBarriers.empty() && m_BufferBarriers.empty())
-            return;
-
-        std::vector<VkImageMemoryBarrier2> imageBarriers;
-        imageBarriers.reserve(m_ImageBarriers.size());
-        std::vector<VkBufferMemoryBarrier2> bufferBarriers;
-        bufferBarriers.reserve(m_BufferBarriers.size());
-
-        for (const ImageBarrier& imageBarrier : m_ImageBarriers)
-        {
-            const ResourceStateMapping& before = ResourceStateToMapping(imageBarrier.StateBefore);
-            const ResourceStateMapping& after = ResourceStateToMapping(imageBarrier.StateAfter);
-
-            NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
-
-            Image& image = *imageBarrier.ImagePtr;
-            VulkanImage& vulkanImage = *api_cast<VulkanImage*>(imageBarrier.ImagePtr);
-
-            VkImageMemoryBarrier2 barrier2 = {};
-            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-            barrier2.srcStageMask = before.StageFlags;
-            barrier2.dstStageMask = after.StageFlags;
-            barrier2.srcAccessMask = before.AccessMask;
-            barrier2.dstAccessMask = after.AccessMask;
-            barrier2.oldLayout = before.ImageLayout;
-            barrier2.newLayout = after.ImageLayout;
-            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.image = vulkanImage.GetVkImage();
-
-            barrier2.subresourceRange.aspectMask = VkFormatToImageAspect(FormatToVkFormat(image.GetSpecification().ImageFormat));
-            barrier2.subresourceRange.baseMipLevel = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageMipLevel);
-            barrier2.subresourceRange.levelCount = (imageBarrier.EntireTexture ? image.GetSpecification().MipLevels : 1);
-            barrier2.subresourceRange.baseArrayLayer = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageArraySlice);
-            barrier2.subresourceRange.layerCount = (imageBarrier.EntireTexture ? image.GetSpecification().ArraySize : 1);
-
-            imageBarriers.push_back(barrier2);
-        }
-
-        for (const BufferBarrier& bufferBarrier : m_BufferBarriers)
-        {
-            const ResourceStateMapping& before = ResourceStateToMapping(bufferBarrier.StateBefore);
-            const ResourceStateMapping& after = ResourceStateToMapping(bufferBarrier.StateAfter);
-
-            Buffer& buffer = *bufferBarrier.BufferPtr;
-            VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
-
-            VkBufferMemoryBarrier2 barrier2 = {};
-            barrier2.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-            barrier2.srcStageMask = before.StageFlags;
-            barrier2.dstStageMask = after.StageFlags;
-            barrier2.srcAccessMask = before.AccessMask;
-            barrier2.dstAccessMask = after.AccessMask;
-            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.buffer = vulkanBuffer.GetVkBuffer();
-            barrier2.offset = 0;
-            barrier2.size = buffer.GetSpecification().Size;
-
-            bufferBarriers.push_back(barrier2);
-        }
-
-        if (!imageBarriers.empty() || !bufferBarriers.empty())
-        {
-            VkDependencyInfo dependencyInfo = {};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(bufferBarriers.size());
-            dependencyInfo.pBufferMemoryBarriers = bufferBarriers.data();
-            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(imageBarriers.size());
-            dependencyInfo.pImageMemoryBarriers = imageBarriers.data();
-
-#if defined(NG_PLATFORM_APPLE)
-            VkExtension::g_vkCmdPipelineBarrier2KHR(cmdBuf, &dependencyInfo);
-#else
-            vkCmdPipelineBarrier2(cmdBuf, &dependencyInfo);
-#endif
-        }
-
-        m_ImageBarriers.clear();
-        m_BufferBarriers.clear();
-    }
-
-    void VulkanStateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const
-    {
-        NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
-        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
+        NG_ASSERT((Contains(image)), "[StateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[StateTracker] Cannot get a single ResourceState from multiple subresources.");
 
         if (!image.GetSpecification().HasPermanentState())
             return;
@@ -304,9 +222,9 @@ namespace Nano::Graphics::Internal
             RequireImageState(image, subresource, state);
     }
 
-    void VulkanStateTracker::ResolvePermanentState(Buffer& buffer) const
+    void StateTracker::ResolvePermanentState(Buffer& buffer) const
     {
-        NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT((Contains(buffer)), "[StateTracker] Cannot get resourcestate for an untracked object.");
         if (!buffer.GetSpecification().HasPermanentState())
             return;
 
@@ -320,23 +238,23 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Getters
     ////////////////////////////////////////////////////////////////////////////////////
-    ResourceState VulkanStateTracker::GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const
+    ResourceState StateTracker::GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const
     {
-        NG_ASSERT((Contains(image)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
-        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[VkStateTracker] Cannot get a single ResourceState from multiple subresources.");
+        NG_ASSERT((Contains(image)), "[StateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[StateTracker] Cannot get a single ResourceState from multiple subresources.");
 
         const ImageSpecification& imageSpec = image.GetSpecification();
         subresource = ResolveImageSubresouce(subresource, imageSpec, false);
 
         if (subresource.IsEntireTexture(imageSpec))
             return m_ImageStates.at(&image).State;
-        
+
         return m_ImageStates.at(&image).SubresourceStates[ImageSubresourceSpecification::SubresourceIndex(subresource.BaseMipLevel, subresource.BaseArraySlice, imageSpec)];
     }
 
-    ResourceState VulkanStateTracker::GetResourceState(const Buffer& buffer) const
+    ResourceState StateTracker::GetResourceState(const Buffer& buffer) const
     {
-        NG_ASSERT((Contains(buffer)), "[VkStateTracker] Cannot get resourcestate for an untracked object.");
+        NG_ASSERT((Contains(buffer)), "[StateTracker] Cannot get resourcestate for an untracked object.");
         return m_BufferStates.at(&buffer).State;
     }
 

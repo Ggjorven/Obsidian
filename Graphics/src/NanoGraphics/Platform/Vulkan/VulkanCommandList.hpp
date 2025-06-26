@@ -7,7 +7,6 @@
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
 
 #include <array>
 

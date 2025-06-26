@@ -237,7 +237,86 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::CommitBarriers()
     {
         NG_PROFILE("VulkanCommandList::CommitBarriers()");
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().CommitBarriers(m_CommandBuffer);
+
+        auto& imageBarriers = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetImageBarriers();
+        auto& bufferBarriers = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetBufferBarriers();
+
+        if (imageBarriers.empty() && bufferBarriers.empty())
+            return;
+
+        std::vector<VkImageMemoryBarrier2> vkImageBarriers;
+        vkImageBarriers.reserve(imageBarriers.size());
+        std::vector<VkBufferMemoryBarrier2> vkBufferBarriers;
+        vkBufferBarriers.reserve(bufferBarriers.size());
+
+        for (const ImageBarrier& imageBarrier : imageBarriers)
+        {
+            const ResourceStateMapping& before = ResourceStateToMapping(imageBarrier.StateBefore);
+            const ResourceStateMapping& after = ResourceStateToMapping(imageBarrier.StateAfter);
+
+            NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
+
+            Image& image = *imageBarrier.ImagePtr;
+            VulkanImage& vulkanImage = *api_cast<VulkanImage*>(imageBarrier.ImagePtr);
+
+            VkImageMemoryBarrier2& barrier2 = vkImageBarriers.emplace_back();
+            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = before.StageFlags;
+            barrier2.dstStageMask = after.StageFlags;
+            barrier2.srcAccessMask = before.AccessMask;
+            barrier2.dstAccessMask = after.AccessMask;
+            barrier2.oldLayout = before.ImageLayout;
+            barrier2.newLayout = after.ImageLayout;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.image = vulkanImage.GetVkImage();
+
+            barrier2.subresourceRange.aspectMask = VkFormatToImageAspect(FormatToVkFormat(image.GetSpecification().ImageFormat));
+            barrier2.subresourceRange.baseMipLevel = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageMipLevel);
+            barrier2.subresourceRange.levelCount = (imageBarrier.EntireTexture ? image.GetSpecification().MipLevels : 1);
+            barrier2.subresourceRange.baseArrayLayer = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageArraySlice);
+            barrier2.subresourceRange.layerCount = (imageBarrier.EntireTexture ? image.GetSpecification().ArraySize : 1);
+        }
+
+        for (const BufferBarrier& bufferBarrier : bufferBarriers)
+        {
+            const ResourceStateMapping& before = ResourceStateToMapping(bufferBarrier.StateBefore);
+            const ResourceStateMapping& after = ResourceStateToMapping(bufferBarrier.StateAfter);
+
+            Buffer& buffer = *bufferBarrier.BufferPtr;
+            VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
+
+            VkBufferMemoryBarrier2& barrier2 = vkBufferBarriers.emplace_back();
+            barrier2.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = before.StageFlags;
+            barrier2.dstStageMask = after.StageFlags;
+            barrier2.srcAccessMask = before.AccessMask;
+            barrier2.dstAccessMask = after.AccessMask;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.buffer = vulkanBuffer.GetVkBuffer();
+            barrier2.offset = 0;
+            barrier2.size = buffer.GetSpecification().Size;
+        }
+
+        if (!vkImageBarriers.empty() || !vkBufferBarriers.empty())
+        {
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(vkBufferBarriers.size());
+            dependencyInfo.pBufferMemoryBarriers = vkBufferBarriers.data();
+            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(vkImageBarriers.size());
+            dependencyInfo.pImageMemoryBarriers = vkImageBarriers.data();
+
+#if defined(NG_PLATFORM_APPLE)
+            VkExtension::g_vkCmdPipelineBarrier2KHR(m_CommandBuffer, &dependencyInfo);
+#else
+            vkCmdPipelineBarrier2(m_CommandBuffer, &dependencyInfo);
+#endif
+        }
+
+        bufferBarriers.clear();
+        imageBarriers.clear();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
