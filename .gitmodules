@@ -19,3 +19,6 @@
 [submodule "vendor/SPIRV/SPIRV-Cross"]
 	path = vendor/SPIRV/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "vendor/shaderc/ShaderCompiler"]
+	path = vendor/shaderc/ShaderCompiler
+	url = https://github.com/Ggjorven/ShaderCompiler.git

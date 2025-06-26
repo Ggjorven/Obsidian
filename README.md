@@ -24,7 +24,7 @@ Heavily inspired by NVRHI, but with a more modern API and more abstraction.
 ### Prerequisites
 
 Ensure you have the following installed on your system:
-- Vulkan SDK (Required for all APIs, windows, linux & macos)
+- Vulkan SDK (Required for Vulkan API, windows, linux & macos)
 - Windows SDK (Required for DX12 API, windows only)
 
 - A C++23 or later compiler (e.g., MSVC, GCC, or Clang)
@@ -60,4 +60,5 @@ Contributions are welcome! Please fork the repository and create a pull request 
 - [Nano](https://github.com/ggjorven/Nano) - Additional utilities
 - [VMA](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) - Vulkan Memory Allocator
 - [D3D12MA](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator) - D3D12 Memory Allocator
+- [shaderc](https://github.com/google/shaderc) - Shader compilation for GLSL and HLSL
 - [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross) - Transpiling shader code

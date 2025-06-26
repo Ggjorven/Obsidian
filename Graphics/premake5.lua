@@ -61,6 +61,7 @@ project "Graphics"
 		"%{Dependencies.glm.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.shaderc.IncludeDir}",
 		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
@@ -68,6 +69,7 @@ project "Graphics"
 	{
 		"%{Dependencies.GLFW.LibName}",
 		"%{Dependencies.Tracy.LibName}",
+		"%{Dependencies.shaderc.LibName}",
 		"%{Dependencies.SPIRVCross.LibName}",
 	}
 
@@ -88,7 +90,6 @@ project "Graphics"
 			links
 			{
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
 			}
 		elseif gfxapi == "dx12" then
 			links
@@ -112,7 +113,6 @@ project "Graphics"
 			links
 			{
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
 			}
 		end
 		
@@ -147,6 +147,7 @@ project "Graphics"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.shaderc.IncludeDir}",
 			"%{Dependencies.SPIRVCross.IncludeDir}",
 		}
 		

@@ -56,6 +56,7 @@ project "Sandbox"
 		"%{Dependencies.glm.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.shaderc.IncludeDir}",
 		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
@@ -87,13 +88,14 @@ project "Sandbox"
 		{
 			"%{Dependencies.GLFW.LibName}",
 			"%{Dependencies.Tracy.LibName}",
+			"%{Dependencies.shaderc.LibName}",
+			"%{Dependencies.SPIRVCross.LibName}",
 		}
 
 		if gfxapi == "vulkan" then
 			links
 			{
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
 			}
 		end
 
@@ -123,7 +125,6 @@ project "Sandbox"
 			links
 			{
 				"%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.ShaderC.LibName}",
 			}
 
 			postbuildcommands
@@ -149,6 +150,7 @@ project "Sandbox"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.shaderc.IncludeDir}",
 			"%{Dependencies.SPIRVCross.IncludeDir}",
 		}
 
