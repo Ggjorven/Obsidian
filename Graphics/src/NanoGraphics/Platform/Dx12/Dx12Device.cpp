@@ -176,14 +176,17 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyFramebuffer(Framebuffer& framebuffer) const
     {
+        (void)framebuffer;
     }
 
     void Dx12Device::DestroyRenderpass(Renderpass& renderpass) const
     {
+        (void)renderpass;
     }
 
     void Dx12Device::DestroyShader(Shader& shader) const
     {
+        (void)shader;
     }
 
     void Dx12Device::DestroyInputLayout(InputLayout& layout) const

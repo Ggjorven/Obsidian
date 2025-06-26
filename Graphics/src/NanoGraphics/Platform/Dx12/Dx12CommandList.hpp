@@ -106,13 +106,13 @@ namespace Nano::Graphics::Internal
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
 
 		// Internal Getters
-		inline ID3D12GraphicsCommandList* GetID3D12GraphicsCommandList() const { return m_CommandList; }
+		inline DxPtr<ID3D12GraphicsCommandList10> GetID3D12GraphicsCommandList() const { return m_CommandList; }
 
 	private:
 		Dx12CommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
 
-		ID3D12GraphicsCommandList* m_CommandList = nullptr;
+		DxPtr<ID3D12GraphicsCommandList10> m_CommandList = nullptr;
 
 		GraphicsState m_GraphicsState = {};
 		ComputeState m_ComputeState = {};

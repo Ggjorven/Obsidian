@@ -90,13 +90,17 @@ namespace Nano::Graphics::Internal
     Dx12CommandList::Dx12CommandList(CommandListPool& pool, const CommandListSpecification& specs)
         : m_Pool(*api_cast<Dx12CommandListPool*>(&pool)), m_Specification(specs)
     {
-        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator().Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
+        DxPtr<ID3D12CommandList> list;
+        DX_VERIFY(m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12Device()->CreateCommandList(0, CommandQueueToD3D12CommandListType(m_Pool.GetSpecification().Queue), m_Pool.GetD3D12CommandAllocator().Get(), nullptr, IID_PPV_ARGS(&list)));
+        
+        DX_VERIFY(list->QueryInterface(IID_PPV_ARGS(&m_CommandList)));
+
         DX_VERIFY(m_CommandList->Close());
 
         if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().SetDebugName(m_CommandList, std::string(m_Specification.DebugName));
+                m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().SetDebugName(m_CommandList.Get(), std::string(m_Specification.DebugName));
         }
     }
 
@@ -138,7 +142,7 @@ namespace Nano::Graphics::Internal
             DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));
         }
         
-        ID3D12CommandList* lists[] = { m_CommandList };
+        ID3D12CommandList* lists[] = { m_CommandList.Get()};
         queue->ExecuteCommandLists(1, lists);
 
         uint64_t signalValue = m_Pool.GetDx12Swapchain().RetrieveCommandListWaitValue(*this);
@@ -179,7 +183,6 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::SetScissor(const ScissorRect& scissor) const
     {
         NG_PROFILE("Dx12CommandList::SetScissor()");
-        
     }
 
     void Dx12CommandList::BindVertexBuffer(const Buffer& buffer) const
