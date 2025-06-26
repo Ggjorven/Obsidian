@@ -1,17 +1,13 @@
 #pragma once
 
-#include "NanoGraphics/Core/Information.hpp"
-
 #include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/ShaderSpec.hpp"
 
-#include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
 #include <Nano/Nano.hpp>
 
 #include <shaderc/shaderc.hpp>
-
-#include <vector>
 
 namespace Nano::Graphics
 {
@@ -21,45 +17,43 @@ namespace Nano::Graphics
 namespace Nano::Graphics::Internal
 {
 
-    class VulkanDevice;
-    class VulkanShader;
-    class VulkanShaderCompiler;
+    class Dx12Device;
+    class Dx12Shader;
+    class Dx12ShaderCompiler;
 
-#if defined(NG_API_VULKAN)
+#if defined(NG_API_DX12)
     ////////////////////////////////////////////////////////////////////////////////////
-    // VulkanShader
+    // Dx12Shader
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanShader
+    class Dx12Shader
     {
     public:
         // Constructors & Destructor
-        VulkanShader(const Device& device, const ShaderSpecification& specs);
-        ~VulkanShader();
+        Dx12Shader(const Device& device, const ShaderSpecification& specs);
+        ~Dx12Shader();
 
         // Getters
         inline const ShaderSpecification& GetSpecification() const { return m_Specification; }
 
         // Internal getters
-        inline VkShaderModule GetVkShaderModule() const { return m_Shader; }
-
-        inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
+        inline const Dx12Device& GetDx12Device() const { return m_Device; }
 
     private:
-        const VulkanDevice& m_Device;
+        const Dx12Device& m_Device;
         ShaderSpecification m_Specification;
 
-        VkShaderModule m_Shader = VK_NULL_HANDLE;
+        D3D12_SHADER_BYTECODE m_ByteCode = {};
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // VulkanShaderCompiler
+    // Dx12ShaderCompiler
     ////////////////////////////////////////////////////////////////////////////////////
-    class VulkanShaderCompiler
+    class Dx12ShaderCompiler
     {
     public:
         // Constructors & Destructor
-        VulkanShaderCompiler();
-        ~VulkanShaderCompiler();
+        Dx12ShaderCompiler();
+        ~Dx12ShaderCompiler();
 
         // Methods
         std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language);

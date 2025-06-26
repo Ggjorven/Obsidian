@@ -114,12 +114,12 @@ Dependencies =
 	shaderc = 
 	{
 		LibName = "shaderc",
-		IncludeDir = "%{wks.location}/vendor/shaderc/ShaderCompiler/ShaderCompiler/include" ,
+		IncludeDir = "%{wks.location}/vendor/shaderc/ShaderCompiler/ShaderCompiler/include"
 	},
 	SPIRVCross = 
 	{
 		LibName = "SPIRVCross",
-		IncludeDir = "%{wks.location}/vendor/SPIRV-Cross/SPIRV-Cross" ,
+		IncludeDir = "%{wks.location}/vendor/SPIRV-Cross/SPIRV-Cross" 
 	},
 
 	DX12 = 
@@ -128,9 +128,18 @@ Dependencies =
 	},
 	D3D12MA = 
 	{
-		IncludeDir = "%{wks.location}/vendor/DirectX/D3D12MA/include",
-		LibName = "D3D12MA"
+		LibName = "D3D12MA",
+		IncludeDir = "%{wks.location}/vendor/DirectX/D3D12MA/include"
 	},
+	DXC = 
+	{
+		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxcompiler",
+		IncludeDir = "%{wks.location}/vendor/DirectX/DXC/include"
+	},
+	DXIL = 
+	{
+		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxil"
+	}
 }
 
 ------------------------------------------------------------------------------

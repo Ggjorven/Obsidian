@@ -46,13 +46,13 @@ namespace Nano::Graphics::Internal
             { ShaderStage::ClosestHit,              shaderc_glsl_closesthit_shader },
             { ShaderStage::Miss,                    shaderc_glsl_miss_shader },
             { ShaderStage::Intersection,            shaderc_glsl_intersection_shader },
-            { ShaderStage::Callable,                shaderc_glsl_callable_shader },
+            { ShaderStage::Callable,                shaderc_glsl_callable_shader }
         });
 
         ////////////////////////////////////////////////////////////////////////////////////
         // Helper methods
         ////////////////////////////////////////////////////////////////////////////////////
-        static shaderc_shader_kind ShaderStageToShaderCKind(ShaderStage stage)
+        constexpr static shaderc_shader_kind ShaderStageToShaderCKind(ShaderStage stage)
         {
             return g_ShaderStageMapping[(std::to_underlying(stage) ? (std::countr_zero(std::to_underlying(stage)) + 1) : 0)].ShaderCShaderKind;
         }
@@ -112,11 +112,8 @@ namespace Nano::Graphics::Internal
 
         // Set language
         shaderc::CompileOptions options = {};
-#if defined(NG_PLATFORM_MACOS)
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-#else
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-#endif
+        
         if (language == ShadingLanguage::GLSL)      
             options.SetSourceLanguage(shaderc_source_language_glsl);
         else if (language == ShadingLanguage::HLSL)

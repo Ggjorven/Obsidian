@@ -43,7 +43,7 @@ project "Graphics"
     elseif gfxapi == "dx12" then
         defines { "NG_API_DX12" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
-		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}" }
+		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}", "%{Dependencies.DXC.IncludeDir}" }
 	elseif gfxapi == "metal" then
         defines { "NG_API_METAL" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Dummy/**" }
@@ -97,9 +97,11 @@ project "Graphics"
 				"d3d12",
 				"dxgi",
 				"dxguid",
-				"d3dcompiler",
+				-- "d3dcompiler",
 
 				"%{Dependencies.D3D12MA.LibName}",
+				"%{Dependencies.DXC.LibName}",
+				-- "%{Dependencies.DXIL.LibName}",
 			}
 		end
 
