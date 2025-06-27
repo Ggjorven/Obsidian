@@ -295,22 +295,19 @@ namespace Nano::Graphics::Internal
             ~Heap();
 
             // Methods
-            Index CreateSRV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateUAV(Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateRTV(Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateDSV(const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
-            Index CreateSampler(const D3D12_SAMPLER_DESC& desc);
+            Index CreateSRV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateUAV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateRTV(Index index, Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
+            Index CreateDSV(Index index, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
+            Index CreateSampler(Index index, const D3D12_SAMPLER_DESC& desc);
             void Free(Index index);
 
             void Grow(uint32_t minNewSize);
 
             // Getters
+            Index GetNextIndex();
             CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandleForIndex(Index index) const;
         
-        private:
-            // Private methods
-            Index GetNextIndex();
-
         private:
             const Dx12Device& m_Device;
 

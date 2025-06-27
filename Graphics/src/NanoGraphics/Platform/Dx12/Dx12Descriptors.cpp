@@ -1,5 +1,5 @@
 #include "ngpch.h"
-#include "Dx12Resources.hpp"
+#include "Dx12Descriptors.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Core/Information.hpp"
@@ -17,33 +17,34 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12Resources::Heap::Heap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+	Dx12DescriptorHeap::Dx12DescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_MaxSize(maxSize), m_Type(type), m_IsShaderVisible(isShaderVisible)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 		heapDesc.NumDescriptors = maxSize;
 		heapDesc.Type = m_Type;
 		heapDesc.Flags = (m_IsShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-		
+
 		DX_VERIFY(m_Device.GetContext().GetD3D12Device()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_DescriptorHeap)));
-		
+
+		// Caching data
 		m_DescriptorSize = m_Device.GetContext().GetD3D12Device()->GetDescriptorHandleIncrementSize(type);
-		m_Start = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		m_Offset = 0;
+		m_CPUStart = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		m_GPUStart = m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 	}
 
-	Dx12Resources::Heap::~Heap()
+	Dx12DescriptorHeap::~Dx12DescriptorHeap()
 	{
 		m_Device.GetContext().Destroy([heap = m_DescriptorHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
-	// Methods
+	// Creation methods // TODO: All of these methods
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateSRV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
+	void Dx12DescriptorHeap::CreateSRV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
 	{
-		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12Resources::Heap] Cannot allocate an SRV from a non SRV heap.");
-		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
@@ -55,8 +56,6 @@ namespace Nano::Graphics::Internal
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 		uint32_t planeSlice = (viewDesc.Format == DXGI_FORMAT_X24_TYPELESS_G8_UINT) ? 1 : 0;
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
 
 		switch (dimension)
 		{
@@ -117,14 +116,23 @@ namespace Nano::Graphics::Internal
 			break;
 		}
 
-		m_Device.GetContext().GetD3D12Device()->CreateShaderResourceView(resource, &viewDesc, handle);
-		return index;
+		// Passthrough to other func
+		CreateSRV(index, viewDesc, resource);
 	}
 
-	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateUAV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
+	void Dx12DescriptorHeap::CreateSRV(DescriptorHeapIndex index, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* resource)
 	{
-		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12Resources::Heap] Cannot allocate an UAV from a non UAV heap.");
-		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
+		m_Device.GetContext().GetD3D12Device()->CreateShaderResourceView(resource, &desc, handle);
+	}
+
+	void Dx12DescriptorHeap::CreateUAV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an UAV from a non UAV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
@@ -133,8 +141,6 @@ namespace Nano::Graphics::Internal
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
 		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).SRVFormat;
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
 
 		switch (specs.Dimension)
 		{
@@ -167,10 +173,10 @@ namespace Nano::Graphics::Internal
 			viewDesc.Texture3D.MipSlice = resSubresources.BaseMipLevel;
 			break;
 		case ImageDimension::Image2DMS:
-		case ImageDimension::Image2DMSArray: 
+		case ImageDimension::Image2DMSArray:
 		{
 			m_Device.GetContext().Error(std::format("Image {0} has unsupported dimension for UAV: Image2DMSArray", specs.DebugName));
-			return index;
+			return;
 		}
 
 		default:
@@ -178,21 +184,28 @@ namespace Nano::Graphics::Internal
 			break;
 		}
 
-		m_Device.GetContext().GetD3D12Device()->CreateUnorderedAccessView(resource, nullptr, &viewDesc, handle);
-		return index;
+		// Passthrough to other func
+		CreateUAV(index, viewDesc, resource);
 	}
 
-	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateRTV(Index index, Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource)
+	void Dx12DescriptorHeap::CreateUAV(DescriptorHeapIndex index, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource)
 	{
-		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV), "[Dx12Resources::Heap] Cannot allocate an RTV from a non RTV heap.");
-		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an UAV from a non UAV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
+		m_Device.GetContext().GetD3D12Device()->CreateUnorderedAccessView(resource, nullptr, &desc, handle);
+	}
+
+	void Dx12DescriptorHeap::CreateRTV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV), "[Dx12DescriptorHeap] Cannot allocate an RTV from a non RTV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
 
 		D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
 		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).RTVFormat;
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
 
 		switch (specs.Dimension)
 		{
@@ -238,14 +251,23 @@ namespace Nano::Graphics::Internal
 			break;
 		}
 
-		m_Device.GetContext().GetD3D12Device()->CreateRenderTargetView(resource, &viewDesc, handle);
-		return index;
+		// Passthrough to other func
+		CreateRTV(index, viewDesc, resource);
 	}
 
-	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateDSV(Index index, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly)
+	void Dx12DescriptorHeap::CreateRTV(DescriptorHeapIndex index, const D3D12_RENDER_TARGET_VIEW_DESC& desc, ID3D12Resource* resource)
 	{
-		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV), "[Dx12Resources::Heap] Cannot allocate an DSV from a non DSV heap.");
-		NG_ASSERT(resource, "[Dx12Resources::Heap] Resource must not be null.");
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV), "[Dx12DescriptorHeap] Cannot allocate an RTV from a non RTV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
+		m_Device.GetContext().GetD3D12Device()->CreateRenderTargetView(resource, &desc, handle);
+	}
+
+	void Dx12DescriptorHeap::CreateDSV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, bool isReadOnly)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV), "[Dx12DescriptorHeap] Cannot allocate an DSV from a non DSV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
 		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, true);
 
@@ -258,8 +280,6 @@ namespace Nano::Graphics::Internal
 			if (viewDesc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT || viewDesc.Format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT)
 				viewDesc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
 		}
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
 
 		switch (specs.Dimension)
 		{
@@ -293,10 +313,10 @@ namespace Nano::Graphics::Internal
 			viewDesc.Texture2DMSArray.FirstArraySlice = resSubresources.BaseArraySlice;
 			viewDesc.Texture2DMSArray.ArraySize = resSubresources.NumArraySlices;
 			break;
-		case ImageDimension::Image3D: 
+		case ImageDimension::Image3D:
 		{
 			m_Device.GetContext().Error(std::format("Image {0} has unsupported dimension for DSV: ImageDimension::Image3D", specs.DebugName));
-			return index;
+			return;
 		}
 
 		default:
@@ -304,26 +324,39 @@ namespace Nano::Graphics::Internal
 			break;
 		}
 
-		m_Device.GetContext().GetD3D12Device()->CreateDepthStencilView(resource, &viewDesc, handle);
-		return index;
+		// Passthrough to other func
+		CreateDSV(index, viewDesc, resource);
 	}
 
-	Dx12Resources::Heap::Index Dx12Resources::Heap::CreateSampler(Index index, const D3D12_SAMPLER_DESC& desc)
+	void Dx12DescriptorHeap::CreateDSV(DescriptorHeapIndex index, const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, ID3D12Resource* resource)
 	{
-		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), "[Dx12Resources::Heap] Cannot allocate a Sampler from a non Sampler heap.");
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV), "[Dx12DescriptorHeap] Cannot allocate an DSV from a non DSV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetHandleForIndex(index);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
+		m_Device.GetContext().GetD3D12Device()->CreateDepthStencilView(resource, &desc, handle);
+	}
 
+	void Dx12DescriptorHeap::CreateSampler(DescriptorHeapIndex index, const SamplerSpecification& specs)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), "[Dx12DescriptorHeap] Cannot allocate a Sampler from a non Sampler heap.");
+
+		// TODO: ...
+
+		// TODO: Passthrough
+	}
+
+	void Dx12DescriptorHeap::CreateSampler(DescriptorHeapIndex index, const D3D12_SAMPLER_DESC& desc)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), "[Dx12DescriptorHeap] Cannot allocate a Sampler from a non Sampler heap.");
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
 		m_Device.GetContext().GetD3D12Device()->CreateSampler(&desc, handle);
-		return index;
 	}
 
-	void Dx12Resources::Heap::Free(Index handle)
-	{
-		m_FreeEntries.emplace_back(1, handle);
-	}
-
-	void Dx12Resources::Heap::Grow(uint32_t minNewSize)
+	////////////////////////////////////////////////////////////////////////////////////
+	// Methods
+	////////////////////////////////////////////////////////////////////////////////////
+	void Dx12DescriptorHeap::Grow(uint32_t minNewSize)
 	{
 		// Utility function
 		auto nextPowerOf2 = [](uint32_t minSize) -> uint32_t
@@ -361,13 +394,11 @@ namespace Nano::Graphics::Internal
 		heapDesc.Flags = (m_IsShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 
 		DX_VERIFY(m_Device.GetContext().GetD3D12Device()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_DescriptorHeap)));
-		m_Start = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		m_Offset = 0;
+		m_CPUStart = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		m_GPUStart = m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
 		// Copy old descriptors
-		m_Device.GetContext().GetD3D12Device()->CopyDescriptorsSimple(oldSize, m_Start, oldHeap->GetCPUDescriptorHandleForHeapStart(), m_Type);
-
-		// Note: The previous FreeEntries are still valid since we just store an index
+		m_Device.GetContext().GetD3D12Device()->CopyDescriptorsSimple(oldSize, m_CPUStart, oldHeap->GetCPUDescriptorHandleForHeapStart(), m_Type);
 
 		m_Device.GetContext().Destroy([heap = oldHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
@@ -375,29 +406,143 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Getters
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12Resources::Heap::Index Dx12Resources::Heap::GetNextIndex()
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12DescriptorHeap::GetCPUHandleForIndex(DescriptorHeapIndex index) const
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = m_CPUStart;
+		return handle.Offset(index, m_DescriptorSize);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Constructor & Destructor
+	////////////////////////////////////////////////////////////////////////////////////
+	Dx12DynamicDescriptorHeap::Dx12DynamicDescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible)
+	{
+		m_FreeEntries.reserve(maxSize);
+	}
+
+	Dx12DynamicDescriptorHeap::~Dx12DynamicDescriptorHeap()
+	{
+		// Note: Dx12DescriptorHeap handles everything
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Creation methods
+	////////////////////////////////////////////////////////////////////////////////////
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSRV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateSRV(index, specs, subresources, resource, format, dimension);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSRV(const D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateSRV(index, desc, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateUAV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateUAV(index, specs, subresources, resource, format, dimension);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateUAV(const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateUAV(index, desc, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateRTV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateRTV(index, specs, subresources, resource, format);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateRTV(const D3D12_RENDER_TARGET_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateRTV(index, desc, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateDSV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, bool isReadOnly)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateDSV(index, specs, subresources, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateDSV(const D3D12_DEPTH_STENCIL_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateDSV(index, desc, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSampler(const SamplerSpecification& specs)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateSampler(index, specs);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSampler(const D3D12_SAMPLER_DESC& desc)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateSampler(index, desc);
+		return index;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Creation methods
+	////////////////////////////////////////////////////////////////////////////////////
+	void Dx12DynamicDescriptorHeap::Free(DescriptorHeapIndex index)
+	{
+		// TODO: Better algorithm for this?
+		for (auto& freed : m_FreeEntries)
+		{
+			if ((freed.Index + freed.Amount) == index)
+			{
+				freed.Amount += 1;
+				return;
+			}
+		}
+		
+		m_FreeEntries.emplace_back(1, index);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Private methods
+	////////////////////////////////////////////////////////////////////////////////////
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::GetNextIndex()
 	{
 		// If we have a freed slot use that else use the offset
-		Index index = {};
+		DescriptorHeapIndex index = {};
 		if (!m_FreeEntries.empty())
 		{
 			Entry& e = m_FreeEntries.back();
 
-			index = e.IndexForHandle;
+			index = e.Index;
 
 			if (e.Amount == 1)
 				m_FreeEntries.pop_back();
 			else
 			{
 				e.Amount -= 1;
-				e.IndexForHandle += 1;
+				e.Index += 1;
 			}
 		}
 		else
 		{
 			if (m_Count >= m_MaxSize) [[unlikely]]
 			{
-				m_Device.GetContext().Warn("[Dx12Resources::Heap] Grew descriptor heap, this is untested and may cause previous retrieved descriptors to be invalid and crash.");
+				m_Device.GetContext().Warn("Dx12DynamicDescriptorHeap] Grew descriptor heap, this is untested and may cause previous retrieved descriptors to be invalid and crash.");
 				Grow(m_Count + 1);
 			}
 
@@ -407,25 +552,6 @@ namespace Nano::Graphics::Internal
 
 		m_Count++;
 		return index;
-	}
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Resources::Heap::GetHandleForIndex(Index index) const
-	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = m_Start;
-		return handle.Offset(index, m_DescriptorSize);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////
-	// Constructor & Destructor
-	////////////////////////////////////////////////////////////////////////////////////
-	Dx12Resources::Dx12Resources(const Device& device)
-		: m_Device(*api_cast<const Dx12Device*>(&device)), m_SRVAndUAVHeap(device, s_SRVAndUAVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true), m_SamplerHeap(device, s_SamplerStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, true), m_DSVHeap(device, s_DSVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false), m_RTVHeap(device, s_RTVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false)
-	{
-	}
-
-	Dx12Resources::~Dx12Resources()
-	{
-		// Note: The destructor of the Heaps will release the resources
 	}
 
 }

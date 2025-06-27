@@ -103,6 +103,7 @@ namespace Nano::Graphics::Internal
 		inline DxPtr<D3D12MA::Allocation> GetD3D12MAAllocation() const { return m_Allocation; }
 
 		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, bool isReadOnly = false);
+		const Dx12ImageSubresourceView& GetSubresourceView(Dx12Resources::Heap::Index index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, bool isReadOnly = false);
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
 	private:

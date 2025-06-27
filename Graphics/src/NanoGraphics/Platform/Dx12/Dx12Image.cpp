@@ -129,6 +129,29 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format, bool isReadOnly)
 	{
+		switch (usage)
+		{
+		case ImageSubresourceViewUsage::SRV:
+			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
+			break;
+		case ImageSubresourceViewUsage::UAV:
+			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
+			break;
+		case ImageSubresourceViewUsage::RTV:
+			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
+			break;
+		case ImageSubresourceViewUsage::DSV:
+			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get(), isReadOnly);
+			break;
+
+		default:
+			break;
+		}
+		return GetSubresourceView(, specs, usage, dimension, format, isReadOnly);
+	}
+
+	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(Dx12Resources::Heap::Index index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format, bool isReadOnly)
+	{
 		// Automatically set the dimension and format if not specified
 		if (dimension == ImageDimension::Unknown)
 			dimension = m_Specification.Dimension;
@@ -165,6 +188,7 @@ namespace Nano::Graphics::Internal
 			break;
 
 		default:
+			NG_UNREACHABLE();
 			break;
 		}
 
