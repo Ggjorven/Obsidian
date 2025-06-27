@@ -43,8 +43,10 @@ namespace Nano::Graphics::Internal
         VulkanBindingLayout(const Device& device, const BindlessLayoutSpecification& specs);
         ~VulkanBindingLayout();
 
+        // Methods
+        const BindingLayoutItem& GetItem(uint32_t slot) const;
+
         // Getters
-        //ShaderStage GetVisibility() const;
         inline bool IsBindless() const { return std::holds_alternative<BindlessLayoutSpecification>(m_Specification); }
 
         // Internal methods
@@ -78,15 +80,16 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        VulkanBindingSet(BindingSetPool& pool);
+        VulkanBindingSet(BindingSetPool& pool, const BindingSetSpecification& specs);
         ~VulkanBindingSet();
 
         // Methods
-        void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
-        void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
-        void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex);
+        void SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources, uint32_t arrayIndex);
+        void SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex);
+        void SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex);
 
-        void UploadList(std::span<const BindingSetUploadable> uploadables);
+        // Getters
+        inline const BindingSetSpecification& GetSpecification() const { return m_Specification; }
 
         // Internal getters
         inline VkDescriptorSet GetVkDescriptorSet() const { return m_DescriptorSet; }
@@ -98,7 +101,9 @@ namespace Nano::Graphics::Internal
         void UploadBuffer(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorBufferInfo>& bufferInfos, Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const;
     
     private:
-        const VulkanDevice& m_Device;
+        VulkanBindingSetPool& m_Pool;
+        BindingSetSpecification m_Specification;
+
         VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
     };
 

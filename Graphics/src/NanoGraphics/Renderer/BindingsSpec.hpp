@@ -53,6 +53,19 @@ namespace Nano::Graphics
     public:
         inline constexpr static uint32_t MaxPushConstantSize = 128;
     public:
+        union
+        {
+            Image* ImagePtr = nullptr;
+            Sampler* SamplerPtr;
+            Buffer* BufferPtr;
+        };
+        union
+        {
+            ImageSubresourceSpecification Subresources = {};
+            BufferRange Range;
+        };
+        uint32_t ArrayIndex = 0;
+
         ShaderStage Visibility = ShaderStage::None;
 
         uint32_t Slot = 0;
@@ -63,42 +76,29 @@ namespace Nano::Graphics
         std::string DebugName = {};
 
     public:
-        // Setters
+        // Setters // Note: The Item setter are optional and can be set later via the BindingSet itself
+        inline constexpr BindingLayoutItem& SetItemReference(Image& image) { ImagePtr = &image; return *this; }
+        inline constexpr BindingLayoutItem& SetItemReference(Sampler& sampler) { SamplerPtr = &sampler; return *this; }
+        inline constexpr BindingLayoutItem& SetItemReference(Buffer& buffer) { BufferPtr = &buffer; return *this; }
+
+        inline constexpr BindingLayoutItem& SetItemRange(const ImageSubresourceSpecification& subresources) { Subresources = subresources; return *this; }
+        inline constexpr BindingLayoutItem& SetItemRange(const BufferRange& range) { Range = range; return *this; }
+
+        inline constexpr BindingLayoutItem& SetItemIndex(uint32_t arrayIndex) { ArrayIndex = arrayIndex; return *this; }
+
         inline constexpr BindingLayoutItem& SetVisibility(ShaderStage visibility) { Visibility = visibility; return *this; }
         inline constexpr BindingLayoutItem& SetSlot(uint32_t slot) { Slot = slot; return *this; }
         inline constexpr BindingLayoutItem& SetType(ResourceType type) { Type = type; return *this; }
         inline constexpr BindingLayoutItem& SetSize(uint16_t size) { Size = size; return *this; }
 
-        inline constexpr BindingLayoutItem& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline BindingLayoutItem& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
         // Operators
         inline constexpr bool operator == (const BindingLayoutItem& other) const { return ((Slot == other.Slot) && (Type == other.Type) && (Size == other.Size)); }
         inline constexpr bool operator != (const BindingLayoutItem& other) const { return !(*this == other); }
 
-        // Methods
+        // Getters
         inline constexpr uint32_t GetArraySize() const { return (Type == ResourceType::PushConstants) ? 1 : Size; }
-    };
-
-    struct BindingSetUploadable
-    {
-    public:
-        std::variant<Image*, Sampler*, Buffer*> Element = {};
-        std::variant<ImageSubresourceSpecification, BufferRange> Range = {};
-
-        ResourceType Type = ResourceType::None;
-        
-        uint32_t Slot = 0;
-        uint32_t ArrayIndex = 0;
-
-    public:
-        // Setters
-        inline BindingSetUploadable& SetElement(Image& image, const ImageSubresourceSpecification& subresources = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices)) { Element = &image; Range = subresources; return *this; }
-        inline BindingSetUploadable& SetElement(Sampler& sampler) { Element = &sampler; return *this; }
-        inline BindingSetUploadable& SetElement(Buffer& buffer, const BufferRange& range = BufferRange(BufferRange::FullSize, 0)) { Element = &buffer; Range = range; return *this; }
-
-        inline constexpr BindingSetUploadable& SetResourceType(ResourceType type) { Type = type; return *this; }
-        inline constexpr BindingSetUploadable& SetSlot(uint32_t slot) { Slot = slot; return *this; }
-        inline constexpr BindingSetUploadable& SetArrayIndex(uint32_t index) { ArrayIndex = index; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -107,21 +107,18 @@ namespace Nano::Graphics
     struct BindingLayoutSpecification
     {
     public:
-        //ShaderStage Visibility = ShaderStage::None;
+        inline constexpr static size_t MaxBindings = 16;
+    public:
+        uint32_t RegisterSpace = 0; // In Vulkan maps to descriptor set index. Other API's not implemented.
 
-        uint32_t RegisterSpace = 0; // In vulkan maps to descriptor set index. Other API's not implemented.
-        bool RegisterSpaceIsDescriptorSet = false;
-
-        std::vector<BindingLayoutItem> Bindings;
+        Nano::Memory::StaticVector<BindingLayoutItem, MaxBindings> Bindings;
 
         std::string DebugName = {};
 
     public:
         // Setters
-        //inline constexpr BindingLayoutSpecification& SetVisibility(ShaderStage stage) { Visibility = stage; return *this; }
         inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint32_t space) { RegisterSpace = space; return *this; }
-        inline constexpr BindingLayoutSpecification& SetRegisterSpaceIsDescriptorSet(bool enabled) { RegisterSpaceIsDescriptorSet = enabled; return *this; }
-        inline constexpr BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
+        inline BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
         inline BindingLayoutSpecification& SetDebugName(const std::string_view& name) { DebugName = name; return *this; }
     };
 
@@ -131,24 +128,38 @@ namespace Nano::Graphics
     struct BindlessLayoutSpecification
     {
     public:
-        inline constexpr static size_t MaxBindLessRegisterSpaces = 16;
+        inline constexpr static size_t MaxBindings = BindingLayoutSpecification::MaxBindings;
     public:
-        //ShaderStage Visibility = ShaderStage::None;
-
         uint32_t FirstSlot = 0;
         uint32_t MaxCapacity = 0;
 
-        Nano::Memory::StaticVector<BindingLayoutItem, MaxBindLessRegisterSpaces> RegisterSpaces;
+        Nano::Memory::StaticVector<BindingLayoutItem, MaxBindings> Bindings;
 
         std::string DebugName = {};
 
     public:
         // Setters
-        //inline constexpr BindlessLayoutSpecification& SetVisibility(ShaderStage stage) { Visibility = stage; return *this; }
         inline constexpr BindlessLayoutSpecification& SetFirstSlot(uint32_t slot) { FirstSlot = slot; return *this; }
         inline constexpr BindlessLayoutSpecification& SetMaxCapacity(uint32_t capacity) { MaxCapacity = capacity; return *this; }
-        inline BindlessLayoutSpecification& AddRegisterSpace(const BindingLayoutItem& item) { RegisterSpaces.push_back(item); return *this; }
-        inline constexpr BindlessLayoutSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+        inline BindlessLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
+        inline BindlessLayoutSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BindingSetSpecification
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BindingSetSpecification
+    {
+    public:
+        uint32_t Register = 0;
+        
+        std::string DebugName = {};
+
+    public:
+        // Setters
+        inline constexpr BindingSetSpecification& SetRegister(uint32_t regist) { Register = regist; return *this; }
+
+        inline BindingSetSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

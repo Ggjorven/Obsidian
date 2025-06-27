@@ -98,24 +98,12 @@ namespace Nano::Graphics::Internal
 
         //D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_RESOURCE_STATES initialState = ResourceStateToD3D12ResourceStates(m_Specification.PermanentState);
-        D3D12_HEAP_TYPE heapType;
+        D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
 
-        switch (m_Specification.CpuAccess)
-        {
-        case CpuAccessMode::None:
-            heapType = D3D12_HEAP_TYPE_DEFAULT;
-            break;
-        case CpuAccessMode::Read:
+        if (static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Read))
             heapType = D3D12_HEAP_TYPE_READBACK;
-            break;
-        case CpuAccessMode::Write:
+        if (static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write)) // Note: We purposefully overwrite when we have write flag
             heapType = D3D12_HEAP_TYPE_UPLOAD;
-            break;
-
-        default:
-            NG_UNREACHABLE();
-            break;
-        }
 
         m_Allocation = dxDevice.GetAllocator().AllocateBuffer(m_Resource,
             size, initialState,
