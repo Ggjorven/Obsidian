@@ -157,11 +157,7 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroySampler(Sampler& sampler) const
     {
-        Dx12Sampler& dxSampler = *api_cast<Dx12Sampler*>(&sampler);
-
-        m_Resources.GetSamplerHeap().Free(dxSampler.GetSamplerIndex());
-
-        dxSampler.m_SamplerIndex = 0;
+        (void)sampler;
     }
 
     void Dx12Device::DestroyBuffer(Buffer& buffer) const

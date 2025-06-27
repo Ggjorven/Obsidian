@@ -6,6 +6,7 @@
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Renderpass.hpp"
 
@@ -18,6 +19,17 @@ namespace Nano::Graphics::Internal
     Dx12Framebuffer::Dx12Framebuffer(const Renderpass& renderpass, const FramebufferSpecification& specs)
         : m_Renderpass(api_cast<const Dx12Renderpass*>(&renderpass)), m_Specification(specs)
     {
+        // Make sure the imageviews are available
+        if (specs.ColourAttachment.IsValid())
+        {
+            Dx12Image& dxImage = *api_cast<Dx12Image*>(specs.ColourAttachment.ImagePtr);
+            (void)dxImage.GetSubresourceView(specs.ColourAttachment.Subresources, ImageSubresourceViewUsage::RTV, ImageDimension::Unknown, Format::Unknown);
+        }
+        if (specs.DepthAttachment.IsValid())
+        {
+            Dx12Image& dxImage = *api_cast<Dx12Image*>(specs.DepthAttachment.ImagePtr);
+            (void)dxImage.GetSubresourceView(specs.DepthAttachment.Subresources, ImageSubresourceViewUsage::DSV, ImageDimension::Unknown, Format::Unknown, specs.DepthAttachment.IsReadOnly);
+        }
     }
 
     Dx12Framebuffer::~Dx12Framebuffer()

@@ -127,7 +127,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Internal getters
 	////////////////////////////////////////////////////////////////////////////////////
-	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format)
+	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format, bool isReadOnly)
 	{
 		// Automatically set the dimension and format if not specified
 		if (dimension == ImageDimension::Unknown)
@@ -161,7 +161,7 @@ namespace Nano::Graphics::Internal
 			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
 			break;
 		case ImageSubresourceViewUsage::DSV:
-			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get(), isReadOnly);
 			break;
 
 		default:
@@ -235,6 +235,14 @@ namespace Nano::Graphics::Internal
 	Dx12Sampler::Dx12Sampler(const Device& device, const SamplerSpecification& specs)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
+	}
+
+	Dx12Sampler::~Dx12Sampler()
+	{
+	}
+
+	D3D12_SAMPLER_DESC Dx12Sampler::GetD3D12SamplerDesc() const
+	{
 		D3D12_SAMPLER_DESC samplerDesc = {};
 
 		UINT reductionType = static_cast<UINT>(SamplerReductionTypeToD3D12FilterReductionType(m_Specification.ReductionType));
@@ -260,20 +268,8 @@ namespace Nano::Graphics::Internal
 		samplerDesc.BorderColor[3] = m_Specification.BorderColour.a;
 		samplerDesc.MinLOD = 0.0f;
 		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-		
-		m_SamplerIndex = m_Device.GetResources().GetSamplerHeap().CreateSampler(samplerDesc);
-	}
 
-	Dx12Sampler::~Dx12Sampler()
-	{
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////
-	// Internal getters
-	////////////////////////////////////////////////////////////////////////////////////
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12Sampler::GetHandle() const
-	{
-		return m_Device.GetResources().GetSamplerHeap().GetHandleForIndex(m_SamplerIndex);
+		return samplerDesc;
 	}
 
 }

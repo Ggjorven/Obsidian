@@ -272,10 +272,12 @@ namespace Nano::Graphics::Internal
     class Dx12Resources
     {
     public:
-        inline constexpr static uint32_t s_SRVAndUAVStartSize = 16;
-        inline constexpr static uint32_t s_SamplerStartSize = 16;
+        inline constexpr static uint32_t s_SRVAndUAVStartSize = 1024; // Shader visible
+        inline constexpr static uint32_t s_SamplerStartSize = 1024; // Shader visible
         inline constexpr static uint32_t s_DSVStartSize = 16;
         inline constexpr static uint32_t s_RTVStartSize = 16;
+
+        inline constexpr static uint32_t s_MaxDescriptorsPerSet = 16;
     public:
         struct Heap
         {
@@ -339,7 +341,7 @@ namespace Nano::Graphics::Internal
     private:
         const Dx12Device& m_Device;
 
-        mutable Heap m_SRVAndUAVHeap;
+        mutable Heap m_SRVAndUAVHeap; // Shader visible
         mutable Heap m_SamplerHeap;
         mutable Heap m_DSVHeap;
         mutable Heap m_RTVHeap;

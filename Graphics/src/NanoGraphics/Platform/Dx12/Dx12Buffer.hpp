@@ -45,7 +45,6 @@ namespace Nano::Graphics::Internal
         std::vector<VertexAttributeSpecification> m_Attributes;
         std::vector<D3D12_INPUT_ELEMENT_DESC> m_InputElements = {};
 
-        // Maps a binding slot to an element stride
         uint32_t m_Stride = 0;
     };
 
@@ -71,8 +70,6 @@ namespace Nano::Graphics::Internal
 
         DxPtr<ID3D12Resource> m_Resource = nullptr;
         DxPtr<D3D12MA::Allocation> m_Allocation = nullptr;
-
-        // Note: Maybe in the future add BufferViews like ImageViews
 
         friend class Dx12Device;
     };
