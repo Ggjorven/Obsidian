@@ -19,14 +19,22 @@ namespace Nano::Graphics::Internal
         : m_Specification(specs)
     {
         (void)device;
-        InitResourceCounts(std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end()));
+
+        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end());
+
+        InitResourceCounts(items);
+        CreateRootSignature(device, items);
     }
 
     Dx12BindingLayout::Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
         : m_Specification(specs)
     {
         (void)device;
-        InitResourceCounts(std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end()));
+
+        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end());
+
+        InitResourceCounts(items);
+        NG_ASSERT(false, "[Dx12BindingLayout] Bindless on dx12 is not properly supported.");
     }
 
     Dx12BindingLayout::~Dx12BindingLayout()
@@ -85,8 +93,131 @@ namespace Nano::Graphics::Internal
             m_ResourceCounts.emplace_back(type, count);
     }
 
+    void Dx12BindingLayout::CreateRootSignature(const Device& device, std::span<const BindingLayoutItem> items)
+    {
+        NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Root parameters can currently only be made for bindingsets instead of bindless.");
+
+        const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
+
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> srvRanges;
+        ShaderStage srvStage = ShaderStage::None;
+        srvRanges.reserve(items.size());
+
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> uavRanges;
+        ShaderStage uavStage = ShaderStage::None;
+        uavRanges.reserve(items.size());
+
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> cbvRanges;
+        ShaderStage cbvStage = ShaderStage::None;
+        cbvRanges.reserve(items.size());
+
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> samplerRanges;
+        ShaderStage samplerStage = ShaderStage::None;
+        samplerRanges.reserve(items.size());
+
+        // Create ranges
+        {
+            const BindingLayoutSpecification& specs = std::get<BindingLayoutSpecification>(m_Specification);
+
+            for (const auto& item : items)
+            {
+                switch (item.Type)
+                {
+                case ResourceType::Image:
+                case ResourceType::StorageBuffer:
+                {
+                    CD3DX12_DESCRIPTOR_RANGE& range = srvRanges.emplace_back();
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+
+                    if ((srvStage != ShaderStage::None) && (srvStage != item.Visibility))
+                        srvStage = ShaderStage::AllGraphics;
+                    else
+                        srvStage = item.Visibility;
+
+                    break;
+                }
+
+                case ResourceType::ImageUnordered:
+                case ResourceType::StorageBufferUnordered:
+                {
+                    CD3DX12_DESCRIPTOR_RANGE& range = uavRanges.emplace_back();
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+
+                    if ((uavStage != ShaderStage::None) && (uavStage != item.Visibility))
+                        uavStage = ShaderStage::AllGraphics;
+                    else
+                        uavStage = item.Visibility;
+
+                    break;
+                }
+
+                case ResourceType::UniformBuffer:
+                {
+                    CD3DX12_DESCRIPTOR_RANGE& range = cbvRanges.emplace_back();
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+
+                    if ((cbvStage != ShaderStage::None) && (cbvStage != item.Visibility))
+                        cbvStage = ShaderStage::AllGraphics;
+                    else
+                        cbvStage = item.Visibility;
+
+                    break;
+                }
+
+                case ResourceType::Sampler:
+                {
+                    CD3DX12_DESCRIPTOR_RANGE& range = samplerRanges.emplace_back();
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+
+                    if ((samplerStage != ShaderStage::None) && (samplerStage != item.Visibility))
+                        samplerStage = ShaderStage::AllGraphics;
+                    else
+                        samplerStage = item.Visibility;
+
+                    break;
+                }
+
+                case ResourceType::DynamicStorageBuffer:
+                case ResourceType::DynamicUniformBuffer:
+                    NG_ASSERT(false, "[Dx12BindingLayout] Dynamic buffer are currently not supported in Dx12."); // FUTURE TODO: ...
+                    break;
+
+                case ResourceType::PushConstants:
+                    // Note: There is no Dx12 equivalent // FUTURE TODO: ...
+                    break;
+                }
+            }
+        }
+
+        // Create root params
+        std::array<CD3DX12_ROOT_PARAMETER, 4> parameters = {};
+        CD3DX12_ROOT_PARAMETER& descriptorSRVRootParameter = parameters[0];
+        CD3DX12_ROOT_PARAMETER& descriptorUAVRootParameter = parameters[1];
+        CD3DX12_ROOT_PARAMETER& descriptorCBVRootParameter = parameters[2];
+        CD3DX12_ROOT_PARAMETER& descriptorSamplerRootParameter = parameters[3];
+        {
+            descriptorSRVRootParameter.InitAsDescriptorTable(static_cast<UINT>(srvRanges.size()), srvRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
+            descriptorUAVRootParameter.InitAsDescriptorTable(static_cast<UINT>(uavRanges.size()), uavRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
+            descriptorCBVRootParameter.InitAsDescriptorTable(static_cast<UINT>(cbvRanges.size()), cbvRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
+            descriptorSamplerRootParameter.InitAsDescriptorTable(static_cast<UINT>(samplerRanges.size()), samplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
+        }
+
+        // Create root signature
+        {
+            // Create root signature with these parameters
+            CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
+            rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data());
+
+            DxPtr<ID3DBlob> serializedRootSig;
+            DxPtr<ID3DBlob> errorBlob;
+            D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
+            
+            dxDevice.GetContext().GetD3D12Device()->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+        }
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
-    // Constructor & Destructor // TODO: Implement descriptorsets
+    // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     Dx12BindingSet::Dx12BindingSet(BindingSetPool& pool, const BindingSetSpecification& specs)
         : m_Pool(*api_cast<Dx12BindingSetPool*>(&pool)), m_Specification(specs)
@@ -163,12 +294,15 @@ namespace Nano::Graphics::Internal
         switch (item.Type)
         {
         case ResourceType::StorageBuffer:
-        case ResourceType::UniformBuffer:
             m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::StorageBufferUnordered:
             m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+            break;
+
+        case ResourceType::UniformBuffer:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateCBV(index, buffer.GetSpecification(), dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::DynamicStorageBuffer:
@@ -199,7 +333,7 @@ namespace Nano::Graphics::Internal
                 case ResourceType::Image:
                 case ResourceType::StorageBuffer:
                 case ResourceType::UniformBuffer:
-
+                // Purposeful fallthrough
                 case ResourceType::ImageUnordered:
                 case ResourceType::StorageBufferUnordered:
                     m_SRVAndUAVCountPerSet += count;

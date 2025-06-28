@@ -55,14 +55,19 @@ namespace Nano::Graphics::Internal
 
         inline const std::vector<std::pair<ResourceType, uint32_t>>& GetResourceCounts() const { return m_ResourceCounts; }
 
+        inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
+
     private:
         // Private methods
         void InitResourceCounts(std::span<const BindingLayoutItem> items);
+        void CreateRootSignature(const Device& device, std::span<const BindingLayoutItem> items);
 
     private:
         std::variant<BindingLayoutSpecification, BindlessLayoutSpecification> m_Specification;
 
         std::vector<std::pair<ResourceType, uint32_t>> m_ResourceCounts = { };
+
+        DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

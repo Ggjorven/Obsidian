@@ -40,7 +40,6 @@ namespace Nano::Graphics::Internal
 		m_Device.GetContext().Destroy([heap = m_DescriptorHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
 
-
 	////////////////////////////////////////////////////////////////////////////////////
 	// Creation methods
 	////////////////////////////////////////////////////////////////////////////////////
@@ -245,6 +244,28 @@ namespace Nano::Graphics::Internal
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
 		m_Device.GetContext().GetD3D12Device()->CreateUnorderedAccessView(resource, nullptr, &desc, handle);
+	}
+
+	void Dx12DescriptorHeap::CreateCBV(DescriptorHeapIndex index, const BufferSpecification& specs, ID3D12Resource* resource)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate a CBV from a non CBV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
+		viewDesc.BufferLocation = resource->GetGPUVirtualAddress();
+		viewDesc.SizeInBytes = static_cast<UINT>(specs.Size);
+
+		// Passthrough to other func
+		CreateCBV(index, viewDesc, resource);
+	}
+
+	void Dx12DescriptorHeap::CreateCBV(DescriptorHeapIndex index, const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate a CBV from a non CBV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
+		m_Device.GetContext().GetD3D12Device()->CreateConstantBufferView(&desc, handle);
 	}
 
 	void Dx12DescriptorHeap::CreateRTV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format)
@@ -546,6 +567,20 @@ namespace Nano::Graphics::Internal
 		return index;
 	}
 
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateCBV(const BufferSpecification& specs, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateCBV(index, specs, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateCBV(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateCBV(index, desc, resource);
+		return index;
+	}
+
 	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateRTV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format)
 	{
 		DescriptorHeapIndex index = GetNextIndex();
@@ -675,7 +710,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	DescriptorHeapIndex Dx12ManagedDescriptorHeap::GetNextPoolIndex(uint32_t setCount, uint32_t resourceCount)
 	{
-		uint16_t index = m_NextPoolIndex;
+		DescriptorHeapIndex index = m_NextPoolIndex;
 		m_NextPoolIndex += (setCount * resourceCount);
 		return index;
 	}

@@ -243,6 +243,36 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // ShaderStageMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ShaderStageMapping
+    {
+    public:
+        ShaderStage Stage;
+
+        D3D12_SHADER_VISIBILITY Visibility;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ShaderStageMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ShaderStageMapping = std::to_array<ShaderStageMapping>({
+        // Stage                        Visibility
+        { ShaderStage::None,            D3D12_SHADER_VISIBILITY_ALL }, // Default
+        { ShaderStage::Vertex,          D3D12_SHADER_VISIBILITY_VERTEX },
+        { ShaderStage::Pixel,           D3D12_SHADER_VISIBILITY_PIXEL },
+        { ShaderStage::Compute,         D3D12_SHADER_VISIBILITY_ALL }, // Placeholder
+        { ShaderStage::Geometry,        D3D12_SHADER_VISIBILITY_PIXEL },
+        { ShaderStage::Hull,            D3D12_SHADER_VISIBILITY_HULL },
+        { ShaderStage::Domain,          D3D12_SHADER_VISIBILITY_DOMAIN },
+        { ShaderStage::Amplification,   D3D12_SHADER_VISIBILITY_AMPLIFICATION },
+        { ShaderStage::Mesh,            D3D12_SHADER_VISIBILITY_MESH },
+        { ShaderStage::AllGraphics,     D3D12_SHADER_VISIBILITY_ALL }, // Placeholder
+
+        // Note: Other shaderstages are not supported
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const FormatMapping& FormatToFormatMapping(Format format) { NG_ASSERT((static_cast<size_t>(format) < g_FormatMapping.size()), "Format value exceeds mappings."); return g_FormatMapping[static_cast<size_t>(format)]; }
@@ -267,6 +297,11 @@ namespace Nano::Graphics::Internal
     inline constexpr D3D12_FILTER_TYPE FilterModeToD3D12FilterType(FilterMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_FilterModeMapping.size()), "Mode value exceeds mappings."); return g_FilterModeMapping[static_cast<size_t>(mode)].D3D12FilterType; }
     inline constexpr D3D12_TEXTURE_ADDRESS_MODE SamplerAddresModeToD3D12TextureAddressMode(SamplerAddressMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_SamplerAddressModeMapping.size()), "Mode value exceeds mappings."); return g_SamplerAddressModeMapping[static_cast<size_t>(mode)].D3D12TextureAddressMode; }
     inline constexpr D3D12_FILTER_REDUCTION_TYPE SamplerReductionTypeToD3D12FilterReductionType(SamplerReductionType type) { NG_ASSERT((static_cast<size_t>(type) < g_SamplerReductionTypeMapping.size()), "Type value exceeds mappings."); return g_SamplerReductionTypeMapping[static_cast<size_t>(type)].D3D12ReductionType; }
+
+    inline constexpr D3D12_SHADER_VISIBILITY ShaderStageToD3D12ShaderVisibility(ShaderStage stage) // Note: We take the first stage, since D3D12 visibility are not bit flags
+    {
+        return g_ShaderStageMapping[static_cast<size_t>((std::to_underlying(stage) ? (std::countr_zero(std::to_underlying(stage)) + 1) : 0))].Visibility;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12Resources

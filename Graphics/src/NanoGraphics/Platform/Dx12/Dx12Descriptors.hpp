@@ -48,6 +48,9 @@ namespace Nano::Graphics::Internal
         void CreateUAV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         void CreateUAV(DescriptorHeapIndex index, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource);
         
+        void CreateCBV(DescriptorHeapIndex index, const BufferSpecification& specs, ID3D12Resource* resource);
+        void CreateCBV(DescriptorHeapIndex index, const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource);
+
         void CreateRTV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown);
         void CreateRTV(DescriptorHeapIndex index, const D3D12_RENDER_TARGET_VIEW_DESC& desc, ID3D12Resource* resource);
         
@@ -104,6 +107,9 @@ namespace Nano::Graphics::Internal
         DescriptorHeapIndex CreateUAV(const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format = Format::Unknown);
         DescriptorHeapIndex CreateUAV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         DescriptorHeapIndex CreateUAV(const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource);
+
+        DescriptorHeapIndex CreateCBV(const BufferSpecification& specs, ID3D12Resource* resource);
+        DescriptorHeapIndex CreateCBV(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource);
 
         DescriptorHeapIndex CreateRTV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown);
         DescriptorHeapIndex CreateRTV(const D3D12_RENDER_TARGET_VIEW_DESC& desc, ID3D12Resource* resource);

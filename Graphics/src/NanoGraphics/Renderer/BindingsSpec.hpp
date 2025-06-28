@@ -160,13 +160,13 @@ namespace Nano::Graphics
     struct BindingSetSpecification
     {
     public:
-        uint32_t Register = 0;
+        //uint32_t Register = 0;
         
         std::string DebugName = {};
 
     public:
         // Setters
-        inline constexpr BindingSetSpecification& SetRegister(uint32_t regist) { Register = regist; return *this; }
+        //inline constexpr BindingSetSpecification& SetRegister(uint32_t regist) { Register = regist; return *this; }
 
         inline BindingSetSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
