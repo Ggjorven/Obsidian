@@ -6,8 +6,10 @@
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
+#include "NanoGraphics/Renderer/BindingsSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Descriptors.hpp"
 
 #include <vector>
 
@@ -272,76 +274,30 @@ namespace Nano::Graphics::Internal
     class Dx12Resources
     {
     public:
-        inline constexpr static uint32_t s_SRVAndUAVStartSize = 1024; // Shader visible
-        inline constexpr static uint32_t s_SamplerStartSize = 1024; // Shader visible
+        inline constexpr static uint32_t s_SRVAndUAVStartSize = 1024;   // Shader visible
+        inline constexpr static uint32_t s_SamplerStartSize = 1024;     // Shader visible
         inline constexpr static uint32_t s_DSVStartSize = 16;
         inline constexpr static uint32_t s_RTVStartSize = 16;
 
-        inline constexpr static uint32_t s_MaxDescriptorsPerSet = 16;
-    public:
-        struct Heap
-        {
-        public:
-            using Index = uint32_t;
-            struct Entry
-            {
-            public:
-                uint32_t Amount = 0;
-                Index IndexForHandle = {};
-            };
-        public:
-            // Constructor & Destructor
-            Heap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
-            ~Heap();
-
-            // Methods
-            Index CreateSRV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateUAV(Index index, Format format, ImageDimension dimension, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateRTV(Index index, Format format, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource);
-            Index CreateDSV(Index index, const ImageSubresourceSpecification& subresources, const ImageSpecification& specs, ID3D12Resource* resource, bool isReadOnly = false);
-            Index CreateSampler(Index index, const D3D12_SAMPLER_DESC& desc);
-            void Free(Index index);
-
-            void Grow(uint32_t minNewSize);
-
-            // Getters
-            Index GetNextIndex();
-            CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandleForIndex(Index index) const;
-        
-        private:
-            const Dx12Device& m_Device;
-
-            uint32_t m_MaxSize; // Amount of descriptors allocateable
-            uint32_t m_Count = 0; // Amount of descriptors allocated
-
-            uint32_t m_DescriptorSize = 0; // Size of a descriptor
-            Index m_Offset = {}; // Current offset into heap
-            CD3DX12_CPU_DESCRIPTOR_HANDLE m_Start = {}; // Start of heap
-
-            std::vector<Entry> m_FreeEntries = {}; // Free'd up descriptors that can be reused.
-
-            DxPtr<ID3D12DescriptorHeap> m_DescriptorHeap = nullptr;
-            D3D12_DESCRIPTOR_HEAP_TYPE m_Type;
-            bool m_IsShaderVisible;
-        };
+        inline constexpr static size_t s_MaxDescriptorsPerSet = BindingLayoutSpecification::MaxBindings;
     public:
         // Constructor & Destructor
         Dx12Resources(const Device& device);
         ~Dx12Resources();
 
         // (Internal) Getters
-        inline Heap& GetSRVAndUAVHeap() const { return m_SRVAndUAVHeap; }
-        inline Heap& GetSamplerHeap() const { return m_SamplerHeap; }
-        inline Heap& GetDSVHeap() const { return m_DSVHeap; }
-        inline Heap& GetRTVHeap() const { return m_RTVHeap; }
+        inline Dx12DescriptorHeap& GetSRVAndUAVHeap() const { return m_SRVAndUAVHeap; }
+        inline Dx12DescriptorHeap& GetSamplerHeap() const { return m_SamplerHeap; }
+        inline Dx12DynamicDescriptorHeap& GetDSVHeap() const { return m_DSVHeap; }
+        inline Dx12DynamicDescriptorHeap& GetRTVHeap() const { return m_RTVHeap; }
 
     private:
         const Dx12Device& m_Device;
 
-        mutable Heap m_SRVAndUAVHeap; // Shader visible
-        mutable Heap m_SamplerHeap;
-        mutable Heap m_DSVHeap;
-        mutable Heap m_RTVHeap;
+        mutable Dx12DescriptorHeap m_SRVAndUAVHeap; // Shader visible
+        mutable Dx12DescriptorHeap m_SamplerHeap;
+        mutable Dx12DynamicDescriptorHeap m_DSVHeap;
+        mutable Dx12DynamicDescriptorHeap m_RTVHeap;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,9 @@ namespace Nano::Graphics::Internal
 		// Caching data
 		m_DescriptorSize = m_Device.GetContext().GetD3D12Device()->GetDescriptorHandleIncrementSize(type);
 		m_CPUStart = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		m_GPUStart = m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+		if (m_IsShaderVisible) // GPU Descriptor are only avaible for shader visible heaps
+			m_GPUStart = m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 	}
 
 	Dx12DescriptorHeap::~Dx12DescriptorHeap()
@@ -39,7 +41,7 @@ namespace Nano::Graphics::Internal
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
-	// Creation methods // TODO: All of these methods
+	// Creation methods
 	////////////////////////////////////////////////////////////////////////////////////
 	void Dx12DescriptorHeap::CreateSRV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
 	{
@@ -341,9 +343,34 @@ namespace Nano::Graphics::Internal
 	{
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER), "[Dx12DescriptorHeap] Cannot allocate a Sampler from a non Sampler heap.");
 
-		// TODO: ...
+		D3D12_SAMPLER_DESC samplerDesc = {};
 
-		// TODO: Passthrough
+		UINT reductionType = static_cast<UINT>(SamplerReductionTypeToD3D12FilterReductionType(specs.ReductionType));
+		if (specs.MaxAnisotropy > 1.0f)
+			samplerDesc.Filter = D3D12_ENCODE_ANISOTROPIC_FILTER(reductionType);
+		else
+			samplerDesc.Filter = D3D12_ENCODE_BASIC_FILTER(
+				FilterModeToD3D12FilterType(specs.MinFilter),
+				FilterModeToD3D12FilterType(specs.MagFilter),
+				FilterModeToD3D12FilterType(specs.MipFilter),
+				reductionType
+			);
+
+		samplerDesc.AddressU = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressU);
+		samplerDesc.AddressV = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressV);
+		samplerDesc.AddressW = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressW);
+		samplerDesc.MipLODBias = specs.MipBias;
+		samplerDesc.MaxAnisotropy = std::max(static_cast<UINT>(specs.MaxAnisotropy), 1u);
+		samplerDesc.ComparisonFunc = ((specs.ReductionType == SamplerReductionType::Comparison) ? D3D12_COMPARISON_FUNC_LESS : D3D12_COMPARISON_FUNC_NEVER);
+		samplerDesc.BorderColor[0] = specs.BorderColour.r;
+		samplerDesc.BorderColor[1] = specs.BorderColour.g;
+		samplerDesc.BorderColor[2] = specs.BorderColour.b;
+		samplerDesc.BorderColor[3] = specs.BorderColour.a;
+		samplerDesc.MinLOD = 0.0f;
+		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+
+		// Passthrough to other func
+		CreateSampler(index, samplerDesc);
 	}
 
 	void Dx12DescriptorHeap::CreateSampler(DescriptorHeapIndex index, const D3D12_SAMPLER_DESC& desc)
@@ -474,7 +501,7 @@ namespace Nano::Graphics::Internal
 	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateDSV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, bool isReadOnly)
 	{
 		DescriptorHeapIndex index = GetNextIndex();
-		Dx12DescriptorHeap::CreateDSV(index, specs, subresources, resource);
+		Dx12DescriptorHeap::CreateDSV(index, specs, subresources, resource, isReadOnly);
 		return index;
 	}
 
@@ -504,7 +531,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	void Dx12DynamicDescriptorHeap::Free(DescriptorHeapIndex index)
 	{
-		// TODO: Better algorithm for this?
+		// FUTURE TODO: Better algorithm for this?
 		for (auto& freed : m_FreeEntries)
 		{
 			if ((freed.Index + freed.Amount) == index)
@@ -512,9 +539,23 @@ namespace Nano::Graphics::Internal
 				freed.Amount += 1;
 				return;
 			}
+			else if ((freed.Index - 1) == index)
+			{
+				freed.Index -= 1;
+				freed.Amount += 1;
+				return;
+			}
 		}
 		
 		m_FreeEntries.emplace_back(1, index);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Getters
+	////////////////////////////////////////////////////////////////////////////////////
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12DynamicDescriptorHeap::GetCPUHandleForIndex(DescriptorHeapIndex index) const
+	{
+		return Dx12DescriptorHeap::GetCPUHandleForIndex(index);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////

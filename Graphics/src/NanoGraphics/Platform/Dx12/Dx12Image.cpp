@@ -69,19 +69,19 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Internal getters
 	////////////////////////////////////////////////////////////////////////////////////
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12ImageSubresourceView::GetHandle() const
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12ImageSubresourceView::GetCPUHandle() const
 	{
 		switch (m_Usage)
 		{
 		case ImageSubresourceViewUsage::SRV:
 		case ImageSubresourceViewUsage::UAV:
-			return m_Image.GetDx12Device().GetResources().GetSRVAndUAVHeap().GetHandleForIndex(m_Index);
+			return m_Image.GetDx12Device().GetResources().GetSRVAndUAVHeap().GetCPUHandleForIndex(m_Index);
 		
 		case ImageSubresourceViewUsage::RTV:
-			return m_Image.GetDx12Device().GetResources().GetRTVHeap().GetHandleForIndex(m_Index);
+			return m_Image.GetDx12Device().GetResources().GetRTVHeap().GetCPUHandleForIndex(m_Index);
 
 		case ImageSubresourceViewUsage::DSV:
-			return m_Image.GetDx12Device().GetResources().GetDSVHeap().GetHandleForIndex(m_Index);
+			return m_Image.GetDx12Device().GetResources().GetDSVHeap().GetCPUHandleForIndex(m_Index);
 
 		default:
 			NG_UNREACHABLE();
@@ -129,28 +129,44 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format, bool isReadOnly)
 	{
+		// Automatically set the dimension and format if not specified
+		if (dimension == ImageDimension::Unknown)
+			dimension = m_Specification.Dimension;
+		if (format == Format::Unknown)
+			format = m_Specification.ImageFormat;
+
+		// Find the view in map
+		auto cachekey = std::make_tuple(specs, usage, dimension, format);
+		auto it = m_ImageViews.find(cachekey);
+		if (it != m_ImageViews.end())
+			return it->second;
+
+		// Create new
+		auto viewPair = m_ImageViews.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(cachekey),
+			std::forward_as_tuple(*api_cast<Image*>(this), specs, usage)
+		);
+		auto& imageView = std::get<0>(viewPair)->second;
+
 		switch (usage)
 		{
-		case ImageSubresourceViewUsage::SRV:
-			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
-			break;
-		case ImageSubresourceViewUsage::UAV:
-			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
-			break;
 		case ImageSubresourceViewUsage::RTV:
-			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
+			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(m_Specification, specs, m_Resource.Get(), format);
 			break;
 		case ImageSubresourceViewUsage::DSV:
-			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get(), isReadOnly);
+			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(m_Specification, specs, m_Resource.Get(), isReadOnly);
 			break;
 
 		default:
+			NG_ASSERT(false, "[VkImage] Trying to get imageview without index for SRV or UAV, these are regular DescriptorHeaps so dynamic indexing is not implemented.");
 			break;
 		}
-		return GetSubresourceView(, specs, usage, dimension, format, isReadOnly);
+
+		return imageView;
 	}
 
-	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(Dx12Resources::Heap::Index index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format, bool isReadOnly)
+	const Dx12ImageSubresourceView& Dx12Image::GetSubresourceView(DescriptorHeapIndex index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension, Format format)
 	{
 		// Automatically set the dimension and format if not specified
 		if (dimension == ImageDimension::Unknown)
@@ -175,23 +191,18 @@ namespace Nano::Graphics::Internal
 		switch (usage)
 		{
 		case ImageSubresourceViewUsage::SRV:
-			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(format, dimension, specs, m_Specification, m_Resource.Get());
+			m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
 			break;
 		case ImageSubresourceViewUsage::UAV:
-			imageView.m_Index = m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(format, dimension, specs, m_Specification, m_Resource.Get());
-			break;
-		case ImageSubresourceViewUsage::RTV:
-			imageView.m_Index = m_Device.GetResources().GetRTVHeap().CreateRTV(format, specs, m_Specification, m_Resource.Get());
-			break;
-		case ImageSubresourceViewUsage::DSV:
-			imageView.m_Index = m_Device.GetResources().GetDSVHeap().CreateDSV(specs, m_Specification, m_Resource.Get(), isReadOnly);
+			m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
 			break;
 
 		default:
-			NG_UNREACHABLE();
+			NG_ASSERT(false, "[VkImage] Trying to get imageview with index for RTV or DSV, these are DynamicDescriptorHeaps so manual indexing is not permitted.");
 			break;
 		}
 
+		imageView.m_Index = index;
 		return imageView;
 	}
 
@@ -263,37 +274,6 @@ namespace Nano::Graphics::Internal
 
 	Dx12Sampler::~Dx12Sampler()
 	{
-	}
-
-	D3D12_SAMPLER_DESC Dx12Sampler::GetD3D12SamplerDesc() const
-	{
-		D3D12_SAMPLER_DESC samplerDesc = {};
-
-		UINT reductionType = static_cast<UINT>(SamplerReductionTypeToD3D12FilterReductionType(m_Specification.ReductionType));
-		if (m_Specification.MaxAnisotropy > 1.0f)
-			samplerDesc.Filter = D3D12_ENCODE_ANISOTROPIC_FILTER(reductionType);
-		else
-			samplerDesc.Filter = D3D12_ENCODE_BASIC_FILTER(
-				FilterModeToD3D12FilterType(m_Specification.MinFilter),
-				FilterModeToD3D12FilterType(m_Specification.MagFilter),
-				FilterModeToD3D12FilterType(m_Specification.MipFilter),
-				reductionType
-			);
-
-		samplerDesc.AddressU = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressU);
-		samplerDesc.AddressV = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressV);
-		samplerDesc.AddressW = SamplerAddresModeToD3D12TextureAddressMode(m_Specification.AddressW);
-		samplerDesc.MipLODBias = m_Specification.MipBias;
-		samplerDesc.MaxAnisotropy = std::max(static_cast<UINT>(m_Specification.MaxAnisotropy), 1u);
-		samplerDesc.ComparisonFunc = ((m_Specification.ReductionType == SamplerReductionType::Comparison) ? D3D12_COMPARISON_FUNC_LESS : D3D12_COMPARISON_FUNC_NEVER);
-		samplerDesc.BorderColor[0] = m_Specification.BorderColour.r;
-		samplerDesc.BorderColor[1] = m_Specification.BorderColour.g;
-		samplerDesc.BorderColor[2] = m_Specification.BorderColour.b;
-		samplerDesc.BorderColor[3] = m_Specification.BorderColour.a;
-		samplerDesc.MinLOD = 0.0f;
-		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-		return samplerDesc;
 	}
 
 }

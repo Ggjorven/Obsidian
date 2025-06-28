@@ -111,6 +111,9 @@ namespace Nano::Graphics::Internal
 
         void Free(DescriptorHeapIndex index);
 
+        // Getters
+        CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandleForIndex(DescriptorHeapIndex index) const;
+
     private:
         // Private methods
         DescriptorHeapIndex GetNextIndex();

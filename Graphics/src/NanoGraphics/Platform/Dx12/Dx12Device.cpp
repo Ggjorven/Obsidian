@@ -128,7 +128,7 @@ namespace Nano::Graphics::Internal
             {
             case ImageSubresourceViewUsage::SRV:
             case ImageSubresourceViewUsage::UAV:
-                m_Resources.GetSRVAndUAVHeap().Free(view.GetIndex());
+                // Note: SRV & UAV's are not freeable because of manual indexing
                 break;
 
             case ImageSubresourceViewUsage::RTV:

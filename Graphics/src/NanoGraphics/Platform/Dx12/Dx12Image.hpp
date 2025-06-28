@@ -66,15 +66,15 @@ namespace Nano::Graphics::Internal
 		inline ImageSubresourceViewUsage GetUsage() const { return m_Usage; }
 	
 		// Internal getters
-		inline Dx12Resources::Heap::Index GetIndex() const { return m_Index; }
-		CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandle() const;
+		inline DescriptorHeapIndex GetIndex() const { return m_Index; }
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandle() const;
 	
 	private:
 		const Dx12Image& m_Image;
 		ImageSubresourceSpecification m_Specification;
 		ImageSubresourceViewUsage m_Usage;
 
-		Dx12Resources::Heap::Index m_Index = {};
+		DescriptorHeapIndex m_Index = {};
 	
 		friend class Dx12Image;
 	};
@@ -102,8 +102,8 @@ namespace Nano::Graphics::Internal
 		inline DxPtr<ID3D12Resource> GetD3D12Resource() const { return m_Resource; }
 		inline DxPtr<D3D12MA::Allocation> GetD3D12MAAllocation() const { return m_Allocation; }
 
-		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, bool isReadOnly = false);
-		const Dx12ImageSubresourceView& GetSubresourceView(Dx12Resources::Heap::Index index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, bool isReadOnly = false);
+		const Dx12ImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, bool isReadOnly = false); // Note: For RTV & DSV
+		const Dx12ImageSubresourceView& GetSubresourceView(DescriptorHeapIndex index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown);
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
 	private:
@@ -161,8 +161,6 @@ namespace Nano::Graphics::Internal
 		~Dx12Sampler();
 	
 		// Getters
-		D3D12_SAMPLER_DESC GetD3D12SamplerDesc() const;
-
 		inline const SamplerSpecification& GetSpecification() const { return m_Specification; }
 	
 	private:
