@@ -26,7 +26,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Helper
     ////////////////////////////////////////////////////////////////////////////////////
-    using DescriptorHeapIndex = uint16_t;
+    using DescriptorHeapIndex = uint32_t;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12DescriptorHeap
@@ -35,7 +35,7 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        Dx12DescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
         ~Dx12DescriptorHeap();
 
         // Creation methods
@@ -64,7 +64,7 @@ namespace Nano::Graphics::Internal
         const Dx12Device& m_Device;
 
         // Specification
-        uint16_t m_MaxSize; // Amount of descriptors allocateable
+        uint32_t m_MaxSize; // Amount of descriptors allocateable
         D3D12_DESCRIPTOR_HEAP_TYPE m_Type;
         bool m_IsShaderVisible;
 
@@ -90,7 +90,7 @@ namespace Nano::Graphics::Internal
         };
     public:
         // Constructor & Destructor
-        Dx12DynamicDescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
         ~Dx12DynamicDescriptorHeap();
 
         // Creation methods // Note: Most are just passthrough functions
@@ -119,10 +119,27 @@ namespace Nano::Graphics::Internal
         DescriptorHeapIndex GetNextIndex();
 
     private:
-        uint16_t m_Count = 0; // Amount of descriptors allocated
+        uint32_t m_Count = 0; // Amount of descriptors allocated
         DescriptorHeapIndex m_Offset = 0; // Current offset into heap
 
         std::vector<Entry> m_FreeEntries = {}; // Free'd up descriptors that can be reused.
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Dx12ManagedDescriptorHeap
+    ////////////////////////////////////////////////////////////////////////////////////
+    class Dx12ManagedDescriptorHeap : public Dx12DescriptorHeap // Note: This is for descriptor pools, with extra offset logic
+    {
+    public:
+        // Constructor & Destructor
+        Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        ~Dx12ManagedDescriptorHeap();
+
+        // Getters
+        DescriptorHeapIndex GetNextPoolIndex(uint32_t setCount, uint32_t resourceCount);
+
+    private:
+        DescriptorHeapIndex m_NextPoolIndex = 0;
     };
 #endif
 

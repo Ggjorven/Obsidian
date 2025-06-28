@@ -17,7 +17,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12DescriptorHeap::Dx12DescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+	Dx12DescriptorHeap::Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_MaxSize(maxSize), m_Type(type), m_IsShaderVisible(isShaderVisible)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
@@ -442,7 +442,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12DynamicDescriptorHeap::Dx12DynamicDescriptorHeap(const Device& device, uint16_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+	Dx12DynamicDescriptorHeap::Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
 		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible)
 	{
 		m_FreeEntries.reserve(maxSize);
@@ -592,6 +592,29 @@ namespace Nano::Graphics::Internal
 		}
 
 		m_Count++;
+		return index;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Constructor & Destructor
+	////////////////////////////////////////////////////////////////////////////////////
+	Dx12ManagedDescriptorHeap::Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible)
+	{
+	}
+
+	Dx12ManagedDescriptorHeap::~Dx12ManagedDescriptorHeap()
+	{
+		// Note: Dx12DescriptorHeap handles everything
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Getters
+	////////////////////////////////////////////////////////////////////////////////////
+	DescriptorHeapIndex Dx12ManagedDescriptorHeap::GetNextPoolIndex(uint32_t setCount, uint32_t resourceCount)
+	{
+		uint16_t index = m_NextPoolIndex;
+		m_NextPoolIndex += (setCount * resourceCount);
 		return index;
 	}
 
