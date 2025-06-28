@@ -32,6 +32,9 @@ namespace Nano::Graphics::Internal
         // Constructor & Destructor
         Dx12InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes);
         ~Dx12InputLayout();
+
+        // Internal getters
+        inline const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetInputElements() const { return m_InputElements; }
     
     private:
         // Private methods

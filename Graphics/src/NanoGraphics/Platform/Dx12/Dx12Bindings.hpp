@@ -39,6 +39,8 @@ namespace Nano::Graphics::Internal
     class Dx12BindingLayout
     {
     public:
+        inline constexpr static size_t ParameterCount = 4;
+    public:
         // Constructors & Destructor
         Dx12BindingLayout(const Device& device, const BindingLayoutSpecification& specs);
         Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs);
@@ -55,19 +57,30 @@ namespace Nano::Graphics::Internal
 
         inline const std::vector<std::pair<ResourceType, uint32_t>>& GetResourceCounts() const { return m_ResourceCounts; }
 
-        inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
+        inline const std::array<CD3DX12_ROOT_PARAMETER, ParameterCount>& GetD3D12RootParameters() const { return m_Parameters; }
 
     private:
         // Private methods
         void InitResourceCounts(std::span<const BindingLayoutItem> items);
-        void CreateRootSignature(const Device& device, std::span<const BindingLayoutItem> items);
+        void CreateRootParameters(const Device& device, std::span<const BindingLayoutItem> items);
 
     private:
         std::variant<BindingLayoutSpecification, BindlessLayoutSpecification> m_Specification;
 
         std::vector<std::pair<ResourceType, uint32_t>> m_ResourceCounts = { };
 
-        DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SRVRanges;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_UAVRanges;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_CBVRanges;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SamplerRanges;
+
+        std::array<CD3DX12_ROOT_PARAMETER, ParameterCount> m_Parameters = {};
+
+        // Note: For ease of use, will be optimized away by compiler (I hope)
+        CD3DX12_ROOT_PARAMETER& m_DescriptorSRVRootParameter = m_Parameters[0];
+        CD3DX12_ROOT_PARAMETER& m_DescriptorUAVRootParameter = m_Parameters[1];
+        CD3DX12_ROOT_PARAMETER& m_DescriptorCBVRootParameter = m_Parameters[2];
+        CD3DX12_ROOT_PARAMETER& m_DescriptorSamplerRootParameter = m_Parameters[3];
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

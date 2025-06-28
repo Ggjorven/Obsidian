@@ -23,7 +23,7 @@ namespace Nano::Graphics::Internal
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end());
 
         InitResourceCounts(items);
-        CreateRootSignature(device, items);
+        CreateRootParameters(device, items);
     }
 
     Dx12BindingLayout::Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
@@ -93,27 +93,23 @@ namespace Nano::Graphics::Internal
             m_ResourceCounts.emplace_back(type, count);
     }
 
-    void Dx12BindingLayout::CreateRootSignature(const Device& device, std::span<const BindingLayoutItem> items)
+    void Dx12BindingLayout::CreateRootParameters(const Device& device, std::span<const BindingLayoutItem> items)
     {
         NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Root parameters can currently only be made for bindingsets instead of bindless.");
 
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> srvRanges;
         ShaderStage srvStage = ShaderStage::None;
-        srvRanges.reserve(items.size());
+        m_SRVRanges.reserve(items.size());
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> uavRanges;
         ShaderStage uavStage = ShaderStage::None;
-        uavRanges.reserve(items.size());
+        m_UAVRanges.reserve(items.size());
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> cbvRanges;
         ShaderStage cbvStage = ShaderStage::None;
-        cbvRanges.reserve(items.size());
+        m_CBVRanges.reserve(items.size());
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> samplerRanges;
         ShaderStage samplerStage = ShaderStage::None;
-        samplerRanges.reserve(items.size());
+        m_SamplerRanges.reserve(items.size());
 
         // Create ranges
         {
@@ -126,7 +122,7 @@ namespace Nano::Graphics::Internal
                 case ResourceType::Image:
                 case ResourceType::StorageBuffer:
                 {
-                    CD3DX12_DESCRIPTOR_RANGE& range = srvRanges.emplace_back();
+                    CD3DX12_DESCRIPTOR_RANGE& range = m_SRVRanges.emplace_back();
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
 
                     if ((srvStage != ShaderStage::None) && (srvStage != item.Visibility))
@@ -140,7 +136,7 @@ namespace Nano::Graphics::Internal
                 case ResourceType::ImageUnordered:
                 case ResourceType::StorageBufferUnordered:
                 {
-                    CD3DX12_DESCRIPTOR_RANGE& range = uavRanges.emplace_back();
+                    CD3DX12_DESCRIPTOR_RANGE& range = m_UAVRanges.emplace_back();
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
 
                     if ((uavStage != ShaderStage::None) && (uavStage != item.Visibility))
@@ -153,7 +149,7 @@ namespace Nano::Graphics::Internal
 
                 case ResourceType::UniformBuffer:
                 {
-                    CD3DX12_DESCRIPTOR_RANGE& range = cbvRanges.emplace_back();
+                    CD3DX12_DESCRIPTOR_RANGE& range = m_CBVRanges.emplace_back();
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
 
                     if ((cbvStage != ShaderStage::None) && (cbvStage != item.Visibility))
@@ -166,7 +162,7 @@ namespace Nano::Graphics::Internal
 
                 case ResourceType::Sampler:
                 {
-                    CD3DX12_DESCRIPTOR_RANGE& range = samplerRanges.emplace_back();
+                    CD3DX12_DESCRIPTOR_RANGE& range = m_SamplerRanges.emplace_back();
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
 
                     if ((samplerStage != ShaderStage::None) && (samplerStage != item.Visibility))
@@ -190,29 +186,11 @@ namespace Nano::Graphics::Internal
         }
 
         // Create root params
-        std::array<CD3DX12_ROOT_PARAMETER, 4> parameters = {};
-        CD3DX12_ROOT_PARAMETER& descriptorSRVRootParameter = parameters[0];
-        CD3DX12_ROOT_PARAMETER& descriptorUAVRootParameter = parameters[1];
-        CD3DX12_ROOT_PARAMETER& descriptorCBVRootParameter = parameters[2];
-        CD3DX12_ROOT_PARAMETER& descriptorSamplerRootParameter = parameters[3];
         {
-            descriptorSRVRootParameter.InitAsDescriptorTable(static_cast<UINT>(srvRanges.size()), srvRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
-            descriptorUAVRootParameter.InitAsDescriptorTable(static_cast<UINT>(uavRanges.size()), uavRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
-            descriptorCBVRootParameter.InitAsDescriptorTable(static_cast<UINT>(cbvRanges.size()), cbvRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
-            descriptorSamplerRootParameter.InitAsDescriptorTable(static_cast<UINT>(samplerRanges.size()), samplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
-        }
-
-        // Create root signature
-        {
-            // Create root signature with these parameters
-            CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
-            rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data());
-
-            DxPtr<ID3DBlob> serializedRootSig;
-            DxPtr<ID3DBlob> errorBlob;
-            D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob);
-            
-            dxDevice.GetContext().GetD3D12Device()->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature));
+            m_DescriptorSRVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
+            m_DescriptorUAVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
+            m_DescriptorCBVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
+            m_DescriptorSamplerRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
         }
     }
 

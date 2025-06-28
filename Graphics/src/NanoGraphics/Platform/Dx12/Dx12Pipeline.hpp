@@ -35,8 +35,17 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const GraphicsPipelineSpecification& GetSpecification() const { return m_Specification; }
 
+        // Internal getters
+        inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
+        inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
+
     private:
         GraphicsPipelineSpecification m_Specification;
+
+        DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
+        DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
+
+        friend class Dx12Device;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +63,8 @@ namespace Nano::Graphics::Internal
 
     private:
         ComputePipelineSpecification m_Specification;
+
+        friend class Dx12Device;
     };
 #endif
 

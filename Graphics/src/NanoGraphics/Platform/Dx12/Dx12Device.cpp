@@ -11,6 +11,7 @@
 #include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Buffer.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Swapchain.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Pipeline.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -192,18 +193,27 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyBindingLayout(BindingLayout& layout) const
     {
+        (void)layout;
     }
 
     void Dx12Device::FreeBindingSetPool(BindingSetPool& pool) const
     {
+        (void)pool;
     }
 
     void Dx12Device::DestroyGraphicsPipeline(GraphicsPipeline& pipeline) const
     {
+        Dx12GraphicsPipeline& dxPipeline = *api_cast<Dx12GraphicsPipeline*>(&pipeline);
+
+        m_Context.Destroy([rootSignature = dxPipeline.GetD3D12RootSignature(), pipelineState = dxPipeline.GetD3D12PipelineState()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+        dxPipeline.m_RootSignature = nullptr;
+        dxPipeline.m_PipelineState = nullptr;
     }
 
     void Dx12Device::DestroyComputePipeline(ComputePipeline& pipeline) const
     {
+        // TODO: ...
     }
 
 }

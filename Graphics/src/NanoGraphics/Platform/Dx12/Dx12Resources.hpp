@@ -7,6 +7,7 @@
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
+#include "NanoGraphics/Renderer/PipelineSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Descriptors.hpp"
@@ -267,9 +268,211 @@ namespace Nano::Graphics::Internal
         { ShaderStage::Domain,          D3D12_SHADER_VISIBILITY_DOMAIN },
         { ShaderStage::Amplification,   D3D12_SHADER_VISIBILITY_AMPLIFICATION },
         { ShaderStage::Mesh,            D3D12_SHADER_VISIBILITY_MESH },
-        { ShaderStage::AllGraphics,     D3D12_SHADER_VISIBILITY_ALL }, // Placeholder
+        { ShaderStage::AllGraphics,     D3D12_SHADER_VISIBILITY_ALL } // Placeholder
 
         // Note: Other shaderstages are not supported
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimiteTypeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PrimitiveTypeMapping
+    {
+    public:
+        PrimitiveType PrimType;
+
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE D3D12Type;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimiteTypeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_PrimitiveTypeMapping = std::to_array<PrimitiveTypeMapping>({
+        // PrimType                                     D3D12Type
+        { PrimitiveType::PointList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT },
+        { PrimitiveType::LineList,                      D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
+        { PrimitiveType::LineStrip,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
+        { PrimitiveType::TriangleList,                  D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::TriangleStrip,                 D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::TriangleFan,                   D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::TriangleListWithAdjacency,     D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::TriangleStripWithAdjacency,    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendFactorMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BlendFactorMapping
+    {
+    public:
+        BlendFactor Factor;
+
+        D3D12_BLEND Blend;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendFactorMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_BlendFactorMapping = std::to_array<BlendFactorMapping>({
+        // Factor                           Blend
+        { BlendFactor::Zero,                D3D12_BLEND_ZERO },
+        { BlendFactor::One,                 D3D12_BLEND_ONE },
+        { BlendFactor::SrcColour,           D3D12_BLEND_SRC_COLOR },
+        { BlendFactor::InvSrcColour,        D3D12_BLEND_INV_SRC_COLOR },
+        { BlendFactor::SrcAlpha,            D3D12_BLEND_SRC_ALPHA },
+        { BlendFactor::InvSrcAlpha,         D3D12_BLEND_INV_SRC_ALPHA },
+        { BlendFactor::DstAlpha,            D3D12_BLEND_DEST_ALPHA },
+        { BlendFactor::InvDstAlpha,         D3D12_BLEND_INV_DEST_ALPHA },
+        { BlendFactor::DstColour,           D3D12_BLEND_DEST_COLOR },
+        { BlendFactor::InvDstColour,        D3D12_BLEND_INV_DEST_COLOR },
+        { BlendFactor::SrcAlphaSaturate,    D3D12_BLEND_SRC_ALPHA_SAT },
+        { BlendFactor::ConstantColour,      D3D12_BLEND_BLEND_FACTOR },
+        { BlendFactor::ConstantColour,      D3D12_BLEND_BLEND_FACTOR },
+        { BlendFactor::InvConstantColour,   D3D12_BLEND_INV_BLEND_FACTOR },
+        { BlendFactor::Src1Colour,          D3D12_BLEND_SRC1_COLOR },
+        { BlendFactor::InvSrc1Colour,       D3D12_BLEND_INV_SRC1_COLOR },
+        { BlendFactor::Src1Alpha,           D3D12_BLEND_SRC1_ALPHA },
+        { BlendFactor::InvSrc1Alpha,        D3D12_BLEND_INV_SRC1_ALPHA }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct BlendOperationMapping
+    {
+    public:
+        BlendOperation Operation;
+
+        D3D12_BLEND_OP BlendOp;
+    };
+    
+    ////////////////////////////////////////////////////////////////////////////////////
+    // BlendOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_BlendOperationMapping = std::to_array<BlendOperationMapping>({
+        // Operation                        BlendOp
+        { BlendOperation::Add,              D3D12_BLEND_OP_ADD },
+        { BlendOperation::Subtract,         D3D12_BLEND_OP_SUBTRACT },
+        { BlendOperation::ReverseSubtract,  D3D12_BLEND_OP_REV_SUBTRACT },
+        { BlendOperation::Min,              D3D12_BLEND_OP_MIN },
+        { BlendOperation::Max,              D3D12_BLEND_OP_MAX }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourMaskMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ColourMaskMapping
+    {
+    public:
+        ColourMask Mask;
+
+        D3D12_COLOR_WRITE_ENABLE WriteEnable;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourMaskMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ColourMaskMapping = std::to_array<ColourMaskMapping>({
+        // Mask                         WriteEnable
+        { ColourMask::None,             D3D12_COLOR_WRITE_ENABLE_RED }, // Default
+        { ColourMask::Red,              D3D12_COLOR_WRITE_ENABLE_RED },
+        { ColourMask::Green,            D3D12_COLOR_WRITE_ENABLE_GREEN },
+        { ColourMask::Blue,             D3D12_COLOR_WRITE_ENABLE_BLUE },
+        { ColourMask::Alpha,            D3D12_COLOR_WRITE_ENABLE_ALPHA }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StencilOperationMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct StencilOperationMapping
+    {
+    public:
+        StencilOperation Operation;
+
+        D3D12_STENCIL_OP StencilOp;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // StencilOperationMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_StencilOperationMapping = std::to_array<StencilOperationMapping>({
+        // Operation                            StencilOp
+        { StencilOperation::Keep,               D3D12_STENCIL_OP_KEEP },
+        { StencilOperation::Zero,               D3D12_STENCIL_OP_ZERO },
+        { StencilOperation::Replace,            D3D12_STENCIL_OP_REPLACE },
+        { StencilOperation::IncrementAndClamp,  D3D12_STENCIL_OP_INCR_SAT },
+        { StencilOperation::DecrementAndClamp,  D3D12_STENCIL_OP_DECR_SAT },
+        { StencilOperation::Invert,             D3D12_STENCIL_OP_INVERT },
+        { StencilOperation::IncrementAndWrap,   D3D12_STENCIL_OP_INCR },
+        { StencilOperation::DecrementAndWrap,   D3D12_STENCIL_OP_DECR }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComparisonFuncMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ComparisonFuncMapping
+    {
+    public:
+        ComparisonFunc Func;
+
+        D3D12_COMPARISON_FUNC D3D12ComparisonFunc;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ComparisonFuncMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ComparisonFuncMapping = std::to_array<ComparisonFuncMapping>({
+        // Func                             D3D12ComparisonFunc
+        { ComparisonFunc::Never,            D3D12_COMPARISON_FUNC_NEVER },
+        { ComparisonFunc::Less,             D3D12_COMPARISON_FUNC_LESS },
+        { ComparisonFunc::Equal,            D3D12_COMPARISON_FUNC_EQUAL },
+        { ComparisonFunc::LessOrEqual,      D3D12_COMPARISON_FUNC_LESS_EQUAL },
+        { ComparisonFunc::Greater,          D3D12_COMPARISON_FUNC_GREATER },
+        { ComparisonFunc::NotEqual,         D3D12_COMPARISON_FUNC_NOT_EQUAL },
+        { ComparisonFunc::GreaterOrEqual,   D3D12_COMPARISON_FUNC_GREATER_EQUAL },
+        { ComparisonFunc::Always,           D3D12_COMPARISON_FUNC_ALWAYS }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterFillModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct RasterFillModeMapping
+    {
+    public:
+        RasterFillMode Mode;
+
+        D3D12_FILL_MODE D3D12FillMode;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterFillModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_RasterFillModeMapping = std::to_array<RasterFillModeMapping>({
+        // Mode                         D3D12FillMode
+        { RasterFillMode::Solid,        D3D12_FILL_MODE_SOLID },
+        { RasterFillMode::Wireframe,    D3D12_FILL_MODE_WIREFRAME },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterCullingModeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct RasterCullingModeMapping
+    {
+    public:
+        RasterCullingMode Mode;
+
+        D3D12_CULL_MODE D3D12CullMode;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // RasterCullingModeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_RasterCullingModeMapping = std::to_array<RasterCullingModeMapping>({
+        // Mode                     D3D12CullMode
+        { RasterCullingMode::None,  D3D12_CULL_MODE_NONE },
+        { RasterCullingMode::Back,  D3D12_CULL_MODE_BACK },
+        { RasterCullingMode::Front, D3D12_CULL_MODE_FRONT },
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -302,6 +505,33 @@ namespace Nano::Graphics::Internal
     {
         return g_ShaderStageMapping[static_cast<size_t>((std::to_underlying(stage) ? (std::countr_zero(std::to_underlying(stage)) + 1) : 0))].Visibility;
     }
+
+    inline constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTypeToD3D12PrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeMapping[static_cast<size_t>(type)].D3D12Type; }
+    
+    inline constexpr D3D12_BLEND BlendFactorToD3D12Blend(BlendFactor factor) { NG_ASSERT((static_cast<size_t>(factor) < g_BlendFactorMapping.size()), "Factor value exceeds mappings."); return g_BlendFactorMapping[static_cast<size_t>(factor)].Blend; }
+    inline constexpr D3D12_BLEND_OP BlendOperationToD3D12BlendOp(BlendOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_BlendOperationMapping.size()), "Operation value exceeds mappings."); return g_BlendOperationMapping[static_cast<size_t>(operation)].BlendOp; }
+
+    inline constexpr D3D12_COLOR_WRITE_ENABLE ColourMaskToD3D12ColourWriteEnable(ColourMask mask)
+    {
+        std::underlying_type_t<D3D12_COLOR_WRITE_ENABLE> result = 0;
+        std::underlying_type_t<ColourMask> value = std::to_underlying(mask);
+
+        while (value)
+        {
+            int index = std::countr_zero(value);
+            value &= ~(1u << index); // clear bit
+
+            result |= g_ColourMaskMapping[static_cast<size_t>(index) + 1].WriteEnable;
+        }
+
+        return static_cast<D3D12_COLOR_WRITE_ENABLE>(result);
+    }
+
+    inline constexpr D3D12_STENCIL_OP StencilOperationToD3D12StencilOp(StencilOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_StencilOperationMapping.size()), "Operation value exceeds mappings."); return g_StencilOperationMapping[static_cast<size_t>(operation)].StencilOp; }
+    inline constexpr D3D12_COMPARISON_FUNC ComparisonFuncToD3D12ComparisonFunc(ComparisonFunc func) { NG_ASSERT((static_cast<size_t>(func) < g_ComparisonFuncMapping.size()), "Func value exceeds mappings."); return g_ComparisonFuncMapping[static_cast<size_t>(func)].D3D12ComparisonFunc; }
+
+    inline constexpr D3D12_FILL_MODE RasterFillModeTOD3D12FillMode(RasterFillMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_RasterFillModeMapping.size()), "Mode value exceeds mappings."); return g_RasterFillModeMapping[static_cast<size_t>(mode)].D3D12FillMode; }
+    inline constexpr D3D12_CULL_MODE RasterCullingModeTOD3D12CullMode(RasterCullingMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_RasterCullingModeMapping.size()), "Mode value exceeds mappings."); return g_RasterCullingModeMapping[static_cast<size_t>(mode)].D3D12CullMode; }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12Resources
