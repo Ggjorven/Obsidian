@@ -7,6 +7,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Descriptors.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -105,6 +106,9 @@ namespace Nano::Graphics::Internal
 
         // Internal methods
         void GetNextSetIndices(DescriptorHeapIndex& outSRVAndUAVBeginIndex, DescriptorHeapIndex& outSamplerBeginIndex);
+
+        // Internal getters
+        inline const Dx12Device& GetDx12Device() const { return m_Device; }
 
     private:
         const Dx12Device& m_Device;

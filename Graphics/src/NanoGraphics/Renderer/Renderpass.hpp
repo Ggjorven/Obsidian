@@ -6,6 +6,7 @@
 #include "NanoGraphics/Renderer/RenderpassSpec.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanRenderpass.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Renderpass.hpp"
 #include "NanoGraphics/Platform/Dummy/DummyRenderpass.hpp"
 
 #include <Nano/Nano.hpp>
@@ -23,7 +24,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanRenderpass>,
-            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyRenderpass>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::Dx12Renderpass>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyRenderpass>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyRenderpass>
         >;

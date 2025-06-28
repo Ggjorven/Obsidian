@@ -107,32 +107,79 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12BindingSet::SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources, uint32_t arrayIndex)
     {
+        (void)arrayIndex; // TODO: Maybe use somehow or remove.
+
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
         NG_ASSERT(((item.Type == ResourceType::Image) || (item.Type == ResourceType::ImageUnordered)), "[Dx12BindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
 
-        // TODO: ...
+        Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
+        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + slot;
+
+        switch (item.Type)
+        {
+        case ResourceType::Image:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
+            break;
+
+        case ResourceType::ImageUnordered:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
+            break;
+
+        default:
+            NG_UNREACHABLE();
+            break;
+        }
     }
 
     void Dx12BindingSet::SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex)
     {
+        (void)arrayIndex; // TODO: Maybe use somehow or remove.
+
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
         NG_ASSERT((item.Type == ResourceType::Sampler), "[Dx12BindingSet] When uploading a sampler the ResourceType must be Sampler.");
 
-        // TODO: ...
+        //Dx12Sampler& dxSampler = *api_cast<Dx12Sampler*>(&sampler);
+        DescriptorHeapIndex index = m_SamplerBeginIndex + slot;
+
+        m_Pool.GetDx12Device().GetResources().GetSamplerHeap().CreateSampler(index, sampler.GetSpecification());
     }
 
     void Dx12BindingSet::SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex)
     {
+        (void)arrayIndex; // TODO: Maybe use somehow or remove.
+
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
+        NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, UniformBuffer or DynamicUniformBuffer.");
 
-        // TODO: ...
+        Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
+        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + slot;
+
+        switch (item.Type)
+        {
+        case ResourceType::StorageBuffer:
+        case ResourceType::UniformBuffer:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+            break;
+
+        case ResourceType::StorageBufferUnordered:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+            break;
+
+        case ResourceType::DynamicStorageBuffer:
+        case ResourceType::DynamicUniformBuffer:
+            NG_ASSERT(false, "[Dx12BindingSet] Dynamic buffers are not implemented on dx12.");
+            break;
+
+        default:
+            NG_UNREACHABLE();
+            break;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

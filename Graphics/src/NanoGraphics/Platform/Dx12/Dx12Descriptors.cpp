@@ -40,9 +40,34 @@ namespace Nano::Graphics::Internal
 		m_Device.GetContext().Destroy([heap = m_DescriptorHeap]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 	}
 
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Creation methods
 	////////////////////////////////////////////////////////////////////////////////////
+	void Dx12DescriptorHeap::CreateSRV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		BufferRange resRange = ResolveBufferRange(range, specs);
+
+		if (format == Format::Unknown)
+			format = specs.BufferFormat;
+
+		FormatInfo info = FormatToFormatInfo(format);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
+		viewDesc.Format = FormatToFormatMapping(format).ResourceFormat;
+		viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+		viewDesc.Buffer.FirstElement = range.Offset / info.BytesPerBlock;
+		viewDesc.Buffer.NumElements = static_cast<UINT>((range.Size / info.BytesPerBlock));
+
+		// Passthrough to other func
+		CreateSRV(index, viewDesc, resource);
+	}
+
 	void Dx12DescriptorHeap::CreateSRV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
 	{
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
@@ -129,6 +154,29 @@ namespace Nano::Graphics::Internal
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
 		m_Device.GetContext().GetD3D12Device()->CreateShaderResourceView(resource, &desc, handle);
+	}
+
+	void Dx12DescriptorHeap::CreateUAV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format)
+	{
+		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
+		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+
+		BufferRange resRange = ResolveBufferRange(range, specs);
+
+		if (format == Format::Unknown)
+			format = specs.BufferFormat;
+
+		FormatInfo info = FormatToFormatInfo(format);
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
+		viewDesc.Format = FormatToFormatMapping(format).ResourceFormat;
+		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+
+		viewDesc.Buffer.FirstElement = range.Offset / info.BytesPerBlock;
+		viewDesc.Buffer.NumElements = static_cast<UINT>((range.Size / info.BytesPerBlock));
+
+		// Passthrough to other func
+		CreateUAV(index, viewDesc, resource);
 	}
 
 	void Dx12DescriptorHeap::CreateUAV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
@@ -456,6 +504,13 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Creation methods
 	////////////////////////////////////////////////////////////////////////////////////
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSRV(const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateSRV(index, specs, range, resource, format);
+		return index;
+	}
+
 	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateSRV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format, ImageDimension dimension)
 	{
 		DescriptorHeapIndex index = GetNextIndex();
@@ -467,6 +522,13 @@ namespace Nano::Graphics::Internal
 	{
 		DescriptorHeapIndex index = GetNextIndex();
 		Dx12DescriptorHeap::CreateSRV(index, desc, resource);
+		return index;
+	}
+
+	DescriptorHeapIndex Dx12DynamicDescriptorHeap::CreateUAV(const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format)
+	{
+		DescriptorHeapIndex index = GetNextIndex();
+		Dx12DescriptorHeap::CreateUAV(index, specs, range, resource, format);
 		return index;
 	}
 
