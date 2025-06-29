@@ -20,7 +20,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     Dx12Device::Dx12Device(const DeviceSpecification& specs)
-        : m_Context(specs.MessageCallback, specs.DestroyCallback), m_Allocator(m_Context.GetD3D12Adapter().Get(), m_Context.GetD3D12Device()), m_Resources(*api_cast<const Device*>(this))
+        : m_Context(specs.MessageCallback, specs.DestroyCallback), m_Allocator(m_Context.GetD3D12Adapter().Get(), m_Context.GetD3D12Device()), m_Resources(*api_cast<const Device*>(this)), m_StateTracker(*api_cast<const Device*>(this))
     {
     }
 
@@ -33,36 +33,45 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12Device::Wait() const
     {
+        //NG_ASSERT(false, "Not implemented.");
     }
 
     void Dx12Device::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
+        m_StateTracker.StartTracking(image, subresources, currentState);
     }
 
     void Dx12Device::StartTracking(const StagingImage& image, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
+        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
+        m_StateTracker.StartTracking(*api_cast<const Buffer*>(&dxStagingImage.GetDx12Buffer()), currentState);
     }
 
     void Dx12Device::StartTracking(const Buffer& buffer, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
+        m_StateTracker.StartTracking(buffer, currentState);
     }
 
     void Dx12Device::StopTracking(const Image& image)
     {
         NG_PROFILE("Dx12Device::StopTracking()");
+        m_StateTracker.StopTracking(image);
     }
 
     void Dx12Device::StopTracking(const StagingImage& image)
     {
         NG_PROFILE("Dx12Device::StopTracking()");
+        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
+        m_StateTracker.StopTracking(*api_cast<const Buffer*>(&dxStagingImage.GetDx12Buffer()));
     }
 
     void Dx12Device::StopTracking(const Buffer& buffer)
     {
         NG_PROFILE("Dx12Device::StopTracking()");
+        m_StateTracker.StopTracking(buffer);
     }
 
     void Dx12Device::MapBuffer(const Buffer& buffer, void*& memory) const
@@ -77,10 +86,13 @@ namespace Nano::Graphics::Internal
     void Dx12Device::MapStagingImage(const StagingImage& image, void*& memory) const
     {
         memory = nullptr;
+        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
     }
 
     void Dx12Device::UnmapStagingImage(const StagingImage& image) const
     {
+        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
+
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -75,12 +75,10 @@ namespace Nano::Graphics::Internal
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
 			
-				if constexpr (Information::Validation)
+				// Transition
 				{
-					if (!m_Specification.DebugName.empty())
-					{
-
-					}
+					m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Present);
+					//m_Device.GetTracker().RequireImageState(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
 				}
 			}
 		}
@@ -177,6 +175,12 @@ namespace Nano::Graphics::Internal
 
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
+			
+				// Transition
+				{
+					// Note: Maybe tell the tracker that the swapchain image on create is in Present // TODO: ...
+					//m_Device.GetTracker().RequireImageState(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
+				}
 			}
 		}
 	}

@@ -10,7 +10,12 @@
 #include "NanoGraphics/Renderer/Swapchain.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Buffer.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Image.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Resources.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Renderpass.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Framebuffer.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Pipeline.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -115,11 +120,28 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::Open()");
         DX_VERIFY(m_CommandList->Reset(m_Pool.GetD3D12CommandAllocator().Get(), nullptr));
+
+        CommitBarriers();
+
+        // TODO: Remove
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(m_Pool.GetDx12Swapchain().GetImage(m_Pool.GetDx12Swapchain().GetAcquiredImage()), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
+        CommitBarriers();
     }
 
     void Dx12CommandList::Close()
     {
         NG_PROFILE("Dx12CommandList::Close()");
+
+        // Close renderpass
+        {
+            NG_PROFILE("Dx12CommandList::Close::Renderpass");
+            m_CommandList->EndRenderPass();
+        }
+
+        // TODO: Remove
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(m_Pool.GetDx12Swapchain().GetImage(m_Pool.GetDx12Swapchain().GetAcquiredImage()), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Present);
+        CommitBarriers();
+
         DX_VERIFY(m_CommandList->Close());
     }
 
@@ -142,7 +164,7 @@ namespace Nano::Graphics::Internal
             DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));
         }
         
-        ID3D12CommandList* lists[] = { m_CommandList.Get()};
+        ID3D12CommandList* lists[] = { m_CommandList.Get() };
         queue->ExecuteCommandLists(1, lists);
 
         uint64_t signalValue = m_Pool.GetDx12Swapchain().RetrieveCommandListWaitValue(*this);
@@ -155,6 +177,77 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::CommitBarriers()
     {
         NG_PROFILE("Dx12CommandList::CommitBarriers()");
+
+        auto& imageBarriers = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetImageBarriers();
+        auto& bufferBarriers = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetBufferBarriers();
+
+        if (imageBarriers.empty() && bufferBarriers.empty())
+            return;
+
+        std::vector<D3D12_RESOURCE_BARRIER> resourceBarriers;
+        resourceBarriers.reserve(imageBarriers.size() + bufferBarriers.size());
+
+        // Image barriers
+        for (const auto& imageBarrier : imageBarriers)
+        {
+            Dx12Image& dxImage = *api_cast<Dx12Image*>(imageBarrier.ImagePtr);
+
+            D3D12_RESOURCE_BARRIER barrier = {};
+            D3D12_RESOURCE_STATES stateBefore = ResourceStateToD3D12ResourceStates(imageBarrier.StateBefore);
+            D3D12_RESOURCE_STATES stateAfter = ResourceStateToD3D12ResourceStates(imageBarrier.StateAfter);
+            
+            if (stateBefore != stateAfter)
+            {
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                barrier.Transition.StateBefore = stateBefore;
+                barrier.Transition.StateAfter = stateAfter;
+                barrier.Transition.pResource = dxImage.GetD3D12Resource().Get();
+                
+                if (imageBarrier.EntireTexture)
+                {
+                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                    resourceBarriers.push_back(barrier);
+                }
+                else
+                {
+                    for (uint8_t plane = 0; plane < dxImage.GetPlaneCount(); plane++)
+                    {
+                        barrier.Transition.Subresource = CalculateSubresource(imageBarrier.ImageMipLevel, imageBarrier.ImageArraySlice, plane, dxImage.GetSpecification().MipLevels, dxImage.GetSpecification().ArraySize);
+                        resourceBarriers.push_back(barrier);
+                    }
+                }
+            }
+            else if (stateAfter & D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+            {
+                barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+                barrier.UAV.pResource = dxImage.GetD3D12Resource().Get();
+                resourceBarriers.push_back(barrier);
+            }
+        }
+
+        // Buffer barriers
+        for (const auto& bufferBarrier : bufferBarriers)
+        {
+            Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(bufferBarrier.BufferPtr);
+
+            D3D12_RESOURCE_BARRIER barrier = {};
+            D3D12_RESOURCE_STATES stateBefore = ResourceStateToD3D12ResourceStates(bufferBarrier.StateBefore);
+            D3D12_RESOURCE_STATES stateAfter = ResourceStateToD3D12ResourceStates(bufferBarrier.StateAfter);
+            
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Transition.StateBefore = stateBefore;
+            barrier.Transition.StateAfter = stateAfter;
+            barrier.Transition.pResource = dxBuffer.GetD3D12Resource().Get();
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            resourceBarriers.push_back(barrier);
+        }
+
+        // Place barriers
+        if (!resourceBarriers.empty())
+            m_CommandList->ResourceBarrier(static_cast<uint32_t>(resourceBarriers.size()), resourceBarriers.data());
+
+        imageBarriers.clear();
+        bufferBarriers.clear();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -163,6 +256,41 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::SetGraphicsState(const GraphicsState& state)
     {
         NG_PROFILE("Dx12CommandList::SetGraphicsState()");
+        m_GraphicsState = state;
+
+        //NG_ASSERT(m_GraphicsState.Pipeline, "[Dx12CommandList] No pipeline passed in.");
+        NG_ASSERT(m_GraphicsState.Pass, "[Dx12CommandList] No Renderpass passed in.");
+
+        // Renderpass
+        {
+            NG_PROFILE("Dx12CommandList::SetGraphicsState::Renderpass");
+
+            Dx12Renderpass& renderpass = *api_cast<Dx12Renderpass*>(state.Pass);
+            Dx12Framebuffer* framebuffer = nullptr;
+            if (state.Frame)
+                framebuffer = api_cast<Dx12Framebuffer*>(state.Frame);
+            else
+                framebuffer = api_cast<Dx12Framebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage())));
+            Dx12Image& image = *api_cast<Dx12Image*>(framebuffer->GetSpecification().ColourAttachment.ImagePtr);
+            
+            D3D12_RENDER_PASS_RENDER_TARGET_DESC colourDesc = {};
+            colourDesc.cpuDescriptor = image.GetSubresourceView(framebuffer->GetSpecification().ColourAttachment.Subresources, ImageSubresourceViewUsage::RTV).GetCPUHandle();
+            colourDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR; // TODO: ...
+            colourDesc.BeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(image.GetSpecification().ImageFormat).RTVFormat;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[0] = state.ColourClear.r;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[1] = state.ColourClear.g;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[2] = state.ColourClear.b;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[3] = state.ColourClear.a;
+
+            colourDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE; // TODO: ...
+            // TODO: ...
+
+            D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthDesc = {};
+            // TODO: ...
+
+            // TODO: Have better flags based on specifications
+            m_CommandList->BeginRenderPass(1, &colourDesc, nullptr, D3D12_RENDER_PASS_FLAG_NONE);
+        }
     }
 
     void Dx12CommandList::SetComputeState(const ComputeState& state)

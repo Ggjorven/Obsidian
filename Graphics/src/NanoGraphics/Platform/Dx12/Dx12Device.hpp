@@ -6,6 +6,7 @@
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/StateTracker.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Context.hpp"
@@ -92,11 +93,13 @@ namespace Nano::Graphics::Internal
         inline const Dx12Context& GetContext() const { return m_Context; }
         inline const Dx12Allocator& GetAllocator() const { return m_Allocator; }
         inline const Dx12Resources& GetResources() const { return m_Resources; }
+        inline const StateTracker& GetTracker() const { return m_StateTracker; }
 
     private:
         Dx12Context m_Context;
         Dx12Allocator m_Allocator;
         Dx12Resources m_Resources;
+        StateTracker m_StateTracker;
     };
 #endif
 

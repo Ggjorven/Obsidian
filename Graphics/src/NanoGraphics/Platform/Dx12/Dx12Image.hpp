@@ -106,6 +106,8 @@ namespace Nano::Graphics::Internal
 		const Dx12ImageSubresourceView& GetSubresourceView(DescriptorHeapIndex index, const ImageSubresourceSpecification& specs, ImageSubresourceViewUsage usage, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown);
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
+		inline uint8_t GetPlaneCount() const { return m_PlaneCount; }
+
 	private:
 		const Dx12Device& m_Device;
 		ImageSpecification m_Specification;
@@ -114,6 +116,9 @@ namespace Nano::Graphics::Internal
 		DxPtr<D3D12MA::Allocation> m_Allocation = nullptr;
 
 		std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash> m_ImageViews = {};
+
+		// Dx12 needed info
+		uint8_t m_PlaneCount = 0;
 
 		friend class Dx12Device;
 		friend class Dx12Swapchain;

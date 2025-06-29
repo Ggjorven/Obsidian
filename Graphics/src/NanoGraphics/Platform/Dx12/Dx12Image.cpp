@@ -104,6 +104,8 @@ namespace Nano::Graphics::Internal
 	{
 		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
 	
+		m_PlaneCount = Dx12FormatToPlaneCount(device, (m_Specification.IsTypeless ? FormatToFormatMapping(m_Specification.ImageFormat).ResourceFormat : FormatToFormatMapping(m_Specification.ImageFormat).RTVFormat));
+
 		if constexpr (Information::Validation)
 		{
 			if (!m_Specification.DebugName.empty())
@@ -122,6 +124,8 @@ namespace Nano::Graphics::Internal
 	{
 		m_Specification = specs;
 		m_Resource = image;
+
+		m_PlaneCount = Dx12FormatToPlaneCount(*api_cast<const Device*>(&m_Device), (m_Specification.IsTypeless ? FormatToFormatMapping(m_Specification.ImageFormat).ResourceFormat : FormatToFormatMapping(m_Specification.ImageFormat).RTVFormat));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////

@@ -72,6 +72,30 @@ public:
 				.SetDebugName(std::format("CommandList for: {0}", m_CommandPools[i]->GetSpecification().DebugName))
 			);
 		}
+
+		// Renderpass
+		m_Renderpass.Construct(m_Device.Get(), RenderpassSpecification()
+			.SetBindpoint(PipelineBindpoint::Graphics)
+
+			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
+			.SetColourLoadOperation(LoadOperation::Clear)
+			.SetColourStoreOperation(StoreOperation::Store)
+			.SetColourStartState(ResourceState::Unknown)
+			.SetColourEndState(ResourceState::Present)
+
+			.SetDebugName("Renderpass")
+		);
+
+		for (size_t i = 0; i < m_Swapchain->GetImageCount(); i++)
+		{
+			std::string debugName = std::format("Framebuffer({0}) for: {1}", i, m_Renderpass->GetSpecification().DebugName);
+			(void)m_Renderpass->CreateFramebuffer(FramebufferSpecification()
+				.SetColourAttachment(FramebufferAttachment()
+					.SetImage(m_Swapchain->GetImage(static_cast<uint8_t>(i)))
+				)
+				.SetDebugName(debugName)
+			);
+		}
 	}
 	~Application()
 	{
@@ -111,6 +135,7 @@ public:
 				auto& list = m_CommandLists[m_Swapchain->GetCurrentFrame()];
 
 				list->Open();
+				list->SetGraphicsState(GraphicsState().SetRenderpass(m_Renderpass.Get()).SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f }));
 
 				list->Close();
 				list->Submit(CommandListSubmitArgs()
@@ -171,6 +196,8 @@ private:
 
 	std::array<Nano::Memory::DeferredConstruct<CommandListPool>, Information::FramesInFlight> m_CommandPools = { };
 	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_CommandLists = { };
+
+	Nano::Memory::DeferredConstruct<Renderpass> m_Renderpass = {};
 
 	std::queue<DeviceDestroyFn> m_DestroyQueue = {};
 };

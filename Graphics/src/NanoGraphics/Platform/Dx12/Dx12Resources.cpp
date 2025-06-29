@@ -27,4 +27,24 @@ namespace Nano::Graphics::Internal
 		// Note: The destructor of the Heaps will release the resources
 	}
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Other
+    ////////////////////////////////////////////////////////////////////////////////////
+	uint8_t Dx12FormatToPlaneCount(const Device& device, DXGI_FORMAT format)
+    {
+        const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
+
+        uint8_t planeCount = 0;
+
+        D3D12_FEATURE_DATA_FORMAT_INFO formatInfo = { format, 1 };
+        if (DX_FAILED(dxDevice.GetContext().GetD3D12Device()->CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, &formatInfo, sizeof(formatInfo))))
+            // Format not supported
+            planeCount = 255;
+        else
+            // Format supported
+            planeCount = formatInfo.PlaneCount;
+
+        return planeCount;
+    }
+
 }

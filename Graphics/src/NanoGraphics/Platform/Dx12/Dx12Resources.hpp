@@ -568,6 +568,8 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Other
     ////////////////////////////////////////////////////////////////////////////////////
+    uint8_t Dx12FormatToPlaneCount(const Device& device, DXGI_FORMAT format); // Note: 255 means format not supported.
+
     // helper function for texture subresource calculations
     // https://msdn.microsoft.com/en-us/library/windows/desktop/dn705766(v=vs.85).aspx
     inline constexpr uint32_t CalculateSubresource(uint32_t MipSlice, uint32_t ArraySlice, uint32_t PlaneSlice, uint32_t MipLevels, uint32_t ArraySize)
