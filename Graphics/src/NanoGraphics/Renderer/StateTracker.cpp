@@ -27,11 +27,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void StateTracker::Clear() const
-    {
-        m_ImageStates.clear();
-    }
-
     void StateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
     {
         NG_ASSERT((!Contains(image)), "[StateTracker] Started tracking an object that's already being tracked.");
@@ -80,7 +75,7 @@ namespace Nano::Graphics::Internal
             m_BufferStates.erase(&buffer);
     }
 
-    void StateTracker::RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
+    void StateTracker::RequireImageState(const CommandList& list, Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
     {
         NG_ASSERT(Contains(image), "[StateTracker] Using an untracked image is not allowed, call StartTracking() on image.");
 
@@ -102,7 +97,7 @@ namespace Nano::Graphics::Internal
                 barrier.StateBefore = currentState.State;
                 barrier.StateAfter = state;
 
-                m_ImageBarriers.push_back(barrier);
+                m_ImageBarriers[&list].push_back(barrier);
             }
 
             currentState.State = state;
@@ -155,7 +150,7 @@ namespace Nano::Graphics::Internal
                         barrier.StateBefore = priorState;
                         barrier.StateAfter = state;
 
-                        m_ImageBarriers.push_back(barrier);
+                        m_ImageBarriers[&list].push_back(barrier);
                     }
 
                     currentState.SubresourceStates[subresourceIndex] = state;
@@ -170,7 +165,7 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void StateTracker::RequireBufferState(Buffer& buffer, ResourceState state) const
+    void StateTracker::RequireBufferState(const CommandList& list, Buffer& buffer, ResourceState state) const
     {
         NG_ASSERT(Contains(buffer), "[StateTracker] Using an untracked buffer is not allowed, call StartTracking() on buffer.");
 
@@ -181,7 +176,7 @@ namespace Nano::Graphics::Internal
 
         if (transitionNecessary)
         {
-            for (BufferBarrier& barrier : m_BufferBarriers) // Check if the buffer isn't already begin transitioned and add the flag to the after state.
+            for (BufferBarrier& barrier : m_BufferBarriers[&list]) // Check if the buffer isn't already begin transitioned and add the flag to the after state.
             {
                 if (barrier.BufferPtr == &buffer)
                 {
@@ -198,7 +193,7 @@ namespace Nano::Graphics::Internal
             barrier.BufferPtr = &buffer;
             barrier.StateBefore = currentState.State;
             barrier.StateAfter = state;
-            m_BufferBarriers.push_back(barrier);
+            m_BufferBarriers[&list].push_back(barrier);
         }
 
         if (uavNecessary && !transitionNecessary)
@@ -207,7 +202,7 @@ namespace Nano::Graphics::Internal
         currentState.State = state;
     }
 
-    void StateTracker::ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const
+    void StateTracker::ResolvePermanentState(const CommandList& list, Image& image, const ImageSubresourceSpecification& subresource) const
     {
         NG_ASSERT((Contains(image)), "[StateTracker] Cannot get resourcestate for an untracked object.");
         NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[StateTracker] Cannot get a single ResourceState from multiple subresources.");
@@ -219,10 +214,10 @@ namespace Nano::Graphics::Internal
         ResourceState currentState = GetResourceState(image, subresource);
 
         if (state != currentState)
-            RequireImageState(image, subresource, state);
+            RequireImageState(list, image, subresource, state);
     }
 
-    void StateTracker::ResolvePermanentState(Buffer& buffer) const
+    void StateTracker::ResolvePermanentState(const CommandList& list, Buffer& buffer) const
     {
         NG_ASSERT((Contains(buffer)), "[StateTracker] Cannot get resourcestate for an untracked object.");
         if (!buffer.GetSpecification().HasPermanentState())
@@ -232,7 +227,7 @@ namespace Nano::Graphics::Internal
         ResourceState currentState = GetResourceState(buffer);
 
         if (state != currentState)
-            RequireBufferState(buffer, state);
+            RequireBufferState(list, buffer, state);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

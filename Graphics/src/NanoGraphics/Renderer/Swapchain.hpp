@@ -42,8 +42,8 @@ namespace Nano::Graphics
         inline void Resize(uint32_t width, uint32_t height) { m_Impl->Resize(width, height); }
         inline void Resize(uint32_t width, uint32_t height, bool vsync, Format colourFormat, ColourSpace colourSpace) { m_Impl->Resize(width, height, vsync, colourFormat, colourSpace); }
 
-        inline void AcquireNextImage() { m_Impl->AcquireNextImage(); }
-        inline void Present() { m_Impl->Present(); }
+        inline void AcquireNextImage() { m_Impl->AcquireNextImage(); } // Note: An acquired image will be ResourceState::RenderTarget
+        inline void Present() { m_Impl->Present(); } // Note: The image must be in present (often done through renderpass EndState)
 
         // Getters
         inline const SwapchainSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }

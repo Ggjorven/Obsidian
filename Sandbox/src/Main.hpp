@@ -80,7 +80,7 @@ public:
 			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourStartState(ResourceState::Unknown)
+			.SetColourStartState(ResourceState::RenderTarget)
 			.SetColourEndState(ResourceState::Present)
 
 			.SetDebugName("Renderpass")

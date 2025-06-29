@@ -43,6 +43,7 @@ namespace Nano::Graphics::Internal
 
 			#if defined(NG_PLATFORM_DESKTOP)
 				HWND hwnd = glfwGetWin32Window(static_cast<GLFWwindow*>(m_Specification.WindowTarget->GetNativeWindow()));
+				NG_ASSERT(hwnd, "[Dx12Swapchain] Failed to retrieve win32 window, glfw error occurred.");
 			#endif
 
 			// Note: Fullscreen is currently not a thing.
@@ -75,10 +76,9 @@ namespace Nano::Graphics::Internal
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
 			
-				// Transition
+				// Start tracking to allow transitioning
 				{
 					m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Present);
-					//m_Device.GetTracker().RequireImageState(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
 				}
 			}
 		}
@@ -94,6 +94,7 @@ namespace Nano::Graphics::Internal
 			}
 		}
 
+		// Debug naming
 		if constexpr (Information::Validation)
 		{
 			if (!m_Specification.DebugName.empty())
@@ -175,12 +176,6 @@ namespace Nano::Graphics::Internal
 
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
-			
-				// Transition
-				{
-					// Note: Maybe tell the tracker that the swapchain image on create is in Present // TODO: ...
-					//m_Device.GetTracker().RequireImageState(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
-				}
 			}
 		}
 	}

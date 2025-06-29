@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NanoGraphics/Core/Logging.hpp"
+
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
 
@@ -8,6 +10,7 @@ namespace Nano::Graphics
     class Device;
     class Image;
     class Buffer;
+    class CommandList;
 }
 
 namespace Nano::Graphics::Internal
@@ -73,18 +76,16 @@ namespace Nano::Graphics::Internal
         ~StateTracker();
 
         // Methods
-        void Clear() const;
-
         void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const;
         void StartTracking(const Buffer& buffer, ResourceState currentState) const;
         void StopTracking(const Image& image);
         void StopTracking(const Buffer& buffer);
 
-        void RequireImageState(Image& image, ImageSubresourceSpecification subresources, ResourceState state) const;
-        void RequireBufferState(Buffer& buffer, ResourceState state) const;
+        void RequireImageState(const CommandList& list, Image& image, ImageSubresourceSpecification subresources, ResourceState state) const;
+        void RequireBufferState(const CommandList& list, Buffer& buffer, ResourceState state) const;
 
-        void ResolvePermanentState(Image& image, const ImageSubresourceSpecification& subresource) const;
-        void ResolvePermanentState(Buffer& buffer) const;
+        void ResolvePermanentState(const CommandList& list, Image& image, const ImageSubresourceSpecification& subresource) const;
+        void ResolvePermanentState(const CommandList& list, Buffer& buffer) const;
 
         // Getters
         inline bool Contains(const Image& image) const { return m_ImageStates.contains(&image); }
@@ -96,8 +97,8 @@ namespace Nano::Graphics::Internal
         ResourceState GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const;
         ResourceState GetResourceState(const Buffer& buffer) const;
 
-        inline std::vector<ImageBarrier>& GetImageBarriers() const { return m_ImageBarriers; }
-        inline std::vector<BufferBarrier>& GetBufferBarriers() const { return m_BufferBarriers; }
+        inline std::vector<ImageBarrier>& GetImageBarriers(const CommandList& list) const { return m_ImageBarriers[&list]; }
+        inline std::vector<BufferBarrier>& GetBufferBarriers(const CommandList& list) const { return m_BufferBarriers[&list]; }
 
     private:
         const Device& m_Device;
@@ -105,8 +106,8 @@ namespace Nano::Graphics::Internal
         mutable std::unordered_map<const Image*, ImageState> m_ImageStates = { };
         mutable std::unordered_map<const Buffer*, BufferState> m_BufferStates = { };
 
-        mutable std::vector<ImageBarrier> m_ImageBarriers = { };
-        mutable std::vector<BufferBarrier> m_BufferBarriers = { };
+        mutable std::unordered_map<const CommandList*, std::vector<ImageBarrier>> m_ImageBarriers = { };
+        mutable std::unordered_map<const CommandList*, std::vector<BufferBarrier>> m_BufferBarriers = { };
     };
 
 }

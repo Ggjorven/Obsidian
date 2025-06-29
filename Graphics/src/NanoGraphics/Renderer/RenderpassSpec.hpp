@@ -104,7 +104,7 @@ namespace Nano::Graphics
         ImageSpecification ColourSpecification = {};
         LoadOperation ColourLoadOperation = LoadOperation::Clear;
         StoreOperation ColourStoreOperation = StoreOperation::Store;
-        ResourceState ColourImageStartState = ResourceState::Unknown;
+        ResourceState ColourImageStartState = ResourceState::RenderTarget;
         ResourceState ColourImageEndState = ResourceState::Present;
 
         ImageSpecification DepthSpecification = {};
