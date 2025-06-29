@@ -125,10 +125,6 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::Open()");
         DX_VERIFY(m_CommandList->Reset(m_Pool.GetD3D12CommandAllocator().Get(), nullptr));
-
-        // TODO: Remove
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), m_Pool.GetDx12Swapchain().GetImage(m_Pool.GetDx12Swapchain().GetAcquiredImage()), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::RenderTarget);
-        CommitBarriers();
     }
 
     void Dx12CommandList::Close()
@@ -286,7 +282,10 @@ namespace Nano::Graphics::Internal
 
             Dx12Renderpass& renderpass = *api_cast<Dx12Renderpass*>(m_GraphicsState.Pass);
             if (!m_GraphicsState.Frame)
+            {
+                NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
                 m_GraphicsState.Frame = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
+            }
             Dx12Framebuffer& framebuffer = *api_cast<Dx12Framebuffer*>(m_GraphicsState.Frame);
             
             Dx12Image* colourImage = api_cast<Dx12Image*>(framebuffer.GetSpecification().ColourAttachment.ImagePtr);
@@ -325,14 +324,22 @@ namespace Nano::Graphics::Internal
                 colourDesc.BeginningAccess.Clear.ClearValue.Color[3] = m_GraphicsState.ColourClear.a;
                 
                 colourDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE; // TODO: ...
+
+                // Transition to rendering state
+                if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
+                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(colourImage), framebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
             }
             if (depthImage)
             {
                 // TODO: ...
             }
+            CommitBarriers();
 
             // TODO: Flags
-            m_CommandList->BeginRenderPass((colourImage ? 1 : 0), (colourImage ? &colourDesc : nullptr), (depthImage ? &depthDesc : nullptr), D3D12_RENDER_PASS_FLAG_NONE);
+            {
+                NG_PROFILE("Dx12CommandList::SetGraphicsState::BeginRenderpass");
+                m_CommandList->BeginRenderPass((colourImage ? 1 : 0), (colourImage ? &colourDesc : nullptr), (depthImage ? &depthDesc : nullptr), D3D12_RENDER_PASS_FLAG_NONE);
+            }
         }
 
         // Pipeline

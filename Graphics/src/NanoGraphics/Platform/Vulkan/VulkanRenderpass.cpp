@@ -43,7 +43,7 @@ namespace Nano::Graphics::Internal
             VkAttachmentReference2& reference = colourReference.emplace();
             reference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
             reference.attachment = static_cast<uint32_t>((attachments.size() - 1));
-            reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            reference.layout = ResourceStateToImageLayout(m_Specification.ColourImageRenderingState);
         }
 
         if ((m_Specification.DepthSpecification.Width != 0) || (m_Specification.DepthSpecification.Height != 0))
@@ -62,7 +62,7 @@ namespace Nano::Graphics::Internal
             VkAttachmentReference2& reference = depthReference.emplace();
             reference.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
             reference.attachment = static_cast<uint32_t>((attachments.size() - 1));
-            reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            reference.layout = ResourceStateToImageLayout(m_Specification.DepthImageRenderingState);
         }
 
         VkSubpassDescription2 subpass = {};

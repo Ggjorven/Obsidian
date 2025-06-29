@@ -76,23 +76,24 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::MapBuffer(const Buffer& buffer, void*& memory) const
     {
-        memory = nullptr;
+        const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
+        dxBuffer.GetD3D12Resource()->Map(0, nullptr, &memory);
     }
 
     void Dx12Device::UnmapBuffer(const Buffer& buffer) const
     {
+        const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
+        dxBuffer.GetD3D12Resource()->Unmap(0, nullptr);
     }
 
     void Dx12Device::MapStagingImage(const StagingImage& image, void*& memory) const
     {
-        memory = nullptr;
-        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
+        MapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())), memory);
     }
 
     void Dx12Device::UnmapStagingImage(const StagingImage& image) const
     {
-        const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
-
+        UnmapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

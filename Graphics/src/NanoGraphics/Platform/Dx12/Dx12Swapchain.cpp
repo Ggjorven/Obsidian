@@ -51,6 +51,7 @@ namespace Nano::Graphics::Internal
 			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present).Get(), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
+			// TODO: Set ColourSpace
 		}
 
 		// Images
@@ -157,6 +158,7 @@ namespace Nano::Graphics::Internal
 			}
 
 			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToFormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
+			// TODO: Set ColourSpace
 
 			for (size_t i = 0; i < m_Images.size(); i++)
 			{

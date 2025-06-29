@@ -123,7 +123,7 @@ namespace Nano::Graphics::Internal
         void Free(DescriptorHeapIndex index);
 
         // Getters
-        CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandleForIndex(DescriptorHeapIndex index) const;
+        using Dx12DescriptorHeap::GetCPUHandleForIndex;
 
     private:
         // Private methods
@@ -147,6 +147,7 @@ namespace Nano::Graphics::Internal
         ~Dx12ManagedDescriptorHeap();
 
         // Getters
+        using Dx12DescriptorHeap::GetCPUHandleForIndex;
         DescriptorHeapIndex GetNextPoolIndex(uint32_t setCount, uint32_t resourceCount);
 
     private:

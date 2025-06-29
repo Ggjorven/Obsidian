@@ -80,7 +80,8 @@ public:
 			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourStartState(ResourceState::RenderTarget)
+			.SetColourStartState(ResourceState::Present)
+			.SetColourRenderingState(ResourceState::RenderTarget)
 			.SetColourEndState(ResourceState::Present)
 
 			.SetDebugName("Renderpass")
@@ -135,7 +136,14 @@ public:
 				auto& list = m_CommandLists[m_Swapchain->GetCurrentFrame()];
 
 				list->Open();
-				list->SetGraphicsState(GraphicsState().SetRenderpass(m_Renderpass.Get()).SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f }));
+				list->SetGraphicsState(GraphicsState()
+					.SetRenderpass(m_Renderpass.Get())
+
+					.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
+					.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
+
+					.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+				);
 
 				list->Close();
 				list->Submit(CommandListSubmitArgs()

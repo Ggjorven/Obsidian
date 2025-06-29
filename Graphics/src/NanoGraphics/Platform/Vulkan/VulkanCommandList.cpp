@@ -335,10 +335,13 @@ namespace Nano::Graphics::Internal
             NG_PROFILE("VulkanCommandList::SetGraphicsState::Renderpass");
 
             VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(m_GraphicsState.Pass);
-            
+
             if (!m_GraphicsState.Frame)
+            {
+                NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetVulkanSwapchain().GetImageCount()), "[VkCommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
                 m_GraphicsState.Frame = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
-            VulkanFramebuffer& framebuffer = *api_cast<VulkanFramebuffer*>(&m_GraphicsState.Frame);
+            }
+            VulkanFramebuffer& framebuffer = *api_cast<VulkanFramebuffer*>(m_GraphicsState.Frame);
         
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

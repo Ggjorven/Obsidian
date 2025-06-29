@@ -638,21 +638,13 @@ namespace Nano::Graphics::Internal
 			}
 			else if ((freed.Index - 1) == index)
 			{
-				freed.Index -= 1;
+				freed.Index = index;
 				freed.Amount += 1;
 				return;
 			}
 		}
 		
 		m_FreeEntries.emplace_back(1, index);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////
-	// Getters
-	////////////////////////////////////////////////////////////////////////////////////
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12DynamicDescriptorHeap::GetCPUHandleForIndex(DescriptorHeapIndex index) const
-	{
-		return Dx12DescriptorHeap::GetCPUHandleForIndex(index);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////

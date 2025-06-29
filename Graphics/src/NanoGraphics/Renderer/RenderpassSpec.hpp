@@ -104,13 +104,15 @@ namespace Nano::Graphics
         ImageSpecification ColourSpecification = {};
         LoadOperation ColourLoadOperation = LoadOperation::Clear;
         StoreOperation ColourStoreOperation = StoreOperation::Store;
-        ResourceState ColourImageStartState = ResourceState::RenderTarget;
+        ResourceState ColourImageStartState = ResourceState::Present;
+        ResourceState ColourImageRenderingState = ResourceState::RenderTarget;
         ResourceState ColourImageEndState = ResourceState::Present;
 
         ImageSpecification DepthSpecification = {};
         LoadOperation DepthLoadOperation = LoadOperation::Clear;
         StoreOperation DepthStoreOperation = StoreOperation::Store;
-        ResourceState DepthImageStartState = ResourceState::Unknown;
+        ResourceState DepthImageStartState = ResourceState::DepthWrite;
+        ResourceState DepthImageRenderingState = ResourceState::DepthWrite;
         ResourceState DepthImageEndState = ResourceState::DepthWrite;
 
         std::string DebugName = {};
@@ -123,12 +125,14 @@ namespace Nano::Graphics
         inline constexpr RenderpassSpecification& SetColourLoadOperation(LoadOperation operation) { ColourLoadOperation = operation; return *this; }
         inline constexpr RenderpassSpecification& SetColourStoreOperation(StoreOperation operation) { ColourStoreOperation = operation; return *this; }
         inline constexpr RenderpassSpecification& SetColourStartState(ResourceState state) { ColourImageStartState = state; return *this; }
+        inline constexpr RenderpassSpecification& SetColourRenderingState(ResourceState state) { ColourImageRenderingState = state; return *this; }
         inline constexpr RenderpassSpecification& SetColourEndState(ResourceState state) { ColourImageEndState = state; return *this; }
 
         inline constexpr RenderpassSpecification& SetDepthImageSpecification(const ImageSpecification& specs) { DepthSpecification = specs; return *this; }
         inline constexpr RenderpassSpecification& SetDepthLoadOperation(LoadOperation operation) { DepthLoadOperation = operation; return *this; }
         inline constexpr RenderpassSpecification& SetDepthStoreOperation(StoreOperation operation) { DepthStoreOperation = operation; return *this; }
         inline constexpr RenderpassSpecification& SetDepthStartState(ResourceState state) { DepthImageStartState = state; return *this; }
+        inline constexpr RenderpassSpecification& SetDepthRenderingState(ResourceState state) { DepthImageRenderingState = state; return *this; }
         inline constexpr RenderpassSpecification& SetDepthEndState(ResourceState state) { DepthImageEndState = state; return *this; }
 
         inline RenderpassSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
