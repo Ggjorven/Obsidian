@@ -280,7 +280,7 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(((item.Type == ResourceType::Image) || (item.Type == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
 
         VulkanImage& vulkanImage = *api_cast<VulkanImage*>(&image);
-        ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, image.GetSpecification(), false);
 
         VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(item.Type) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
         VkImageUsageFlags imageUsage = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(item.Type) - static_cast<size_t>(ResourceType::Image)].VulkanImageUsage;
@@ -360,7 +360,7 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
     
         VulkanImage& vulkanImage = *api_cast<VulkanImage*>(&image);
-        ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, image.GetSpecification(), false);
 
         VkImageLayout imageLayout = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageLayout;
         VkImageUsageFlags imageUsage = g_ResourceTypeToLayoutsAndUsageMapping[static_cast<size_t>(resourceType) - static_cast<size_t>(ResourceType::Image)].VulkanImageUsage;

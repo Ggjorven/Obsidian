@@ -35,7 +35,7 @@ namespace Nano::Graphics::Internal
         return ret;
     }
 
-    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip)
+    ImageSubresourceSpecification ResolveImageSubresource(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip)
     {
         ImageSubresourceSpecification ret;
         ret.BaseMipLevel = subresourceSpec.BaseMipLevel;

@@ -17,7 +17,7 @@ namespace Nano::Graphics
     {
     public:
         Image* ImagePtr = nullptr;
-        ImageSubresourceSpecification Subresources = ImageSubresourceSpecification(0, 1, 0, 1);
+        ImageSubresourceSpecification Subresources = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
         
         bool IsReadOnly = false;
 

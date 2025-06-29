@@ -39,7 +39,7 @@ namespace Nano::Graphics::Internal
         void Destroy(DeviceDestroyFn fn) const;
 
         // Internal methods
-        void SetDebugName(ID3D12Object* object, std::string name) const;
+        void SetDebugName(ID3D12Object* object, const std::string& name) const;
         void SetDebugName(ID3D12Object* object, const std::wstring& name) const;
 
         // Internal getters

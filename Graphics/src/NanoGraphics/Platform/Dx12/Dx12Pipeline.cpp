@@ -129,6 +129,15 @@ namespace Nano::Graphics::Internal
 
             DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
         }
+
+        if constexpr (Information::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+            {
+                dxDevice.GetContext().SetDebugName(m_PipelineState.Get(), m_Specification.DebugName);
+                dxDevice.GetContext().SetDebugName(m_RootSignature.Get(), std::format("RootSignature for: {0}", m_Specification.DebugName));
+            }
+        }
     }
 
     Dx12GraphicsPipeline::~Dx12GraphicsPipeline()

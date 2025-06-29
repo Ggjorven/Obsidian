@@ -17,7 +17,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12DescriptorHeap::Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
+	Dx12DescriptorHeap::Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_MaxSize(maxSize), m_Type(type), m_IsShaderVisible(isShaderVisible)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
@@ -33,6 +33,12 @@ namespace Nano::Graphics::Internal
 
 		if (m_IsShaderVisible) // GPU Descriptor are only avaible for shader visible heaps
 			m_GPUStart = m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+		if constexpr (Information::Validation)
+		{
+			if (!debugName.empty())
+				m_Device.GetContext().SetDebugName(m_DescriptorHeap.Get(), debugName);
+		}
 	}
 
 	Dx12DescriptorHeap::~Dx12DescriptorHeap()
@@ -72,7 +78,7 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an SRV from a non SRV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
-		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
+		ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, specs, false);
 
 		if (dimension == ImageDimension::Unknown)
 			dimension = specs.Dimension;
@@ -183,7 +189,7 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate an UAV from a non UAV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
-		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
+		ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, specs, false);
 
 		if (dimension == ImageDimension::Unknown)
 			dimension = specs.Dimension;
@@ -273,7 +279,7 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV), "[Dx12DescriptorHeap] Cannot allocate an RTV from a non RTV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
-		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, false);
+		ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, specs, false);
 
 		D3D12_RENDER_TARGET_VIEW_DESC viewDesc = {};
 		viewDesc.Format = FormatToFormatMapping(format == Format::Unknown ? specs.ImageFormat : format).RTVFormat;
@@ -340,7 +346,7 @@ namespace Nano::Graphics::Internal
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV), "[Dx12DescriptorHeap] Cannot allocate an DSV from a non DSV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
 
-		ImageSubresourceSpecification resSubresources = ResolveImageSubresouce(subresources, specs, true);
+		ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, specs, true);
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
 		viewDesc.Format = FormatToFormatMapping(specs.ImageFormat).RTVFormat;
@@ -511,8 +517,8 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12DynamicDescriptorHeap::Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
-		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible)
+	Dx12DynamicDescriptorHeap::Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName)
+		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible, debugName)
 	{
 		m_FreeEntries.reserve(maxSize);
 	}
@@ -687,8 +693,8 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12ManagedDescriptorHeap::Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible)
-		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible)
+	Dx12ManagedDescriptorHeap::Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName)
+		: Dx12DescriptorHeap(device, maxSize, type, isShaderVisible, debugName)
 	{
 	}
 

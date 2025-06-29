@@ -76,12 +76,12 @@ namespace Nano::Graphics::Internal
         ~StateTracker();
 
         // Methods
-        void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const;
+        void StartTracking(const Image& image, const ImageSubresourceSpecification& subresources, ResourceState currentState) const;
         void StartTracking(const Buffer& buffer, ResourceState currentState) const;
         void StopTracking(const Image& image);
         void StopTracking(const Buffer& buffer);
 
-        void RequireImageState(const CommandList& list, Image& image, ImageSubresourceSpecification subresources, ResourceState state) const;
+        void RequireImageState(const CommandList& list, Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) const;
         void RequireBufferState(const CommandList& list, Buffer& buffer, ResourceState state) const;
 
         void ResolvePermanentState(const CommandList& list, Image& image, const ImageSubresourceSpecification& subresource) const;
@@ -94,7 +94,7 @@ namespace Nano::Graphics::Internal
         inline ImageState& GetImageState(const Image& image) const { return m_ImageStates[&image]; }
         inline BufferState& GetBufferState(const Buffer& buffer) const { return m_BufferStates[&buffer]; }
 
-        ResourceState GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const;
+        ResourceState GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const;
         ResourceState GetResourceState(const Buffer& buffer) const;
 
         inline std::vector<ImageBarrier>& GetImageBarriers(const CommandList& list) const { return m_ImageBarriers[&list]; }

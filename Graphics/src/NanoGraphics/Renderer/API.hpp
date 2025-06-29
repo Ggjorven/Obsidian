@@ -79,7 +79,7 @@ namespace Nano::Graphics::Internal
     // Specification helper methods
     ////////////////////////////////////////////////////////////////////////////////////
     ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
-    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
+    ImageSubresourceSpecification ResolveImageSubresource(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
 
     BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
 

@@ -18,7 +18,7 @@ namespace Nano::Graphics::Internal
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
 	Dx12Resources::Dx12Resources(const Device& device)
-		: m_Device(*api_cast<const Dx12Device*>(&device)), m_SRVAndUAVHeap(device, s_SRVAndUAVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true), m_SamplerHeap(device, s_SamplerStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, true), m_DSVHeap(device, s_DSVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false), m_RTVHeap(device, s_RTVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false)
+		: m_Device(*api_cast<const Dx12Device*>(&device)), m_SRVAndUAVHeap(device, s_SRVAndUAVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, "SRV, UAV & CBV DescriptorHeap"), m_SamplerHeap(device, s_SamplerStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, true, "Sampler DescriptorHeap"), m_DSVHeap(device, s_DSVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, "DSV DescriptorHeap"), m_RTVHeap(device, s_RTVStartSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false, "RTV DescriptorHeap")
 	{
 	}
 

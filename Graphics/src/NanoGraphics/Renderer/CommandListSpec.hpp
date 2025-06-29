@@ -129,7 +129,7 @@ namespace Nano::Graphics
     public:
         GraphicsPipeline* Pipeline = nullptr;
         Renderpass* Pass = nullptr;
-        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[CurrentFrame] from pass.
+        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[AcquiredImage] from pass.
 
         Viewport ViewportState = {};
         ScissorRect Scissor = {};

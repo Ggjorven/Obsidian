@@ -27,16 +27,16 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void StateTracker::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) const
+    void StateTracker::StartTracking(const Image& image, const ImageSubresourceSpecification& subresources, ResourceState currentState) const
     {
         NG_ASSERT((!Contains(image)), "[StateTracker] Started tracking an object that's already being tracked.");
 
         m_ImageStates.emplace();
         ImageState& state = m_ImageStates[&image];
         const ImageSpecification& imageSpec = image.GetSpecification();
-        subresources = ResolveImageSubresouce(subresources, imageSpec, false);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, imageSpec, false);
 
-        if (subresources.IsEntireTexture(imageSpec))
+        if (resSubresources.IsEntireTexture(imageSpec))
         {
             state.State = currentState;
         }
@@ -45,9 +45,9 @@ namespace Nano::Graphics::Internal
             state.SubresourceStates.resize(static_cast<size_t>(imageSpec.MipLevels) * imageSpec.ArraySize, state.State);
             state.State = ResourceState::Unknown;
 
-            for (MipLevel mipLevel = subresources.BaseMipLevel; mipLevel < subresources.BaseMipLevel + subresources.NumMipLevels; mipLevel++)
+            for (MipLevel mipLevel = resSubresources.BaseMipLevel; mipLevel < resSubresources.BaseMipLevel + resSubresources.NumMipLevels; mipLevel++)
             {
-                for (ArraySlice arraySlice = subresources.BaseArraySlice; arraySlice < subresources.BaseArraySlice + subresources.NumArraySlices; arraySlice++)
+                for (ArraySlice arraySlice = resSubresources.BaseArraySlice; arraySlice < resSubresources.BaseArraySlice + resSubresources.NumArraySlices; arraySlice++)
                     state.SubresourceStates[ImageSubresourceSpecification::SubresourceIndex(mipLevel, arraySlice, imageSpec)] = currentState;
             }
         }
@@ -75,16 +75,16 @@ namespace Nano::Graphics::Internal
             m_BufferStates.erase(&buffer);
     }
 
-    void StateTracker::RequireImageState(const CommandList& list, Image& image, ImageSubresourceSpecification subresources, ResourceState state) const
+    void StateTracker::RequireImageState(const CommandList& list, Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) const
     {
         NG_ASSERT(Contains(image), "[StateTracker] Using an untracked image is not allowed, call StartTracking() on image.");
 
         const ImageSpecification& imageSpec = image.GetSpecification();
-        subresources = ResolveImageSubresouce(subresources, image.GetSpecification(), false);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, imageSpec, false);
 
         ImageState& currentState = m_ImageStates[&image];
 
-        if (subresources.IsEntireTexture(image.GetSpecification())) // Entire texture
+        if (resSubresources.IsEntireTexture(image.GetSpecification())) // Entire texture
         {
             bool transitionNecessary = (currentState.State != state);
             bool uavNecessary = (static_cast<bool>((state & ResourceState::UnorderedAccess)) != false) && (currentState.EnableUavBarriers || !currentState.FirstUavBarrierPlaced);
@@ -123,9 +123,9 @@ namespace Nano::Graphics::Internal
             }
 
             bool anyUavBarrier = false;
-            for (ArraySlice arraySlice = subresources.BaseArraySlice; arraySlice < subresources.BaseArraySlice + subresources.NumArraySlices; arraySlice++)
+            for (ArraySlice arraySlice = resSubresources.BaseArraySlice; arraySlice < resSubresources.BaseArraySlice + resSubresources.NumArraySlices; arraySlice++)
             {
-                for (MipLevel mipLevel = subresources.BaseMipLevel; mipLevel < subresources.BaseMipLevel + subresources.NumMipLevels; mipLevel++)
+                for (MipLevel mipLevel = resSubresources.BaseMipLevel; mipLevel < resSubresources.BaseMipLevel + resSubresources.NumMipLevels; mipLevel++)
                 {
                     size_t subresourceIndex = ImageSubresourceSpecification::SubresourceIndex(mipLevel, arraySlice, imageSpec);
                     auto priorState = currentState.SubresourceStates[subresourceIndex];
@@ -233,13 +233,14 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Getters
     ////////////////////////////////////////////////////////////////////////////////////
-    ResourceState StateTracker::GetResourceState(const Image& image, ImageSubresourceSpecification subresource) const
+    ResourceState StateTracker::GetResourceState(const Image& image, const ImageSubresourceSpecification& subresource) const
     {
         NG_ASSERT((Contains(image)), "[StateTracker] Cannot get resourcestate for an untracked object.");
-        NG_ASSERT(((subresource.NumMipLevels == 1) && (subresource.NumArraySlices == 1)), "[StateTracker] Cannot get a single ResourceState from multiple subresources.");
-
+        
         const ImageSpecification& imageSpec = image.GetSpecification();
-        subresource = ResolveImageSubresouce(subresource, imageSpec, false);
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresource, imageSpec, false);
+        
+        NG_ASSERT(((resSubresources.NumMipLevels == 1) && (resSubresources.NumArraySlices == 1)), "[StateTracker] Cannot get a single ResourceState from multiple subresources.");
 
         if (subresource.IsEntireTexture(imageSpec))
             return m_ImageStates.at(&image).State;

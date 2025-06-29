@@ -36,7 +36,7 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        Dx12DescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName);
         ~Dx12DescriptorHeap();
 
         // Creation methods
@@ -96,7 +96,7 @@ namespace Nano::Graphics::Internal
         };
     public:
         // Constructor & Destructor
-        Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        Dx12DynamicDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName);
         ~Dx12DynamicDescriptorHeap();
 
         // Creation methods // Note: Most are just passthrough functions
@@ -143,7 +143,7 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible);
+        Dx12ManagedDescriptorHeap(const Device& device, uint32_t maxSize, D3D12_DESCRIPTOR_HEAP_TYPE type, bool isShaderVisible, const std::string& debugName);
         ~Dx12ManagedDescriptorHeap();
 
         // Getters

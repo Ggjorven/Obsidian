@@ -214,7 +214,7 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void Dx12Context::SetDebugName(ID3D12Object* object, std::string name) const
+    void Dx12Context::SetDebugName(ID3D12Object* object, const std::string& name) const
     {
         int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, name.c_str(), static_cast<int>(name.size()), nullptr, 0);
 

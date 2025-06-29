@@ -316,14 +316,15 @@ namespace Nano::Graphics::Internal
             if (colourImage)
             {
                 colourDesc.cpuDescriptor = colourImage->GetSubresourceView(framebuffer.GetSpecification().ColourAttachment.Subresources, ImageSubresourceViewUsage::RTV).GetCPUHandle();
-                colourDesc.BeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR; // TODO: ...
+                
+                colourDesc.BeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().ColourLoadOperation); 
                 colourDesc.BeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(colourImage->GetSpecification().ImageFormat).RTVFormat;
                 colourDesc.BeginningAccess.Clear.ClearValue.Color[0] = m_GraphicsState.ColourClear.r;
                 colourDesc.BeginningAccess.Clear.ClearValue.Color[1] = m_GraphicsState.ColourClear.g;
                 colourDesc.BeginningAccess.Clear.ClearValue.Color[2] = m_GraphicsState.ColourClear.b;
                 colourDesc.BeginningAccess.Clear.ClearValue.Color[3] = m_GraphicsState.ColourClear.a;
                 
-                colourDesc.EndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE; // TODO: ...
+                colourDesc.EndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().ColourStoreOperation);
 
                 // Transition to rendering state
                 if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
@@ -331,15 +332,28 @@ namespace Nano::Graphics::Internal
             }
             if (depthImage)
             {
-                // TODO: ...
+                depthDesc.cpuDescriptor = depthImage->GetSubresourceView(framebuffer.GetSpecification().DepthAttachment.Subresources, ImageSubresourceViewUsage::DSV, ImageDimension::Image2D, Format::Unknown, false).GetCPUHandle();
+
+                // Note: We currently don't support stencil
+                depthDesc.DepthBeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().DepthLoadOperation);
+                depthDesc.DepthBeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(depthImage->GetSpecification().ImageFormat).RTVFormat;
+                depthDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = m_GraphicsState.DepthClear;
+
+                depthDesc.DepthEndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().DepthStoreOperation);
+
+                // Transition to rendering state
+                if (renderpass.GetSpecification().DepthImageStartState != renderpass.GetSpecification().DepthImageRenderingState)
+                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(depthImage), framebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
             }
             CommitBarriers();
 
-            // TODO: Flags
             {
-                NG_PROFILE("Dx12CommandList::SetGraphicsState::BeginRenderpass");
+                NG_PROFILE("Dx12CommandList::SetGraphicsState::BeginRenderpass"); // Note: Only 1 render target is currently supported
                 m_CommandList->BeginRenderPass((colourImage ? 1 : 0), (colourImage ? &colourDesc : nullptr), (depthImage ? &depthDesc : nullptr), D3D12_RENDER_PASS_FLAG_NONE);
             }
+
+            SetViewport(m_GraphicsState.ViewportState);
+            SetScissor(m_GraphicsState.Scissor);
         }
 
         // Pipeline
@@ -361,11 +375,30 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::SetViewport(const Viewport& viewport) const
     {
         NG_PROFILE("Dx12CommandList::SetViewport()");
+
+        // Note: We use VK coordinates
+        D3D12_VIEWPORT d3d12Viewport = {};
+        d3d12Viewport.TopLeftX = viewport.MinX;
+        d3d12Viewport.TopLeftY = viewport.MinY + viewport.GetHeight(); // Shift origin to top-left
+        d3d12Viewport.Width = viewport.GetWidth();
+        d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
+        d3d12Viewport.MinDepth = viewport.MinZ;
+        d3d12Viewport.MaxDepth = viewport.MaxZ;
+
+        m_CommandList->RSSetViewports(1, &d3d12Viewport);
     }
 
     void Dx12CommandList::SetScissor(const ScissorRect& scissor) const
     {
         NG_PROFILE("Dx12CommandList::SetScissor()");
+
+        D3D12_RECT rect = {};
+        rect.left = scissor.MinX;
+        rect.top = scissor.MinY;
+        rect.right = scissor.MaxX;
+        rect.bottom = scissor.MaxY;
+
+        m_CommandList->RSSetScissorRects(1, &rect);
     }
 
     void Dx12CommandList::BindVertexBuffer(const Buffer& buffer) const
