@@ -200,69 +200,6 @@ namespace Nano::Graphics::Internal
     VulkanBindingSet::VulkanBindingSet(BindingSetPool& pool, const BindingSetSpecification& specs)
         : m_Pool(*api_cast<VulkanBindingSetPool*>(&pool)), m_Specification(specs), m_DescriptorSet(api_cast<VulkanBindingSetPool*>(&pool)->CreateDescriptorSet())
     {
-        // Note: The layout shouldn't contain any actual resources (decision made later)
-        //VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
-        //
-        //auto items = vkLayout.GetBindingItems();
-        //
-        //std::vector<VkWriteDescriptorSet> writes;
-        //writes.reserve(items.size());
-        //std::vector<VkDescriptorImageInfo> imageInfos;
-        //imageInfos.reserve(items.size());
-        //std::vector<VkDescriptorBufferInfo> bufferInfos;
-        //bufferInfos.reserve(items.size());
-        //
-        //// Upload already defined items
-        //for (const auto& item : items)
-        //{
-        //    switch (item.Type)
-        //    {
-        //    case ResourceType::Image:
-        //    case ResourceType::ImageUnordered:
-        //    {
-        //        if (!(item.ImagePtr))
-        //            break;
-        //
-        //        // Only upload items that are predefined
-        //        UploadImage(writes, imageInfos, *item.ImagePtr, item.Subresources, item.Type, item.Slot, item.ArrayIndex);
-        //        break;
-        //    }
-        //
-        //    case ResourceType::StorageBuffer:
-        //    case ResourceType::StorageBufferUnordered:
-        //    case ResourceType::DynamicStorageBuffer:
-        //    case ResourceType::UniformBuffer:
-        //    case ResourceType::DynamicUniformBuffer:
-        //    {
-        //        if (!(item.BufferPtr))
-        //            break;
-        //
-        //        // Only upload items that are predefined
-        //        UploadBuffer(writes, bufferInfos, *item.BufferPtr, item.Range, item.Type, item.Slot, item.ArrayIndex);
-        //        break;
-        //    }
-        //
-        //    case ResourceType::Sampler:
-        //    {
-        //        if (!(item.SamplerPtr))
-        //            break;
-        //
-        //        // Only upload items that are predefined
-        //        UploadSampler(writes, imageInfos, *item.SamplerPtr, item.Type, item.Slot, item.ArrayIndex);
-        //        break;
-        //    }
-        //
-        //    case ResourceType::PushConstants:
-        //        // Note: PushConstants are not really uploadable
-        //        break;
-        //
-        //    default:
-        //        NG_UNREACHABLE();
-        //        break;
-        //    }
-        //}
-        //
-        //vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
 
     VulkanBindingSet::~VulkanBindingSet()
@@ -330,7 +267,7 @@ namespace Nano::Graphics::Internal
         VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = vkLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, UniformBuffer or DynamicUniformBuffer.");
+        NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
 
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
@@ -400,7 +337,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::UploadBuffer(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorBufferInfo>& bufferInfos, Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
-        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, UniformBuffer or DynamicUniformBuffer.");
+        NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered or UniformBuffer.");
 
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());

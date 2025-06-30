@@ -35,15 +35,15 @@ namespace Nano::Graphics::Internal
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
         : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
-        NG_ASSERT(((specs.Width != 0) && (specs.Height != 0)), "[VkImage] Invalid width/height passed in.");
-        NG_ASSERT((specs.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
+        NG_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[VkImage] Invalid width/height passed in.");
+        NG_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
 
         // Validation checks
         if constexpr (Information::Validation)
         {
-            if (!((specs.SampleCount >= 1) && (specs.SampleCount <= 64) && (specs.SampleCount & (specs.SampleCount - 1)) == 0))
+            if (!((m_Specification.SampleCount >= 1) && (m_Specification.SampleCount <= 64) && (m_Specification.SampleCount & (m_Specification.SampleCount - 1)) == 0))
             {
-                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", specs.SampleCount));
+                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", m_Specification.SampleCount));
             }
         }
 

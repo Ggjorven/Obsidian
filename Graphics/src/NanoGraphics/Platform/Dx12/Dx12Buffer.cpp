@@ -85,6 +85,8 @@ namespace Nano::Graphics::Internal
 	Dx12Buffer::Dx12Buffer(const Device& device, const BufferSpecification& specs)
 		: m_Specification(specs)
 	{
+        NG_ASSERT((specs.Size > 0), "[Dx12Buffer] Buffer size must be equal to 0.");
+
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
         size_t size = m_Specification.Size;
@@ -96,7 +98,6 @@ namespace Nano::Graphics::Internal
         if (m_Specification.IsUnorderedAccessed)
             flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-        //D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_RESOURCE_STATES initialState = ResourceStateToD3D12ResourceStates(m_Specification.PermanentState);
         D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
 

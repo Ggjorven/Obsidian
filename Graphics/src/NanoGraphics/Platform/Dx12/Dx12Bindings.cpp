@@ -20,7 +20,12 @@ namespace Nano::Graphics::Internal
     {
         (void)device;
 
-        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end());
+        BindingLayoutSpecification& mSpecs = std::get<BindingLayoutSpecification>(m_Specification);
+
+        // Sort the bindings by slot item from lowest to highest
+        std::sort(mSpecs.Bindings.begin(), mSpecs.Bindings.end(), [](const BindingLayoutItem& a, const BindingLayoutItem& b) { return a.Slot < b.Slot; });
+
+        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
         CreateRootParameters(device, items);
@@ -31,10 +36,15 @@ namespace Nano::Graphics::Internal
     {
         (void)device;
 
-        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(specs.Bindings.begin(), specs.Bindings.end());
+        BindlessLayoutSpecification& mSpecs = std::get<BindlessLayoutSpecification>(m_Specification);
+
+        std::sort(mSpecs.Bindings.begin(), mSpecs.Bindings.end(), [](const BindingLayoutItem& a, const BindingLayoutItem& b) { return a.Slot < b.Slot; });
+
+        // Sort the bindings by slot item from lowest to highest
+        std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
-        NG_ASSERT(false, "[Dx12BindingLayout] Bindless on dx12 is not properly supported.");
+        NG_ASSERT(false, "[Dx12BindingLayout] Bindless on dx12 is not properly supported yet.");
     }
 
     Dx12BindingLayout::~Dx12BindingLayout()
@@ -77,14 +87,22 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12BindingLayout::InitResourceCounts(std::span<const BindingLayoutItem> items)
     {
-        // Map the counts
+        m_SlotToHeapOffset.reserve(items.size());
+
+        // Map the counts & Map the offsets
+        uint32_t offset = 0;
         std::unordered_map<ResourceType, uint32_t> counts = { };
-        for (const auto& item : items)
+        for (const auto& item : items) // Note: The items are sorted from lowest to highest slot in the constructor
         {
+            // Map the counts
             if (!(counts.contains(item.Type)))
                 counts[item.Type] = item.GetArraySize();
             else
                 counts[item.Type] += item.GetArraySize();
+
+            // Map the offsets
+            m_SlotToHeapOffset.emplace_back(offset);
+            offset += item.GetArraySize();
         }
 
         // Add to vector
@@ -119,11 +137,11 @@ namespace Nano::Graphics::Internal
             {
                 switch (item.Type)
                 {
-                case ResourceType::Image:
-                case ResourceType::StorageBuffer:
+                case ResourceType::TextureSRV:
+                case ResourceType::TypedBufferSRV:
                 {
                     CD3DX12_DESCRIPTOR_RANGE& range = m_SRVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace);
 
                     if ((srvStage != ShaderStage::None) && (srvStage != item.Visibility))
                         srvStage = ShaderStage::AllGraphics;
@@ -133,11 +151,11 @@ namespace Nano::Graphics::Internal
                     break;
                 }
 
-                case ResourceType::ImageUnordered:
-                case ResourceType::StorageBufferUnordered:
+                case ResourceType::TextureUAV:
+                case ResourceType::TypedBufferUAV:
                 {
                     CD3DX12_DESCRIPTOR_RANGE& range = m_UAVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace);
 
                     if ((uavStage != ShaderStage::None) && (uavStage != item.Visibility))
                         uavStage = ShaderStage::AllGraphics;
@@ -147,10 +165,10 @@ namespace Nano::Graphics::Internal
                     break;
                 }
 
-                case ResourceType::UniformBuffer:
+                case ResourceType::ConstantBuffer:
                 {
                     CD3DX12_DESCRIPTOR_RANGE& range = m_CBVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace);
 
                     if ((cbvStage != ShaderStage::None) && (cbvStage != item.Visibility))
                         cbvStage = ShaderStage::AllGraphics;
@@ -163,7 +181,7 @@ namespace Nano::Graphics::Internal
                 case ResourceType::Sampler:
                 {
                     CD3DX12_DESCRIPTOR_RANGE& range = m_SamplerRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace); // 1 descriptor, register t0, space 2
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace);
 
                     if ((samplerStage != ShaderStage::None) && (samplerStage != item.Visibility))
                         samplerStage = ShaderStage::AllGraphics;
@@ -172,11 +190,6 @@ namespace Nano::Graphics::Internal
 
                     break;
                 }
-
-                case ResourceType::DynamicStorageBuffer:
-                case ResourceType::DynamicUniformBuffer:
-                    NG_ASSERT(false, "[Dx12BindingLayout] Dynamic buffer are currently not supported in Dx12."); // FUTURE TODO: ...
-                    break;
 
                 case ResourceType::PushConstants:
                     // Note: There is no Dx12 equivalent // FUTURE TODO: ...
@@ -187,10 +200,10 @@ namespace Nano::Graphics::Internal
 
         // Create root params
         {
-            m_DescriptorSRVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
-            m_DescriptorUAVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
-            m_DescriptorCBVRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
-            m_DescriptorSamplerRootParameter.InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
+            GetSRVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
+            GetUAVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
+            GetCBVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
+            GetSamplerRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
         }
     }
 
@@ -216,23 +229,21 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12BindingSet::SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources, uint32_t arrayIndex)
     {
-        (void)arrayIndex; // TODO: Maybe use somehow or remove.
-
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::Image) || (item.Type == ResourceType::ImageUnordered)), "[Dx12BindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
+        NG_ASSERT(((item.Type == ResourceType::TextureSRV) || (item.Type == ResourceType::TextureUAV)), "[Dx12BindingSet] When uploading an image the ResourceType must be TextureSRV or TextureUAV.");
 
         Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
-        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + slot;
+        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         switch (item.Type)
         {
-        case ResourceType::Image:
+        case ResourceType::TextureSRV:
             m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
             break;
 
-        case ResourceType::ImageUnordered:
+        case ResourceType::TextureUAV:
             m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
             break;
 
@@ -244,30 +255,26 @@ namespace Nano::Graphics::Internal
 
     void Dx12BindingSet::SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex)
     {
-        (void)arrayIndex; // TODO: Maybe use somehow or remove.
-
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
         NG_ASSERT((item.Type == ResourceType::Sampler), "[Dx12BindingSet] When uploading a sampler the ResourceType must be Sampler.");
 
         //Dx12Sampler& dxSampler = *api_cast<Dx12Sampler*>(&sampler);
-        DescriptorHeapIndex index = m_SamplerBeginIndex + slot;
+        DescriptorHeapIndex index = m_SamplerBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         m_Pool.GetDx12Device().GetResources().GetSamplerHeap().CreateSampler(index, sampler.GetSpecification());
     }
 
     void Dx12BindingSet::SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex)
     {
-        (void)arrayIndex; // TODO: Maybe use somehow or remove.
-
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, UniformBuffer or DynamicUniformBuffer.");
+        NG_ASSERT(((item.Type == ResourceType::TypedBufferSRV) || (item.Type == ResourceType::TypedBufferUAV) || (item.Type == ResourceType::ConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be TypedBufferSRV, TypedBufferUAV or ConstantBuffer.");
 
         Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
-        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + slot;
+        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         switch (item.Type)
         {
@@ -281,11 +288,6 @@ namespace Nano::Graphics::Internal
 
         case ResourceType::UniformBuffer:
             m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateCBV(index, buffer.GetSpecification(), dxBuffer.GetD3D12Resource().Get());
-            break;
-
-        case ResourceType::DynamicStorageBuffer:
-        case ResourceType::DynamicUniformBuffer:
-            NG_ASSERT(false, "[Dx12BindingSet] Dynamic buffers are not implemented on dx12.");
             break;
 
         default:
@@ -305,15 +307,14 @@ namespace Nano::Graphics::Internal
             Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(specs.Layout);
             for (const auto& [type, count] : dxLayout.GetResourceCounts())
             {
-                // FUTURE TODO: Dx12 types
                 switch (type)
                 {
-                case ResourceType::Image:
-                case ResourceType::StorageBuffer:
-                case ResourceType::UniformBuffer:
+                case ResourceType::TextureSRV:
+                case ResourceType::TypedBufferSRV:
+                case ResourceType::ConstantBuffer:
                 // Purposeful fallthrough
-                case ResourceType::ImageUnordered:
-                case ResourceType::StorageBufferUnordered:
+                case ResourceType::TextureUAV:
+                case ResourceType::TypedBufferUAV:
                     m_SRVAndUAVCountPerSet += count;
                     break;
 
@@ -322,10 +323,10 @@ namespace Nano::Graphics::Internal
                     break;
 
                 case ResourceType::PushConstants:
-                    // TODO: Pushconstants don't do anything on dx12
+                    // FUTURE TODO: Pushconstants don't do anything on dx12
                     break;
 
-                default: // TODO: Dynamic on dx12?
+                default:
                     NG_UNREACHABLE();
                     break;
                 };

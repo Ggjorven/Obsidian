@@ -102,6 +102,9 @@ namespace Nano::Graphics::Internal
 	Dx12Image::Dx12Image(const Device& device, const ImageSpecification& specs)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
+		NG_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[Dx12Image] Invalid width/height passed in.");
+		NG_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[Dx12Image] Invalid format passed in.");
+
 		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
 	
 		m_PlaneCount = Dx12FormatToPlaneCount(device, (m_Specification.IsTypeless ? FormatToFormatMapping(m_Specification.ImageFormat).ResourceFormat : FormatToFormatMapping(m_Specification.ImageFormat).RTVFormat));
@@ -251,7 +254,7 @@ namespace Nano::Graphics::Internal
 			baseOffset = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT * ((baseOffset + D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1) / D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 		}
 
-		return { };
+		return subresourceOffsets;
 	}
 
 	size_t Dx12StagingImage::GetBufferSize() const

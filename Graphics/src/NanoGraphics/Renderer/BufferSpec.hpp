@@ -77,9 +77,6 @@ namespace Nano::Graphics
         //bool IsAccelStructBuildInput = false;
         //bool IsAccelStructStorage = false;
 
-        bool IsDynamic = false;
-        uint32_t DynamicElements = 0;
-
         bool IsTexel = false;
         bool IsUnorderedAccessed = false;
 
@@ -97,13 +94,11 @@ namespace Nano::Graphics
         inline constexpr BufferSpecification& SetIsVertexBuffer(bool enabled) { IsVertexBuffer = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsIndexBuffer(bool enabled) { IsIndexBuffer = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUniformBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
-
-        inline constexpr BufferSpecification& SetIsDynamic(bool enabled) { IsDynamic = enabled; return *this; }
-        inline constexpr BufferSpecification& SetIsVolatile(bool enabled) { IsDynamic = enabled; return *this; }
-        inline constexpr BufferSpecification& SetDynamicElements(uint32_t elements) { DynamicElements = elements; return *this; }
+        inline constexpr BufferSpecification& SetIsContantBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
 
         inline constexpr BufferSpecification& SetIsTexel(bool enabled) { IsTexel = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
+        inline constexpr BufferSpecification& SetIsUAV(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
 
         inline constexpr BufferSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
         inline constexpr BufferSpecification& SetCPUAccess(CpuAccessMode access) { CpuAccess = access; return *this; }

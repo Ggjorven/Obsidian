@@ -30,27 +30,22 @@ namespace Nano::Graphics
     {
         None = 0,
 
-        // Vulkan names
         Image,
+        TextureSRV = Image,
         ImageUnordered,
+        TextureUAV = ImageUnordered,
         StorageBuffer,
+        TypedBufferSRV = StorageBuffer,
         StorageBufferUnordered,
-        DynamicStorageBuffer, // SRV or UAV? // FUTURE TODO: ...
+        TypedBufferUAV = StorageBufferUnordered,
         UniformBuffer,
-        DynamicUniformBuffer, // SRV or UAV? // FUTURE TODO: ...
+        ConstantBuffer = UniformBuffer,
         Sampler,
         PushConstants,
         //RayTracingAccelStruct,
         
         // Note: CombinedImageSampler is not supported, since only Vulkan supports it
         //       instead use a seperate texture2D ([]) and sampler ([]), and combine with sampler2D (GLSL)
-
-        // Dx12 names // FUTURE TODO: ?
-        //Texture_SRV = Image,
-        //Texture_UAV = ImageUnordered,
-        //TypedBuffer_SRV = StorageBuffer,
-        //TypedBuffer_UAV = StorageBufferUnordered,
-        //ConstantBuffer = UniformBuffer, // SRV
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -61,20 +56,6 @@ namespace Nano::Graphics
     public:
         inline constexpr static uint32_t MaxPushConstantSize = 128;
     public:
-        // Note: The layout shouldn't have actual resources (decision made later)
-        //union
-        //{
-        //    Image* ImagePtr = nullptr;
-        //    Sampler* SamplerPtr;
-        //    Buffer* BufferPtr;
-        //};
-        //union
-        //{
-        //    ImageSubresourceSpecification Subresources = {};
-        //    BufferRange Range;
-        //};
-        //uint32_t ArrayIndex = 0;
-
         ShaderStage Visibility = ShaderStage::None;
 
         uint32_t Slot = 0;
@@ -86,15 +67,6 @@ namespace Nano::Graphics
 
     public:
         // Setters // Note: The Item setter are optional and can be set later via the BindingSet itself
-        //inline constexpr BindingLayoutItem& SetItemReference(Image& image) { ImagePtr = &image; return *this; }
-        //inline constexpr BindingLayoutItem& SetItemReference(Sampler& sampler) { SamplerPtr = &sampler; return *this; }
-        //inline constexpr BindingLayoutItem& SetItemReference(Buffer& buffer) { BufferPtr = &buffer; return *this; }
-        //
-        //inline constexpr BindingLayoutItem& SetItemRange(const ImageSubresourceSpecification& subresources) { Subresources = subresources; return *this; }
-        //inline constexpr BindingLayoutItem& SetItemRange(const BufferRange& range) { Range = range; return *this; }
-        //
-        //inline constexpr BindingLayoutItem& SetItemIndex(uint32_t arrayIndex) { ArrayIndex = arrayIndex; return *this; }
-
         inline constexpr BindingLayoutItem& SetVisibility(ShaderStage visibility) { Visibility = visibility; return *this; }
         inline constexpr BindingLayoutItem& SetSlot(uint32_t slot) { Slot = slot; return *this; }
         inline constexpr BindingLayoutItem& SetType(ResourceType type) { Type = type; return *this; }
@@ -157,17 +129,13 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // BindingSetSpecification
     ////////////////////////////////////////////////////////////////////////////////////
-    struct BindingSetSpecification
+    struct BindingSetSpecification // Note: The register is set via the layout which is provided in the pool
     {
     public:
-        //uint32_t Register = 0;
-        
         std::string DebugName = {};
 
     public:
         // Setters
-        //inline constexpr BindingSetSpecification& SetRegister(uint32_t regist) { Register = regist; return *this; }
-
         inline BindingSetSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
