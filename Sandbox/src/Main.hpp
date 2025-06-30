@@ -100,6 +100,8 @@ public:
 	}
 	~Application()
 	{
+		m_Device->DestroyRenderpass(m_Renderpass.Get());
+
 		for (size_t i = 0; i < m_CommandPools.size(); i++)
 		{
 			m_CommandPools[i]->FreeList(m_CommandLists[i].Get());
@@ -136,13 +138,18 @@ public:
 				auto& list = m_CommandLists[m_Swapchain->GetCurrentFrame()];
 
 				list->Open();
-				list->SetGraphicsState(GraphicsState()
+
+				list->StartRenderpass(RenderpassStartArgs()
 					.SetRenderpass(m_Renderpass.Get())
 
 					.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 					.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
 
 					.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+				);
+
+				list->EndRenderpass(RenderpassEndArgs()
+					.SetRenderpass(m_Renderpass.Get())
 				);
 
 				list->Close();
@@ -164,6 +171,7 @@ private:
 		handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable
 		{
 			m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
+			m_Renderpass->ResizeFramebuffers();
 		});
 	}
 

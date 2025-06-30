@@ -84,10 +84,14 @@ namespace Nano::Graphics::Internal
 		void CommitBarriers();
 
 		// Object methods
-		void SetGraphicsState(const GraphicsState& state);
-		void SetComputeState(const ComputeState& state);
+		void StartRenderpass(const RenderpassStartArgs& args);
+		void EndRenderpass(const RenderpassEndArgs& args);
 
-		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
+		void BindPipeline(const GraphicsPipeline& pipeline);
+		void BindPipeline(const ComputePipeline& pipeline);
+
+		void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set);
+		void BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets);
 
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
@@ -98,6 +102,8 @@ namespace Nano::Graphics::Internal
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice);
 		void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset);
+
+		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
 
 		// Draw methods
 		void DrawIndexed(const DrawArguments& args) const;
@@ -113,9 +119,6 @@ namespace Nano::Graphics::Internal
 		CommandListSpecification m_Specification;
 
 		DxPtr<ID3D12GraphicsCommandList10> m_CommandList = nullptr;
-
-		GraphicsState m_GraphicsState = {};
-		ComputeState m_ComputeState = {};
 
 		friend class Dx12CommandListPool;
 	};

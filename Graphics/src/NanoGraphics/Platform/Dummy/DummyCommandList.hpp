@@ -5,6 +5,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
+#include <span>
 #include <array>
 #include <unordered_map>
 
@@ -73,10 +74,14 @@ namespace Nano::Graphics::Internal
 		inline constexpr void CommitBarriers() {}
 
 		// Object methods
-		inline constexpr void SetGraphicsState(const GraphicsState& state) { (void)state; }
-		inline constexpr void SetComputeState(const ComputeState& state) { (void)state; }
+		inline constexpr void StartRenderpass(const RenderpassStartArgs& args) { (void)args; }
+		inline constexpr void EndRenderpass(const RenderpassEndArgs& args) { (void)args; }
 
-		inline constexpr void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const { (void)groupsX; (void)groupsY; (void)groupsZ; }
+		inline constexpr void BindPipeline(const GraphicsPipeline& pipeline) { (void)pipeline; }
+		inline constexpr void BindPipeline(const ComputePipeline& pipeline) { (void)pipeline; }
+
+		inline constexpr void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set) { (void)pipeline; (void)set; }
+		inline constexpr void BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets) { (void)pipeline; (void)sets; }
 
 		inline constexpr void SetViewport(const Viewport& viewport) const { (void)viewport; }
 		inline constexpr void SetScissor(const ScissorRect& scissor) const { (void)scissor; }
@@ -87,6 +92,8 @@ namespace Nano::Graphics::Internal
 		inline constexpr void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { (void)dst; (void)dstSlice; (void)src; (void)srcSlice; }
 		inline constexpr void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { (void)dst; (void)dstSlice; (void)src; (void)srcSlice; }
 		inline constexpr void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset) { (void)dst; (void)src; (void)size; (void)srcOffset; (void)dstOffset; }
+
+		inline constexpr void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const { (void)groupsX; (void)groupsY; (void)groupsZ; }
 
 		// Draw methods
 		inline constexpr void DrawIndexed(const DrawArguments& args) const { (void)args; }

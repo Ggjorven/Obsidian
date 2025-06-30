@@ -53,6 +53,8 @@ namespace Nano::Graphics::Internal
         void UpdatePoolSizeInfosToMaxSets(uint32_t maxSets); // Note: Multiplies each descriptor count by the MaxSets
 
         // Internal getters
+        BindingLayoutSpecification GetBindingLayoutSpecification() const { NG_ASSERT(!IsBindless(), "[VkBindingLayout] Can't retrieve BindingLayoutSpecification for bindless layout."); return std::get<BindingLayoutSpecification>(m_Specification); }
+
         std::span<const BindingLayoutItem> GetBindingItems() const;
 
         inline VkDescriptorSetLayout GetVkDescriptorSetLayout() const { return m_Layout; }
@@ -92,6 +94,9 @@ namespace Nano::Graphics::Internal
         inline const BindingSetSpecification& GetSpecification() const { return m_Specification; }
 
         // Internal getters
+        inline VulkanBindingSetPool& GetVulkanBindingSetPool() { return m_Pool; }
+        inline const VulkanBindingSetPool& GetVulkanBindingSetPool() const { return m_Pool; }
+
         inline VkDescriptorSet GetVkDescriptorSet() const { return m_DescriptorSet; }
 
     private:

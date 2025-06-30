@@ -83,13 +83,17 @@ namespace Nano::Graphics::Internal
 		void CommitBarriers();
 
 		// Object methods
-		void SetGraphicsState(const GraphicsState& state);
-		void SetComputeState(const ComputeState& state);
-
-		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
+		void StartRenderpass(const RenderpassStartArgs& args);
+		void EndRenderpass(const RenderpassEndArgs& args);
 		
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
+
+		void BindPipeline(const GraphicsPipeline& pipeline);
+		void BindPipeline(const ComputePipeline& pipeline);
+		
+		void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set);
+		void BindBindingSets(const GraphicsPipeline& pipeline, const std::span<const BindingSet*> sets);
 
 		void BindVertexBuffer(const Buffer& buffer) const;
 		void BindIndexBuffer(const Buffer& buffer) const;
@@ -97,6 +101,8 @@ namespace Nano::Graphics::Internal
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice);
 		void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice);
 		void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset);
+
+		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
 
 		// Draw methods
 		void DrawIndexed(const DrawArguments& args) const;
@@ -111,17 +117,12 @@ namespace Nano::Graphics::Internal
 		// Private methods
 		void SetWaitStage(VkPipelineStageFlags2 waitStage);
 
-		void BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindpoint/*, ShaderStage stages*/) const;
-
 	private:
 		VulkanCommandListPool& m_Pool;
 		CommandListSpecification m_Specification;
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
-
-		GraphicsState m_GraphicsState = {};
-		ComputeState m_ComputeState = {};
 	};
 #endif
 

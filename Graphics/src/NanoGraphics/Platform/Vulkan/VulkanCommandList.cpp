@@ -121,23 +121,7 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::Close()
     {
         NG_PROFILE("VulkanCommandList::Close()");
-
-        // Renderpass
-        if (m_GraphicsState.Pass)
-        {
-            VkSubpassEndInfo endInfo = {};
-            endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
-
-            vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
-        }
-
-        m_GraphicsState = GraphicsState();
-        m_ComputeState = ComputeState();
-
-        {
-            NG_PROFILE("VulkanCommandList::Close::End");
-            VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
-        }
+        VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
     }
 
     void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
@@ -322,40 +306,39 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Object methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
+    void VulkanCommandList::StartRenderpass(const RenderpassStartArgs& args)
     {
-        NG_PROFILE("VulkanCommandList::SetGraphicsState()");
-        m_GraphicsState = state;
+        NG_PROFILE("VulkanCommandList::StartRenderpass()");
 
-        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
-        NG_ASSERT(m_GraphicsState.Pass, "[VkCommandList] No Renderpass passed in.");
+        NG_ASSERT(args.Pass, "[VkCommandList] No Renderpass passed in.");
 
         // Renderpass
         {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::Renderpass");
+            NG_PROFILE("VulkanCommandList::StartRenderpass::Renderpass");
 
-            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(m_GraphicsState.Pass);
+            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
 
-            if (!m_GraphicsState.Frame)
+            Framebuffer* framebuffer = args.Frame;
+            if (!framebuffer)
             {
                 NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetVulkanSwapchain().GetImageCount()), "[VkCommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
-                m_GraphicsState.Frame = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
+                framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
             }
-            VulkanFramebuffer& framebuffer = *api_cast<VulkanFramebuffer*>(m_GraphicsState.Frame);
-        
+            VulkanFramebuffer& vkFramebuffer = *api_cast<VulkanFramebuffer*>(framebuffer);
+
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderpassInfo.renderPass = renderpass.GetVkRenderPass();
-            renderpassInfo.framebuffer = framebuffer.GetVkFramebuffer();
+            renderpassInfo.framebuffer = vkFramebuffer.GetVkFramebuffer();
             renderpassInfo.renderArea.offset = { 0, 0 };
-            renderpassInfo.renderArea.extent = { static_cast<uint32_t>(m_GraphicsState.ViewportState.GetWidth()), static_cast<uint32_t>(m_GraphicsState.ViewportState.GetHeight()) };
+            renderpassInfo.renderArea.extent = { static_cast<uint32_t>(args.ViewportState.GetWidth()), static_cast<uint32_t>(args.ViewportState.GetHeight()) };
 
             // Clear values
             Nano::Memory::StaticVector<VkClearValue, 2> clearValues;
-            if (framebuffer.GetSpecification().ColourAttachment.IsValid())
-                clearValues.push_back(VkClearValue({ m_GraphicsState.ColourClear.r, m_GraphicsState.ColourClear.g, m_GraphicsState.ColourClear.b, m_GraphicsState.ColourClear.a }));
-            if (framebuffer.GetSpecification().DepthAttachment.IsValid())
-                clearValues.push_back(VkClearValue({ m_GraphicsState.DepthClear, 0 }));
+            if (vkFramebuffer.GetSpecification().ColourAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ args.ColourClear.r, args.ColourClear.g, args.ColourClear.b, args.ColourClear.a }));
+            if (vkFramebuffer.GetSpecification().DepthAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ args.DepthClear, 0 }));
 
             renderpassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
             renderpassInfo.pClearValues = clearValues.data();
@@ -364,78 +347,31 @@ namespace Nano::Graphics::Internal
             subpassInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO;
             subpassInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
-            vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
-        }
-
-        VulkanGraphicsPipeline& vulkanPipeline = *api_cast<VulkanGraphicsPipeline*>(m_GraphicsState.Pipeline);
-        // Pipeline
-        {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::Pipeline");
-
-            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
-        }
-
-        // BindingSets
-        {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::BindingSets");
-
-            for (auto& [set, dynamicoffsets] : m_GraphicsState.BindingSets) // Note: Only bind when there is a non-nullptr set
             {
-                if (set != nullptr) //[[likely]]
-                {
-                    BindDescriptorSets(m_GraphicsState.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Graphics/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
-                    break;
-                }
+                NG_PROFILE("VulkanCommandList::StartRenderpass::Begin");
+                vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
             }
         }
 
-        SetViewport(m_GraphicsState.ViewportState);
-        SetScissor(m_GraphicsState.Scissor);
+        SetViewport(args.ViewportState);
+        SetScissor(args.Scissor);
     }
 
-    void VulkanCommandList::SetComputeState(const ComputeState& state)
+    void VulkanCommandList::EndRenderpass(const RenderpassEndArgs& args)
     {
-        NG_PROFILE("VulkanCommandList::SetComputeState()");
-        m_ComputeState = state;
+        (void)args;
 
-        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
+        NG_PROFILE("VulkanCommandList::EndRenderpass()");
 
-        VulkanComputePipeline& vulkanPipeline = *api_cast<VulkanComputePipeline*>(state.Pipeline);
+        VkSubpassEndInfo endInfo = {};
+        endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
 
-        // BindingSets
-        {
-            NG_PROFILE("VulkanCommandList::SetComputeState::BindingSets");
-
-            for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
-            {
-                if (set != nullptr) //[[likely]]
-                {
-                    BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Compute/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
-                    break;
-                }
-            }
-        }
-
-        // Pipeline
-        {
-            NG_PROFILE("VulkanCommandList::SetComputeState::Pipeline");
-
-            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
-        }
-    }
-
-    void VulkanCommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
-    {
-        NG_PROFILE("VulkanCommandList::Dispatch()");
-        vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
+        vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
     }
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const
     {
         NG_PROFILE("VulkanCommandList::SetViewport()");
-
-        // Note: For future DX coords?
-        //VkViewport(v.minX, v.maxY, v.maxX - v.minX, -(v.maxY - v.minY), v.minZ, v.maxZ);
 
         VkViewport vkViewport = {};
         vkViewport.x = viewport.MinX;
@@ -454,6 +390,43 @@ namespace Nano::Graphics::Internal
         vkScissor.offset = { scissor.MinX, scissor.MinY };
         vkScissor.extent = { static_cast<uint32_t>(scissor.GetWidth()), static_cast<uint32_t>(scissor.GetHeight()) };
         vkCmdSetScissor(m_CommandBuffer, 0, 1, &vkScissor);
+    }
+
+    void VulkanCommandList::BindPipeline(const GraphicsPipeline& pipeline)
+    {
+        NG_PROFILE("VulkanCommandList::BindPipeline()");
+
+        const VulkanGraphicsPipeline& vulkanPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
+        vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
+    }
+
+    void VulkanCommandList::BindPipeline(const ComputePipeline& pipeline)
+    {
+        NG_PROFILE("VulkanCommandList::BindPipeline()");
+
+        const VulkanComputePipeline& vulkanPipeline = *api_cast<const VulkanComputePipeline*>(&pipeline);
+        vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
+    }
+
+    void VulkanCommandList::BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set)
+    {
+        NG_PROFILE("VulkanCommandList::BindBindingSet()");
+
+        const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
+        const VulkanBindingSet& vkSet = *api_cast<const VulkanBindingSet*>(&set);
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(vkSet.GetVulkanBindingSetPool().GetSpecification().Layout);
+        VkDescriptorSet descriptorSet = vkSet.GetVkDescriptorSet();
+
+        vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline.GetVkPipelineLayout(), vkLayout.GetBindingLayoutSpecification().RegisterSpace, 1, &descriptorSet, 0, nullptr);
+    }
+
+    void VulkanCommandList::BindBindingSets(const GraphicsPipeline& pipeline, const std::span<const BindingSet*> sets)
+    {
+        NG_PROFILE("VulkanCommandList::BindBindingSets()");
+
+        // TODO: Batch bindings
+        for (auto set : sets)
+            BindBindingSet(pipeline, *set);
     }
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const
@@ -662,6 +635,12 @@ namespace Nano::Graphics::Internal
         CommitBarriers();
     }
 
+    void VulkanCommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
+    {
+        NG_PROFILE("VulkanCommandList::Dispatch()");
+        vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
     // Draw methods
     ////////////////////////////////////////////////////////////////////////////////////
@@ -679,59 +658,6 @@ namespace Nano::Graphics::Internal
         VkPipelineStageFlags2 firstStage = GetFirstPipelineStage(waitStage);
         if (GetFirstPipelineStage(firstStage) < GetFirstPipelineStage(m_WaitStage))
             m_WaitStage = firstStage;
-    }
-
-    void VulkanCommandList::BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindPoint/*, ShaderStage stages*/) const
-    {
-        // Note: This corresponds to SetID               Sets                   DynamicOffsets
-        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>, std::vector<uint32_t>>> descriptorSetsSet;
-        std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.emplace_back()).reserve(sets.size());
-
-        // Runtime validation
-        {
-            for (size_t i = 0; i < sets.size(); i++)
-            {
-                if (sets[i].Set == nullptr)
-                    continue;
-
-                // If SetID doesn't match create a new starting point with current SetID
-                if (std::get<uint32_t>(descriptorSetsSet.back()) != i)
-                {
-                    auto& tuple = descriptorSetsSet.emplace_back(
-                        //std::tuple(
-                            static_cast<uint32_t>(i),
-                            std::vector<VkDescriptorSet>(),
-                            std::vector<uint32_t>(sets[i].DynamicOffsets.begin(), sets[i].DynamicOffsets.end())
-                        //)
-                    );
-                    
-                    std::get<std::vector<VkDescriptorSet>>(tuple).reserve(sets.size());
-                }
-
-                // Add descriptor
-                VulkanBindingSet& vulkanSet = *api_cast<VulkanBindingSet*>(sets[i].Set);
-                std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.back()).push_back(vulkanSet.GetVkDescriptorSet());
-            }
-        }
-
-        // Binding
-        for (const auto& [setID, descriptorSets, dynamicOffsets] : descriptorSetsSet)
-        {
-            /*
-            VkBindDescriptorSetsInfo bindInfo = {};
-            bindInfo.sType = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO;
-            bindInfo.stageFlags = ShaderStageToVkShaderStageFlags(stages);
-            bindInfo.layout = layout;
-            bindInfo.firstSet = setID;
-            bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
-            bindInfo.pDescriptorSets = descriptorSets.data();
-            bindInfo.dynamicOffsetCount = static_cast<uint32_t>(dynamicOffsets.size());
-            bindInfo.pDynamicOffsets = dynamicOffsets.data();
-
-            vkCmdBindDescriptorSets2(m_CommandBuffer, &bindInfo);
-            */
-            vkCmdBindDescriptorSets(m_CommandBuffer, PipelineBindpointToVkBindpoint(bindPoint), layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), static_cast<uint32_t>(dynamicOffsets.size()), dynamicOffsets.data());
-        }
     }
 
 }

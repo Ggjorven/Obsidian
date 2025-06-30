@@ -48,10 +48,14 @@ namespace Nano::Graphics
         inline void CommitBarriers() { m_Impl->CommitBarriers(); }
 
         // Object methods
-        inline void SetGraphicsState(const GraphicsState& state) { m_Impl->SetGraphicsState(state); }
-        inline void SetComputeState(const ComputeState& state) { m_Impl->SetComputeState(state); }
+        inline void StartRenderpass(const RenderpassStartArgs& args) { m_Impl->StartRenderpass(args); }
+        inline void EndRenderpass(const RenderpassEndArgs& args) { m_Impl->EndRenderpass(args); }
 
-        inline void Dispatch(uint32_t groupsX, uint32_t groupsY = 1, uint32_t groupsZ = 1) const { m_Impl->Dispatch(groupsX, groupsY, groupsZ); }
+        inline void BindPipeline(const GraphicsPipeline& pipeline) { m_Impl->BindPipeline(pipeline); }
+        inline void BindPipeline(const ComputePipeline& pipeline) { m_Impl->BindPipeline(pipeline); }
+
+        inline void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set) { m_Impl->BindBindingSet(pipeline, set); }
+        inline void BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets) { m_Impl->BindBindingSets(pipeline, sets); }
 
         inline void SetViewport(const Viewport& viewport) const { m_Impl->SetViewport(viewport); }
         inline void SetScissor(const ScissorRect& scissor) const { m_Impl->SetScissor(scissor); }
@@ -62,6 +66,8 @@ namespace Nano::Graphics
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice) { m_Impl->CopyImage(dst, dstSlice, src, srcSlice); }
         inline void CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice) { m_Impl->CopyImage(dst, dstSlice, src, srcSlice); }
         inline void CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_Impl->CopyBuffer(dst, src, size, srcOffset, dstOffset); }
+
+        inline void Dispatch(uint32_t groupsX, uint32_t groupsY = 1, uint32_t groupsZ = 1) const { m_Impl->Dispatch(groupsX, groupsY, groupsZ); }
 
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_Impl->DrawIndexed(args); }

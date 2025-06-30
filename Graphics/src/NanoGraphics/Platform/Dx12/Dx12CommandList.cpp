@@ -130,34 +130,7 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::Close()
     {
         NG_PROFILE("Dx12CommandList::Close()");
-
-        // End renderpass
-        if (m_GraphicsState.Pass)
-        {
-            NG_PROFILE("Dx12CommandList::Close::Renderpass");
-            m_CommandList->EndRenderPass();
-
-            // Transition to FinalState
-            {
-                Dx12Renderpass& dxRenderpass = *api_cast<Dx12Renderpass*>(m_GraphicsState.Pass);
-                Dx12Framebuffer& dxFramebuffer = *api_cast<Dx12Framebuffer*>(m_GraphicsState.Frame);
-
-                if (dxFramebuffer.GetSpecification().ColourAttachment.IsValid())
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr, dxFramebuffer.GetSpecification().ColourAttachment.Subresources, dxRenderpass.GetSpecification().ColourImageEndState);
-                if (dxFramebuffer.GetSpecification().DepthAttachment.IsValid())
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr, dxFramebuffer.GetSpecification().DepthAttachment.Subresources, dxRenderpass.GetSpecification().DepthImageEndState);
-                CommitBarriers();
-            }
-        }
-
-        m_GraphicsState = GraphicsState();
-        m_ComputeState = ComputeState();
-
-        // Close commandlist
-        {
-            NG_PROFILE("Dx12CommandList::Close::CommandList");
-            DX_VERIFY(m_CommandList->Close());
-        }
+        DX_VERIFY(m_CommandList->Close());
     }
 
     void Dx12CommandList::Submit(const CommandListSubmitArgs& args) const
@@ -268,108 +241,136 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Object methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void Dx12CommandList::SetGraphicsState(const GraphicsState& state)
+    void Dx12CommandList::StartRenderpass(const RenderpassStartArgs& args)
     {
-        NG_PROFILE("Dx12CommandList::SetGraphicsState()");
-        m_GraphicsState = state;
+        NG_PROFILE("Dx12CommandList::StartRenderpass()");
+        
+        NG_ASSERT(args.Pass, "[Dx12CommandList] No Renderpass passed in.");
 
-        //NG_ASSERT(m_GraphicsState.Pipeline, "[Dx12CommandList] No pipeline passed in.");
-        NG_ASSERT(m_GraphicsState.Pass, "[Dx12CommandList] No Renderpass passed in.");
-
-        // Renderpass
+        Dx12Renderpass& renderpass = *api_cast<Dx12Renderpass*>(args.Pass);
+        Framebuffer* framebuffer = args.Frame;
+        if (!framebuffer)
         {
-            NG_PROFILE("Dx12CommandList::SetGraphicsState::Renderpass");
+            NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
+            framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
+        }
+        Dx12Framebuffer& dxFramebuffer = *api_cast<Dx12Framebuffer*>(framebuffer);
 
-            Dx12Renderpass& renderpass = *api_cast<Dx12Renderpass*>(m_GraphicsState.Pass);
-            if (!m_GraphicsState.Frame)
-            {
-                NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
-                m_GraphicsState.Frame = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
-            }
-            Dx12Framebuffer& framebuffer = *api_cast<Dx12Framebuffer*>(m_GraphicsState.Frame);
-            
-            Dx12Image* colourImage = api_cast<Dx12Image*>(framebuffer.GetSpecification().ColourAttachment.ImagePtr);
-            Dx12Image* depthImage = api_cast<Dx12Image*>(framebuffer.GetSpecification().DepthAttachment.ImagePtr);
+        Dx12Image* colourImage = api_cast<Dx12Image*>(dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr);
+        Dx12Image* depthImage = api_cast<Dx12Image*>(dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr);
 
-            // Validation checks
-            if constexpr (Information::Validation)
-            {
-                if (colourImage)
-                {
-                    ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(colourImage), framebuffer.GetSpecification().ColourAttachment.Subresources);
-                    ResourceState startState = renderpass.GetSpecification().ColourImageStartState;
-                    if (currentState != startState)
-                        m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current colour image state ({0}) doesn't match the renderpass' specified colour image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
-                }
-                if (depthImage)
-                {
-                    ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(depthImage), framebuffer.GetSpecification().DepthAttachment.Subresources);
-                    ResourceState startState = renderpass.GetSpecification().DepthImageStartState;
-                    if (currentState != startState)
-                        m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current depth image state ({0}) doesn't match the renderpass' specified depth image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
-                }
-            }
-
-            D3D12_RENDER_PASS_RENDER_TARGET_DESC colourDesc = {};
-            D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthDesc = {};
-
+        // Validation checks
+        if constexpr (Information::Validation)
+        {
             if (colourImage)
             {
-                colourDesc.cpuDescriptor = colourImage->GetSubresourceView(framebuffer.GetSpecification().ColourAttachment.Subresources, ImageSubresourceViewUsage::RTV).GetCPUHandle();
-                
-                colourDesc.BeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().ColourLoadOperation); 
-                colourDesc.BeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(colourImage->GetSpecification().ImageFormat).RTVFormat;
-                colourDesc.BeginningAccess.Clear.ClearValue.Color[0] = m_GraphicsState.ColourClear.r;
-                colourDesc.BeginningAccess.Clear.ClearValue.Color[1] = m_GraphicsState.ColourClear.g;
-                colourDesc.BeginningAccess.Clear.ClearValue.Color[2] = m_GraphicsState.ColourClear.b;
-                colourDesc.BeginningAccess.Clear.ClearValue.Color[3] = m_GraphicsState.ColourClear.a;
-                
-                colourDesc.EndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().ColourStoreOperation);
-
-                // Transition to rendering state
-                if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(colourImage), framebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
+                ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources);
+                ResourceState startState = renderpass.GetSpecification().ColourImageStartState;
+                if (currentState != startState)
+                    m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current colour image state ({0}) doesn't match the renderpass' specified colour image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
             }
             if (depthImage)
             {
-                depthDesc.cpuDescriptor = depthImage->GetSubresourceView(framebuffer.GetSpecification().DepthAttachment.Subresources, ImageSubresourceViewUsage::DSV, ImageDimension::Image2D, Format::Unknown, false).GetCPUHandle();
-
-                // Note: We currently don't support stencil
-                depthDesc.DepthBeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().DepthLoadOperation);
-                depthDesc.DepthBeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(depthImage->GetSpecification().ImageFormat).RTVFormat;
-                depthDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = m_GraphicsState.DepthClear;
-
-                depthDesc.DepthEndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().DepthStoreOperation);
-
-                // Transition to rendering state
-                if (renderpass.GetSpecification().DepthImageStartState != renderpass.GetSpecification().DepthImageRenderingState)
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(depthImage), framebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
+                ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources);
+                ResourceState startState = renderpass.GetSpecification().DepthImageStartState;
+                if (currentState != startState)
+                    m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current depth image state ({0}) doesn't match the renderpass' specified depth image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
             }
-            CommitBarriers();
-
-            {
-                NG_PROFILE("Dx12CommandList::SetGraphicsState::BeginRenderpass"); // Note: Only 1 render target is currently supported
-                m_CommandList->BeginRenderPass((colourImage ? 1 : 0), (colourImage ? &colourDesc : nullptr), (depthImage ? &depthDesc : nullptr), D3D12_RENDER_PASS_FLAG_NONE);
-            }
-
-            SetViewport(m_GraphicsState.ViewportState);
-            SetScissor(m_GraphicsState.Scissor);
         }
 
-        // Pipeline
+        D3D12_RENDER_PASS_RENDER_TARGET_DESC colourDesc = {};
+        D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthDesc = {};
+
+        if (colourImage)
         {
+            colourDesc.cpuDescriptor = colourImage->GetSubresourceView(dxFramebuffer.GetSpecification().ColourAttachment.Subresources, ImageSubresourceViewUsage::RTV).GetCPUHandle();
 
+            colourDesc.BeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().ColourLoadOperation);
+            colourDesc.BeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(colourImage->GetSpecification().ImageFormat).RTVFormat;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[0] = args.ColourClear.r;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[1] = args.ColourClear.g;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[2] = args.ColourClear.b;
+            colourDesc.BeginningAccess.Clear.ClearValue.Color[3] = args.ColourClear.a;
+
+            colourDesc.EndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().ColourStoreOperation);
+
+            // Transition to rendering state
+            if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
+                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
+        }
+        if (depthImage)
+        {
+            depthDesc.cpuDescriptor = depthImage->GetSubresourceView(dxFramebuffer.GetSpecification().DepthAttachment.Subresources, ImageSubresourceViewUsage::DSV, ImageDimension::Image2D, Format::Unknown, false).GetCPUHandle();
+
+            // Note: We currently don't support stencil
+            depthDesc.DepthBeginningAccess.Type = LoadOperationToD3D12BeginningAccess(renderpass.GetSpecification().DepthLoadOperation);
+            depthDesc.DepthBeginningAccess.Clear.ClearValue.Format = FormatToFormatMapping(depthImage->GetSpecification().ImageFormat).RTVFormat;
+            depthDesc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = args.DepthClear;
+
+            depthDesc.DepthEndingAccess.Type = StoreOperationToD3D12EndingAccess(renderpass.GetSpecification().DepthStoreOperation);
+
+            // Transition to rendering state
+            if (renderpass.GetSpecification().DepthImageStartState != renderpass.GetSpecification().DepthImageRenderingState)
+                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
+        }
+        CommitBarriers();
+
+        {
+            NG_PROFILE("Dx12CommandList::SetGraphicsState::BeginRenderpass"); // Note: Only 1 render target is currently supported
+            m_CommandList->BeginRenderPass((colourImage ? 1 : 0), (colourImage ? &colourDesc : nullptr), (depthImage ? &depthDesc : nullptr), D3D12_RENDER_PASS_FLAG_NONE);
+        }
+
+        SetViewport(args.ViewportState);
+        SetScissor(args.Scissor);
+    }
+
+    void Dx12CommandList::EndRenderpass(const RenderpassEndArgs& args)
+    {
+        NG_PROFILE("Dx12CommandList::EndRenderpass()");
+
+        m_CommandList->EndRenderPass();
+
+        // Transition to FinalState
+        {
+            Dx12Renderpass& dxRenderpass = *api_cast<Dx12Renderpass*>(args.Pass);
+            Framebuffer* framebuffer = args.Frame;
+            if (!framebuffer)
+            {
+                NG_ASSERT((dxRenderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
+                framebuffer = &dxRenderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
+            }
+            Dx12Framebuffer& dxFramebuffer = *api_cast<Dx12Framebuffer*>(framebuffer);
+
+            if (dxFramebuffer.GetSpecification().ColourAttachment.IsValid())
+                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr, dxFramebuffer.GetSpecification().ColourAttachment.Subresources, dxRenderpass.GetSpecification().ColourImageEndState);
+            if (dxFramebuffer.GetSpecification().DepthAttachment.IsValid())
+                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr, dxFramebuffer.GetSpecification().DepthAttachment.Subresources, dxRenderpass.GetSpecification().DepthImageEndState);
+            CommitBarriers();
         }
     }
 
-    void Dx12CommandList::SetComputeState(const ComputeState& state)
+    void Dx12CommandList::BindPipeline(const GraphicsPipeline& pipeline)
     {
-        NG_PROFILE("Dx12CommandList::SetComputeState()");
+        NG_PROFILE("Dx12CommandList::BindPipeline()");
+
     }
 
-    void Dx12CommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
+    void Dx12CommandList::BindPipeline(const ComputePipeline& pipeline)
     {
-        NG_PROFILE("Dx12CommandList::Dispatch()");
+        NG_PROFILE("Dx12CommandList::BindPipeline()");
+
+    }
+
+    void Dx12CommandList::BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set)
+    {
+        NG_PROFILE("Dx12CommandList::BindBindingSet()");
+
+    }
+
+    void Dx12CommandList::BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets)
+    {
+        NG_PROFILE("Dx12CommandList::BindBindingSets()");
+
     }
 
     void Dx12CommandList::SetViewport(const Viewport& viewport) const
@@ -424,6 +425,12 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
     {
         NG_PROFILE("Dx12CommandList::CopyBuffer()");
+    }
+
+    void Dx12CommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
+    {
+        NG_PROFILE("Dx12CommandList::Dispatch()");
+        m_CommandList->Dispatch(groupsX, groupsY, groupsZ);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
