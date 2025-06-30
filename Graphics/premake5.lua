@@ -97,6 +97,7 @@ project "Graphics"
 				"d3d12",
 				"dxgi",
 				"dxguid",
+				"dxcompiler",
 				-- "d3dcompiler",
 
 				"%{Dependencies.D3D12MA.LibName}",

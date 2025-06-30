@@ -28,28 +28,25 @@ namespace Nano::Graphics::Internal
             const FormatMapping& formatMapping = FormatToFormatMapping(attribute.VertexFormat);
             const FormatInfo& formatInfo = FormatToFormatInfo(attribute.VertexFormat);
 
-            for (uint32_t semanticIndex = 0; semanticIndex < attribute.ArraySize; semanticIndex++)
+            D3D12_INPUT_ELEMENT_DESC desc = {};
+            desc.SemanticName = attribute.DebugName.c_str();
+            desc.AlignedByteOffset = attribute.Offset + attribute.Location * formatInfo.BytesPerBlock;
+            desc.Format = formatMapping.SRVFormat;
+            desc.InputSlot = attribute.BufferIndex;
+            desc.SemanticIndex = attribute.Location;
+
+            if (attribute.IsInstanced)
             {
-                D3D12_INPUT_ELEMENT_DESC desc = {};
-                desc.SemanticName = attribute.DebugName.c_str();
-                desc.AlignedByteOffset = attribute.Offset + semanticIndex * formatInfo.BytesPerBlock;
-                desc.Format = formatMapping.SRVFormat;
-                desc.InputSlot = attribute.BufferIndex;
-                desc.SemanticIndex = semanticIndex;
-
-                if (attribute.IsInstanced)
-                {
-                    desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
-                    desc.InstanceDataStepRate = 1;
-                }
-                else
-                {
-                    desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-                    desc.InstanceDataStepRate = 0;
-                }
-
-                m_InputElements.push_back(desc);
+                desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+                desc.InstanceDataStepRate = 1;
             }
+            else
+            {
+                desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+                desc.InstanceDataStepRate = 0;
+            }
+
+            m_InputElements.push_back(desc);
         }
     }
 

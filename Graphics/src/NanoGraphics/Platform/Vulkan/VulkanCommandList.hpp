@@ -92,8 +92,8 @@ namespace Nano::Graphics::Internal
 		void BindPipeline(const GraphicsPipeline& pipeline);
 		void BindPipeline(const ComputePipeline& pipeline);
 		
-		void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set);
-		void BindBindingSets(const GraphicsPipeline& pipeline, const std::span<const BindingSet*> sets);
+		void BindBindingSet(const BindingSet& set);
+		void BindBindingSets(const std::span<const BindingSet*> sets);
 
 		void BindVertexBuffer(const Buffer& buffer) const;
 		void BindIndexBuffer(const Buffer& buffer) const;
@@ -123,6 +123,8 @@ namespace Nano::Graphics::Internal
 
 		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
+
+		const GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
 	};
 #endif
 

@@ -31,9 +31,13 @@ namespace Nano::Graphics::Internal
                 parameters.insert(parameters.end(), dxLayout.GetD3D12RootParameters().begin(), dxLayout.GetD3D12RootParameters().end());
             }
 
+            // TODO: Remove
+            parameters = {};
+
             // Create root signature with these parameters
             CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc = {};
-            rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data());
+            //rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data()); // TODO: Add back
+            rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
             DxPtr<ID3DBlob> serializedRootSig;
             DxPtr<ID3DBlob> errorBlob;

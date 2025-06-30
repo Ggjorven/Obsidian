@@ -130,6 +130,15 @@ namespace Nano::Graphics::Internal
 	class Dx12StagingImage
 	{
 	public:
+		struct SliceRegion
+		{
+		public:
+			size_t Offset = 0;
+			size_t Size = 0;
+
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint = {};
+		};
+	public:
 		// Constructor & Destructor
 		Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode);
 		~Dx12StagingImage();
@@ -140,6 +149,8 @@ namespace Nano::Graphics::Internal
 		// Internal getters
 		inline Dx12Buffer& GetDx12Buffer() { return m_Buffer; }
 		inline const Dx12Buffer& GetDx12Buffer() const { return m_Buffer; }
+
+		SliceRegion GetSliceRegion(const ImageSliceSpecification& slice) const;
 	
 	private:
 		// Private methods

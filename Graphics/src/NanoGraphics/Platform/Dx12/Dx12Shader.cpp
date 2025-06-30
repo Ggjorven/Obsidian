@@ -69,22 +69,23 @@ namespace Nano::Graphics::Internal
         // ShaderStageMappingToDX12Stage array
         ////////////////////////////////////////////////////////////////////////////////////
         static constexpr auto g_ShaderStageToDX12StageMapping = std::to_array<ShaderStageToDX12StageMapping>({
-            { ShaderStage::None,                  L"vs_6_7" }, // Default
-            { ShaderStage::Vertex,                L"vs_6_7" },
-            { ShaderStage::Fragment,              L"ps_6_7" },
-            { ShaderStage::Compute,               L"cs_6_7" },
-            { ShaderStage::Geometry,              L"gs_6_7" },
-            { ShaderStage::TesselationControl,    L"hs_6_7" },
-            { ShaderStage::TesselationEvaluation, L"ds_6_7" },
-            { ShaderStage::Task,                  L"as_6_7" },
-            { ShaderStage::Mesh,                  L"ms_6_7" },
-            { ShaderStage::AllGraphics,           L"vs_6_7" }, // Default
-            { ShaderStage::RayGeneration,         L"raygen_6_7" },
-            { ShaderStage::AnyHit,                L"anyhit_6_7" },
-            { ShaderStage::ClosestHit,            L"closesthit_6_7" },
-            { ShaderStage::Miss,                  L"miss_6_7" },
-            { ShaderStage::Intersection,          L"intersection_6_7" },
-            { ShaderStage::Callable,              L"callable_6_7" }
+            // Stage                                Dx12Stage
+            { ShaderStage::None,                    L"vs_6_7" }, // Default
+            { ShaderStage::Vertex,                  L"vs_6_7" },
+            { ShaderStage::Fragment,                L"ps_6_7" },
+            { ShaderStage::Compute,                 L"cs_6_7" },
+            { ShaderStage::Geometry,                L"gs_6_7" },
+            { ShaderStage::TesselationControl,      L"hs_6_7" },
+            { ShaderStage::TesselationEvaluation,   L"ds_6_7" },
+            { ShaderStage::Task,                    L"as_6_7" },
+            { ShaderStage::Mesh,                    L"ms_6_7" },
+            { ShaderStage::AllGraphics,             L"vs_6_7" }, // Default
+            { ShaderStage::RayGeneration,           L"raygen_6_7" },
+            { ShaderStage::AnyHit,                  L"anyhit_6_7" },
+            { ShaderStage::ClosestHit,              L"closesthit_6_7" },
+            { ShaderStage::Miss,                    L"miss_6_7" },
+            { ShaderStage::Intersection,            L"intersection_6_7" },
+            { ShaderStage::Callable,                L"callable_6_7" }
         });
 
         ////////////////////////////////////////////////////////////////////////////////////
@@ -102,20 +103,22 @@ namespace Nano::Graphics::Internal
         // ShaderStageToExecutionModelMapping array
         ////////////////////////////////////////////////////////////////////////////////////
         static constexpr auto g_ShaderStageToExecutionModelMapping = std::to_array<ShaderStageToExecutionModelMapping>({
-            { ShaderStage::Vertex,                spv::ExecutionModelVertex },
-            { ShaderStage::Fragment,              spv::ExecutionModelFragment },
-            { ShaderStage::Compute,               spv::ExecutionModelGLCompute },
-            { ShaderStage::Geometry,              spv::ExecutionModelGeometry },
-            { ShaderStage::TesselationControl,    spv::ExecutionModelTessellationControl },
-            { ShaderStage::TesselationEvaluation, spv::ExecutionModelTessellationEvaluation },
-            { ShaderStage::Task,                  spv::ExecutionModelTaskEXT },
-            { ShaderStage::Mesh,                  spv::ExecutionModelMeshEXT },
-            { ShaderStage::RayGeneration,         spv::ExecutionModelRayGenerationKHR },
-            { ShaderStage::AnyHit,                spv::ExecutionModelAnyHitKHR },
-            { ShaderStage::ClosestHit,            spv::ExecutionModelClosestHitKHR },
-            { ShaderStage::Miss,                  spv::ExecutionModelMissKHR },
-            { ShaderStage::Intersection,          spv::ExecutionModelIntersectionKHR },
-            { ShaderStage::Callable,              spv::ExecutionModelCallableKHR }
+            // Stage                                Model
+            { ShaderStage::None,                    spv::ExecutionModelVertex }, // Default
+            { ShaderStage::Vertex,                  spv::ExecutionModelVertex },
+            { ShaderStage::Fragment,                spv::ExecutionModelFragment },
+            { ShaderStage::Compute,                 spv::ExecutionModelGLCompute },
+            { ShaderStage::Geometry,                spv::ExecutionModelGeometry },
+            { ShaderStage::TesselationControl,      spv::ExecutionModelTessellationControl },
+            { ShaderStage::TesselationEvaluation,   spv::ExecutionModelTessellationEvaluation },
+            { ShaderStage::Task,                    spv::ExecutionModelTaskEXT },
+            { ShaderStage::Mesh,                    spv::ExecutionModelMeshEXT },
+            { ShaderStage::RayGeneration,           spv::ExecutionModelRayGenerationKHR },
+            { ShaderStage::AnyHit,                  spv::ExecutionModelAnyHitKHR },
+            { ShaderStage::ClosestHit,              spv::ExecutionModelClosestHitKHR },
+            { ShaderStage::Miss,                    spv::ExecutionModelMissKHR },
+            { ShaderStage::Intersection,            spv::ExecutionModelIntersectionKHR },
+            { ShaderStage::Callable,                spv::ExecutionModelCallableKHR }
         });
 
 
@@ -219,11 +222,12 @@ namespace Nano::Graphics::Internal
             spirv_cross::CompilerHLSL compiler(code.data(), code.size()); // Note: Should probably not reallocate for every shader // FIXME
             spirv_cross::CompilerHLSL::Options options;
             options.shader_model = 67;
-
+            
             compiler.set_hlsl_options(options);
-            compiler.set_entry_point(std::string(m_Specification.MainName), spv::ExecutionModelVertex);
+            compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
             
             hlslString = compiler.compile();
+            NG_LOG_TRACE("{0}", hlslString);
         }
 
         // Compile HLSL

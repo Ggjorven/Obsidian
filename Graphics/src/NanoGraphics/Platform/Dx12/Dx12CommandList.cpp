@@ -131,6 +131,8 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::Close()");
         DX_VERIFY(m_CommandList->Close());
+
+        m_CurrentGraphicsPipeline = nullptr;
     }
 
     void Dx12CommandList::Submit(const CommandListSubmitArgs& args) const
@@ -160,6 +162,12 @@ namespace Nano::Graphics::Internal
         
         if (args.OnFinishMakeSwapchainPresentable)
             m_Pool.GetDx12Swapchain().SetPresentableValue(signalValue);
+    }
+
+    void Dx12CommandList::WaitTillComplete() const
+    {
+        NG_PROFILE("Dx12CommandList::WaitTillComplete()");
+        // TODO: ...
     }
 
     void Dx12CommandList::CommitBarriers()
@@ -353,21 +361,30 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::BindPipeline()");
 
+        m_CurrentGraphicsPipeline = &pipeline;
+        const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
+
+        m_CommandList->SetPipelineState(dxPipeline.GetD3D12PipelineState().Get());
+        m_CommandList->SetGraphicsRootSignature(dxPipeline.GetD3D12RootSignature().Get());
+
+        // TODO: Proper
+        m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
     void Dx12CommandList::BindPipeline(const ComputePipeline& pipeline)
     {
         NG_PROFILE("Dx12CommandList::BindPipeline()");
 
+        m_CurrentGraphicsPipeline = nullptr;
     }
 
-    void Dx12CommandList::BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set)
+    void Dx12CommandList::BindBindingSet(const BindingSet& set)
     {
         NG_PROFILE("Dx12CommandList::BindBindingSet()");
 
     }
 
-    void Dx12CommandList::BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets)
+    void Dx12CommandList::BindBindingSets(std::span<const BindingSet*> sets)
     {
         NG_PROFILE("Dx12CommandList::BindBindingSets()");
 
@@ -378,11 +395,19 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("Dx12CommandList::SetViewport()");
 
         // Note: We use VK coordinates
+        //D3D12_VIEWPORT d3d12Viewport = {};
+        //d3d12Viewport.TopLeftX = viewport.MinX;
+        //d3d12Viewport.TopLeftY = viewport.MinY + viewport.GetHeight(); // Shift origin to top-left
+        //d3d12Viewport.Width = viewport.GetWidth();
+        //d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
+        //d3d12Viewport.MinDepth = viewport.MinZ;
+        //d3d12Viewport.MaxDepth = viewport.MaxZ;
+
         D3D12_VIEWPORT d3d12Viewport = {};
         d3d12Viewport.TopLeftX = viewport.MinX;
-        d3d12Viewport.TopLeftY = viewport.MinY + viewport.GetHeight(); // Shift origin to top-left
+        d3d12Viewport.TopLeftY = viewport.MinY;
         d3d12Viewport.Width = viewport.GetWidth();
-        d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
+        d3d12Viewport.Height = viewport.GetHeight();
         d3d12Viewport.MinDepth = viewport.MinZ;
         d3d12Viewport.MaxDepth = viewport.MaxZ;
 
@@ -405,26 +430,151 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::BindVertexBuffer(const Buffer& buffer) const
     {
         NG_PROFILE("Dx12CommandList::BindVertexBuffer()");
+
+        NG_ASSERT(buffer.GetSpecification().IsVertexBuffer, "[Dx12CommandList] Buffer must have IsVertexBuffer flag to be bound as a vertex buffer.");
+        NG_ASSERT(m_CurrentGraphicsPipeline, "[Dx12CommandList] Can't bind vertexbuffer if no pipeline is bound.");
+
+        const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
+        const Dx12InputLayout& dxLayout = *api_cast<const Dx12InputLayout*>(m_CurrentGraphicsPipeline->GetSpecification().Input);
+
+        D3D12_VERTEX_BUFFER_VIEW view = {};
+        view.BufferLocation = dxBuffer.GetD3D12Resource()->GetGPUVirtualAddress();
+        view.SizeInBytes = static_cast<UINT>(dxBuffer.GetSpecification().Size);
+        view.StrideInBytes = dxLayout.GetStride();
+
+        m_CommandList->IASetVertexBuffers(0, 1, &view);
     }
 
     void Dx12CommandList::BindIndexBuffer(const Buffer& buffer) const
     {
         NG_PROFILE("Dx12CommandList::BindIndexBuffer()");
+
+        NG_ASSERT(buffer.GetSpecification().IsIndexBuffer, "[Dx12CommandList] Buffer must have IsIndexBuffer flag to be bound as an index buffer.");
+
+        const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
+
+        D3D12_INDEX_BUFFER_VIEW view = {};
+        view.BufferLocation = dxBuffer.GetD3D12Resource()->GetGPUVirtualAddress();
+        view.SizeInBytes = static_cast<UINT>(dxBuffer.GetSpecification().Size);
+        view.Format = FormatToFormatMapping(dxBuffer.GetSpecification().BufferFormat).SRVFormat;
+
+        m_CommandList->IASetIndexBuffer(&view);
     }
 
     void Dx12CommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, Image& src, const ImageSliceSpecification& srcSlice)
     {
         NG_PROFILE("Dx12CommandList::CopyImage()");
+
+        Dx12Image& dxDst = *api_cast<Dx12Image*>(&dst);
+        Dx12Image& dxSrc = *api_cast<Dx12Image*>(&src);
+
+        ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
+        ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
+
+        UINT dstSubresource = CalculateSubresource(resDstSlice.ImageMipLevel, resDstSlice.ImageArraySlice, 0, dst.GetSpecification().MipLevels, dst.GetSpecification().ArraySize);
+        UINT srcSubresource = CalculateSubresource(resSrcSlice.ImageMipLevel, resSrcSlice.ImageArraySlice, 0, src.GetSpecification().MipLevels, src.GetSpecification().ArraySize);
+
+        ImageSubresourceSpecification srcSubresourceSpec = ImageSubresourceSpecification(
+            resSrcSlice.ImageMipLevel, 1,
+            resSrcSlice.ImageArraySlice, 1
+        );
+
+        ImageSubresourceSpecification dstSubresourceSpec = ImageSubresourceSpecification(
+            resDstSlice.ImageMipLevel, 1,
+            resDstSlice.ImageArraySlice, 1
+        );
+
+        D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+        dstLocation.pResource = dxDst.GetD3D12Resource().Get();
+        dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dstLocation.SubresourceIndex = dstSubresource;
+
+        D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+        srcLocation.pResource = dxSrc.GetD3D12Resource().Get();
+        srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        srcLocation.SubresourceIndex = srcSubresource;
+
+        D3D12_BOX srcBox;
+        srcBox.left = resSrcSlice.X;
+        srcBox.top = resSrcSlice.Y;
+        srcBox.front = resSrcSlice.Z;
+        srcBox.right = resSrcSlice.X + resSrcSlice.Width;
+        srcBox.bottom = resSrcSlice.Y + resSrcSlice.Height;
+        srcBox.back = resSrcSlice.Z + resSrcSlice.Depth;
+
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        CommitBarriers();
+
+        m_CommandList->CopyTextureRegion(&dstLocation, resDstSlice.X, resDstSlice.Y, resDstSlice.Z, &srcLocation, &srcBox);
+
+        // Update back to permanent state
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), src, srcSubresourceSpec);
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), dst, dstSubresourceSpec);
+        CommitBarriers();
     }
 
     void Dx12CommandList::CopyImage(Image& dst, const ImageSliceSpecification& dstSlice, StagingImage& src, const ImageSliceSpecification& srcSlice)
     {
         NG_PROFILE("Dx12CommandList::CopyImage()");
+
+        Dx12StagingImage& dxSrc = *api_cast<Dx12StagingImage*>(&src);
+        Dx12Image& dxDst = *api_cast<Dx12Image*>(&dst);
+
+        ImageSliceSpecification resDstSlice = ResolveImageSlice(dstSlice, dst.GetSpecification());
+        ImageSliceSpecification resSrcSlice = ResolveImageSlice(srcSlice, src.GetSpecification());
+
+        UINT dstSubresource = CalculateSubresource(resDstSlice.ImageMipLevel, resDstSlice.ImageArraySlice, 0, dst.GetSpecification().MipLevels, dst.GetSpecification().ArraySize);
+
+        ImageSubresourceSpecification dstSubresourceSpec = ImageSubresourceSpecification(
+            resDstSlice.ImageMipLevel, 1,
+            resDstSlice.ImageArraySlice, 1
+        );
+
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
+        CommitBarriers();
+
+        auto srcRegion = dxSrc.GetSliceRegion(resSrcSlice);
+
+        D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+        dstLocation.pResource = dxDst.GetD3D12Resource().Get();
+        dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dstLocation.SubresourceIndex = dstSubresource;
+
+        D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+        srcLocation.pResource = dxSrc.GetDx12Buffer().GetD3D12Resource().Get();
+        srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        srcLocation.PlacedFootprint = srcRegion.Footprint;
+
+        D3D12_BOX srcBox = {};
+        srcBox.left = resSrcSlice.X;
+        srcBox.top = resSrcSlice.Y;
+        srcBox.front = resSrcSlice.Z;
+        srcBox.right = resSrcSlice.X + resSrcSlice.Width;
+        srcBox.bottom = resSrcSlice.Y + resSrcSlice.Height;
+        srcBox.back = resSrcSlice.Z + resSrcSlice.Depth;
+
+        m_CommandList->CopyTextureRegion(&dstLocation, resDstSlice.X, resDstSlice.Y, resDstSlice.Z, &srcLocation, &srcBox);
+
+        // Update back to permanent state
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc));
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Image*>(&dxDst), dstSubresourceSpec);
+        CommitBarriers();
     }
 
     void Dx12CommandList::CopyBuffer(Buffer& dst, Buffer& src, size_t size, size_t srcOffset, size_t dstOffset)
     {
         NG_PROFILE("Dx12CommandList::CopyBuffer()");
+
+        Dx12Buffer& dxDst = *api_cast<Dx12Buffer*>(&dst);
+        Dx12Buffer& dxSrc = *api_cast<Dx12Buffer*>(&src);
+
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
+        CommitBarriers();
+
+        m_CommandList->CopyBufferRegion(dxDst.GetD3D12Resource().Get(), dstOffset, dxSrc.GetD3D12Resource().Get(), srcOffset, size);
     }
 
     void Dx12CommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
@@ -439,6 +589,7 @@ namespace Nano::Graphics::Internal
     void Dx12CommandList::DrawIndexed(const DrawArguments& args) const
     {
         NG_PROFILE("Dx12CommandList::DrawIndexed()");
+        m_CommandList->DrawIndexedInstanced(args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 
 }

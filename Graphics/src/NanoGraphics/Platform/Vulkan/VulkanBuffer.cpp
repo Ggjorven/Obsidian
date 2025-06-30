@@ -54,10 +54,9 @@ namespace Nano::Graphics::Internal
         for (const auto& [_, binding] : bindingMap)
             m_BindingDescriptions.push_back(binding);
 
-        // build attribute descriptions
+        // Build attribute descriptions
         m_AttributeDescriptions.resize(static_cast<size_t>(totalAttributeArraySize));
 
-        uint32_t attributeLocation = 0;
         for (const VertexAttributeSpecification& spec : m_Attributes)
         {
             uint32_t elementSize = FormatToFormatInfo(spec.VertexFormat).BytesPerBlock;
@@ -65,15 +64,13 @@ namespace Nano::Graphics::Internal
 
             for (uint32_t slot = 0; slot < spec.ArraySize; slot++)
             {
-                auto& outAttrib = m_AttributeDescriptions[attributeLocation];
+                auto& outAttrib = m_AttributeDescriptions[spec.Location];
 
-                outAttrib.location = attributeLocation;
+                outAttrib.location = spec.Location;
                 outAttrib.binding = spec.BufferIndex;
                 outAttrib.format = FormatToVkFormat(spec.VertexFormat);
                 outAttrib.offset = bufferOffset + spec.Offset;
                 bufferOffset += elementSize;
-
-                ++attributeLocation;
             }
         }
     }

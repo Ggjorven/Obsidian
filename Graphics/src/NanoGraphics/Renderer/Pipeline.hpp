@@ -32,6 +32,9 @@ namespace Nano::Graphics
         // Destructor
         ~GraphicsPipeline() = default;
 
+        // Getters
+        inline const GraphicsPipelineSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
+
     public: //private:
         // Constructor
         inline GraphicsPipeline(const Device& device, const GraphicsPipelineSpecification& specs) { m_Impl.Construct(device, specs); }
@@ -58,6 +61,9 @@ namespace Nano::Graphics
     public:
         // Destructor
         ~ComputePipeline() = default;
+
+        // Getters
+        inline const ComputePipelineSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
     public: //private:
         // Constructor

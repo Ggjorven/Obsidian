@@ -90,8 +90,8 @@ namespace Nano::Graphics::Internal
 		void BindPipeline(const GraphicsPipeline& pipeline);
 		void BindPipeline(const ComputePipeline& pipeline);
 
-		void BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set);
-		void BindBindingSets(const GraphicsPipeline& pipeline, std::span<const BindingSet*> sets);
+		void BindBindingSet(const BindingSet& set);
+		void BindBindingSets(std::span<const BindingSet*> sets);
 
 		void SetViewport(const Viewport& viewport) const;
 		void SetScissor(const ScissorRect& scissor) const;
@@ -119,6 +119,8 @@ namespace Nano::Graphics::Internal
 		CommandListSpecification m_Specification;
 
 		DxPtr<ID3D12GraphicsCommandList10> m_CommandList = nullptr;
+
+		const GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
 
 		friend class Dx12CommandListPool;
 	};

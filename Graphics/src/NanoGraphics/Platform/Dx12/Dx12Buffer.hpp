@@ -36,13 +36,14 @@ namespace Nano::Graphics::Internal
         // Internal getters
         inline const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetInputElements() const { return m_InputElements; }
     
+        inline uint32_t GetStride() const { return m_Stride; }
+
+        inline uint32_t GetNumAttributes() const { return static_cast<uint32_t>(m_Attributes.size()); }
+        inline const VertexAttributeSpecification& GetAttributeSpecification(uint32_t index) const { return m_Attributes.at(index); }
+
     private:
         // Private methods
         void CalculateOffsetsAndStride();
-
-        inline uint32_t GetStride() const { return m_Stride; }
-        inline uint32_t GetNumAttributes() const { return static_cast<uint32_t>(m_Attributes.size()); }
-        inline const VertexAttributeSpecification& GetAttributeSpecification(uint32_t index) const { return m_Attributes.at(index); }
     
     private:
         std::vector<VertexAttributeSpecification> m_Attributes;

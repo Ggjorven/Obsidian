@@ -122,6 +122,8 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::Close()");
         VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
+
+        m_CurrentGraphicsPipeline = nullptr;
     }
 
     void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
@@ -396,6 +398,8 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::BindPipeline()");
 
+        m_CurrentGraphicsPipeline = &pipeline;
+        
         const VulkanGraphicsPipeline& vulkanPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
         vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
     }
@@ -404,15 +408,17 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::BindPipeline()");
 
+        m_CurrentGraphicsPipeline = nullptr;
+
         const VulkanComputePipeline& vulkanPipeline = *api_cast<const VulkanComputePipeline*>(&pipeline);
         vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
     }
 
-    void VulkanCommandList::BindBindingSet(const GraphicsPipeline& pipeline, const BindingSet& set)
+    void VulkanCommandList::BindBindingSet(const BindingSet& set)
     {
         NG_PROFILE("VulkanCommandList::BindBindingSet()");
 
-        const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
+        const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline);
         const VulkanBindingSet& vkSet = *api_cast<const VulkanBindingSet*>(&set);
         VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(vkSet.GetVulkanBindingSetPool().GetSpecification().Layout);
         VkDescriptorSet descriptorSet = vkSet.GetVkDescriptorSet();
@@ -420,13 +426,13 @@ namespace Nano::Graphics::Internal
         vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline.GetVkPipelineLayout(), vkLayout.GetBindingLayoutSpecification().RegisterSpace, 1, &descriptorSet, 0, nullptr);
     }
 
-    void VulkanCommandList::BindBindingSets(const GraphicsPipeline& pipeline, const std::span<const BindingSet*> sets)
+    void VulkanCommandList::BindBindingSets(const std::span<const BindingSet*> sets)
     {
         NG_PROFILE("VulkanCommandList::BindBindingSets()");
 
         // TODO: Batch bindings
         for (auto set : sets)
-            BindBindingSet(pipeline, *set);
+            BindBindingSet(*set);
     }
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const

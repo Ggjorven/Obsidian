@@ -51,6 +51,7 @@ namespace Nano::Graphics::Internal
 			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present).Get(), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
+			m_Swapchain->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
 			// TODO: Set ColourSpace
 		}
 
