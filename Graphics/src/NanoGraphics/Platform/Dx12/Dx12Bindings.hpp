@@ -59,18 +59,12 @@ namespace Nano::Graphics::Internal
         inline uint32_t GetSlotToHeapOffset(uint32_t slot) const { return m_SlotToHeapOffset[slot]; }
         inline const std::vector<uint32_t>& GetSlotToHeapOffsets() const { return m_SlotToHeapOffset; }
 
-        inline const std::array<CD3DX12_ROOT_PARAMETER, ParameterCount>& GetD3D12RootParameters() const { return m_Parameters; }
+        inline const Nano::Memory::StaticVector<CD3DX12_ROOT_PARAMETER, ParameterCount>& GetD3D12RootParameters() const { return m_Parameters; }
     
     private:
         // Private methods
         void InitResourceCounts(std::span<const BindingLayoutItem> items);
         void CreateRootParameters(const Device& device, std::span<const BindingLayoutItem> items);
-
-        // Private getters
-        inline CD3DX12_ROOT_PARAMETER& GetSRVRootParameter() { return m_Parameters[0]; }
-        inline CD3DX12_ROOT_PARAMETER& GetUAVRootParameter() { return m_Parameters[1]; }
-        inline CD3DX12_ROOT_PARAMETER& GetCBVRootParameter() { return m_Parameters[2]; }
-        inline CD3DX12_ROOT_PARAMETER& GetSamplerRootParameter() { return m_Parameters[3]; }
 
     private:
         std::variant<BindingLayoutSpecification, BindlessLayoutSpecification> m_Specification;
@@ -83,7 +77,7 @@ namespace Nano::Graphics::Internal
         std::vector<CD3DX12_DESCRIPTOR_RANGE> m_CBVRanges;
         std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SamplerRanges;
 
-        std::array<CD3DX12_ROOT_PARAMETER, ParameterCount> m_Parameters = {};
+        Nano::Memory::StaticVector<CD3DX12_ROOT_PARAMETER, ParameterCount> m_Parameters = {};
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

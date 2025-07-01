@@ -13,7 +13,7 @@
 
 using namespace Nano::Graphics;
 
-#if 1
+#if 0
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
@@ -65,36 +65,36 @@ void main()
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::HLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
-struct VSInput {
+struct VSInput 
+{
     float3 a_Position : POSITION;
     float2 a_TexCoord : TEXCOORD0;
 };
 
-struct VSOutput {
-    float4 SV_Position : SV_POSITION;
-    float3 v_Position  : TEXCOORD1;
-    float2 v_TexCoord  : TEXCOORD2;
+struct VSOutput 
+{
+    float4 gl_Position : SV_POSITION;
+    float2 v_TexCoord  : TEXCOORD0;
 };
 
-VSOutput main(VSInput input) {
+VSOutput main(VSInput input) 
+{
     VSOutput output;
-    output.v_Position = input.a_Position;
     output.v_TexCoord = input.a_TexCoord;
 
-    // If using a camera matrix later, you can apply it here
-    output.SV_Position = float4(input.a_Position, 1.0);
+    output.gl_Position = float4(input.a_Position, 1.0);
     return output;
 }
 )";
 
 inline constexpr std::string_view g_FragmentShader = R"(
-struct PSInput {
-    float4 SV_Position : SV_POSITION;
-    float3 v_Position  : TEXCOORD1;
-    float2 v_TexCoord  : TEXCOORD2;
+struct PSInput 
+{
+    float2 v_TexCoord  : TEXCOORD0;
 };
 
-float4 main(PSInput input) : SV_TARGET {
+float4 main(PSInput input) : SV_TARGET 
+{
     return float4(input.v_TexCoord.x, input.v_TexCoord.y, 0.0, 1.0);
 }
 )";
@@ -199,14 +199,14 @@ public:
 				.SetFormat(Format::RGB32Float)
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
-				.SetDebugName("TEXCOORD"), // TODO: Proper naming??
+				.SetDebugName("a_Position"),
 			VertexAttributeSpecification()
 				.SetBufferIndex(0)
 				.SetLocation(1)
 				.SetFormat(Format::RG32Float)
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
-				.SetDebugName("TEXCOORD")
+				.SetDebugName("a_TexCoord")
 		});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()

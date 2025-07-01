@@ -366,9 +366,7 @@ namespace Nano::Graphics::Internal
 
         m_CommandList->SetPipelineState(dxPipeline.GetD3D12PipelineState().Get());
         m_CommandList->SetGraphicsRootSignature(dxPipeline.GetD3D12RootSignature().Get());
-
-        // TODO: Proper
-        m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_CommandList->IASetPrimitiveTopology(PrimitiveTypeToD3DPrimitiveTopology(dxPipeline.GetSpecification().Primitive));
     }
 
     void Dx12CommandList::BindPipeline(const ComputePipeline& pipeline)
@@ -395,21 +393,21 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("Dx12CommandList::SetViewport()");
 
         // Note: We use VK coordinates
-        //D3D12_VIEWPORT d3d12Viewport = {};
-        //d3d12Viewport.TopLeftX = viewport.MinX;
-        //d3d12Viewport.TopLeftY = viewport.MinY + viewport.GetHeight(); // Shift origin to top-left
-        //d3d12Viewport.Width = viewport.GetWidth();
-        //d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
-        //d3d12Viewport.MinDepth = viewport.MinZ;
-        //d3d12Viewport.MaxDepth = viewport.MaxZ;
-
         D3D12_VIEWPORT d3d12Viewport = {};
         d3d12Viewport.TopLeftX = viewport.MinX;
-        d3d12Viewport.TopLeftY = viewport.MinY;
+        d3d12Viewport.TopLeftY = viewport.MinY + viewport.GetHeight(); // Shift origin to top-left
         d3d12Viewport.Width = viewport.GetWidth();
-        d3d12Viewport.Height = viewport.GetHeight();
+        d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
         d3d12Viewport.MinDepth = viewport.MinZ;
         d3d12Viewport.MaxDepth = viewport.MaxZ;
+
+        //D3D12_VIEWPORT d3d12Viewport = {};
+        //d3d12Viewport.TopLeftX = viewport.MinX;
+        //d3d12Viewport.TopLeftY = viewport.MinY;
+        //d3d12Viewport.Width = viewport.GetWidth();
+        //d3d12Viewport.Height = viewport.GetHeight();
+        //d3d12Viewport.MinDepth = viewport.MinZ;
+        //d3d12Viewport.MaxDepth = viewport.MaxZ;
 
         m_CommandList->RSSetViewports(1, &d3d12Viewport);
     }

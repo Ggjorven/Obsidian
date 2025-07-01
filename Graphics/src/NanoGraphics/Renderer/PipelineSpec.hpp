@@ -27,7 +27,7 @@ namespace Nano::Graphics
         TriangleFan,
         TriangleListWithAdjacency,
         TriangleStripWithAdjacency,
-        PatchList
+        //PatchList
     };
 
     enum class BlendFactor : uint8_t

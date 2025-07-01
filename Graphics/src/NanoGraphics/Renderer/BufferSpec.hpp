@@ -37,7 +37,7 @@ namespace Nano::Graphics
         inline constexpr static uint32_t AutoSize = std::numeric_limits<uint32_t>::max();
         inline constexpr static uint32_t AutoOffset = std::numeric_limits<uint32_t>::max();
     public:
-        uint32_t Location = 0; // TODO: In vulkan
+        uint32_t Location = 0;
         uint32_t BufferIndex = 0;
         Format VertexFormat = Format::Unknown;
 

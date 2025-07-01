@@ -274,9 +274,9 @@ namespace Nano::Graphics::Internal
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // PrimiteTypeMapping
+    // PrimitiveTypeToD3D12TypeMapping
     ////////////////////////////////////////////////////////////////////////////////////
-    struct PrimitiveTypeMapping
+    struct PrimitiveTypeToD3D12TypeMapping
     {
     public:
         PrimitiveType PrimType;
@@ -285,9 +285,9 @@ namespace Nano::Graphics::Internal
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // PrimiteTypeMapping array
+    // PrimiteTypeToD3D12TypeMapping array
     ////////////////////////////////////////////////////////////////////////////////////
-    inline constexpr const auto g_PrimitiveTypeMapping = std::to_array<PrimitiveTypeMapping>({
+    inline constexpr const auto g_PrimitiveTypeToD3D12TypeMapping = std::to_array<PrimitiveTypeToD3D12TypeMapping>({
         // PrimType                                     D3D12Type
         { PrimitiveType::PointList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT },
         { PrimitiveType::LineList,                      D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
@@ -296,8 +296,35 @@ namespace Nano::Graphics::Internal
         { PrimitiveType::TriangleStrip,                 D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
         { PrimitiveType::TriangleFan,                   D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
         { PrimitiveType::TriangleListWithAdjacency,     D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
-        { PrimitiveType::TriangleStripWithAdjacency,    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
-        { PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
+        { PrimitiveType::TriangleStripWithAdjacency,    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE }
+        //{ PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimitiveTypeToD3DTypeMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PrimitiveTypeToD3DTypeMapping
+    {
+    public:
+        PrimitiveType PrimType;
+
+        D3D_PRIMITIVE_TOPOLOGY D3DType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // PrimitiveTypeToD3DTypeMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_PrimitiveTypeToD3DTypeMapping = std::to_array<PrimitiveTypeToD3DTypeMapping>({
+        // PrimType                                     D3DType
+        { PrimitiveType::PointList,                     D3D_PRIMITIVE_TOPOLOGY_POINTLIST },
+        { PrimitiveType::LineList,                      D3D_PRIMITIVE_TOPOLOGY_LINELIST },
+        { PrimitiveType::LineStrip,                     D3D_PRIMITIVE_TOPOLOGY_LINESTRIP },
+        { PrimitiveType::TriangleList,                  D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST },
+        { PrimitiveType::TriangleStrip,                 D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP },
+        { PrimitiveType::TriangleFan,                   D3D_PRIMITIVE_TOPOLOGY_TRIANGLEFAN },
+        { PrimitiveType::TriangleListWithAdjacency,     D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ },
+        { PrimitiveType::TriangleStripWithAdjacency,    D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ }
+        //{ PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -547,7 +574,8 @@ namespace Nano::Graphics::Internal
         return g_ShaderStageMapping[static_cast<size_t>((std::to_underlying(stage) ? (std::countr_zero(std::to_underlying(stage)) + 1) : 0))].Visibility;
     }
 
-    inline constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTypeToD3D12PrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeMapping[static_cast<size_t>(type)].D3D12Type; }
+    inline constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTypeToD3D12PrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeToD3D12TypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeToD3D12TypeMapping[static_cast<size_t>(type)].D3D12Type; }
+    inline constexpr D3D_PRIMITIVE_TOPOLOGY PrimitiveTypeToD3DPrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeToD3DTypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeToD3DTypeMapping[static_cast<size_t>(type)].D3DType; }
     
     inline constexpr D3D12_BLEND BlendFactorToD3D12Blend(BlendFactor factor) { NG_ASSERT((static_cast<size_t>(factor) < g_BlendFactorMapping.size()), "Factor value exceeds mappings."); return g_BlendFactorMapping[static_cast<size_t>(factor)].Blend; }
     inline constexpr D3D12_BLEND_OP BlendOperationToD3D12BlendOp(BlendOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_BlendOperationMapping.size()), "Operation value exceeds mappings."); return g_BlendOperationMapping[static_cast<size_t>(operation)].BlendOp; }

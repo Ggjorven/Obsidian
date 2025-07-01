@@ -25,13 +25,10 @@ namespace Nano::Graphics::Internal
             const VertexAttributeSpecification& attribute = m_Attributes[i];
             NG_ASSERT((attribute.ArraySize > 0), "[Dx12InputLayout] ArraySize must be larger than 0.");
 
-            const FormatMapping& formatMapping = FormatToFormatMapping(attribute.VertexFormat);
-            const FormatInfo& formatInfo = FormatToFormatInfo(attribute.VertexFormat);
-
             D3D12_INPUT_ELEMENT_DESC desc = {};
-            desc.SemanticName = attribute.DebugName.c_str();
-            desc.AlignedByteOffset = attribute.Offset + attribute.Location * formatInfo.BytesPerBlock;
-            desc.Format = formatMapping.SRVFormat;
+            desc.SemanticName = "TEXCOORD"; // Note: SPIRV-Cross always returns TEXCOORD
+            desc.AlignedByteOffset = attribute.Offset;
+            desc.Format = FormatToFormatMapping(attribute.VertexFormat).SRVFormat;
             desc.InputSlot = attribute.BufferIndex;
             desc.SemanticIndex = attribute.Location;
 

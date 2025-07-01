@@ -28,15 +28,18 @@ namespace Nano::Graphics::Internal
             for (auto& layout : specs.BindingLayouts)
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
-                parameters.insert(parameters.end(), dxLayout.GetD3D12RootParameters().begin(), dxLayout.GetD3D12RootParameters().end());
-            }
 
-            // TODO: Remove
-            parameters = {};
+                const auto& params = dxLayout.GetD3D12RootParameters();
+                if (!params.empty())
+                    parameters.insert(parameters.end(), params.begin(), params.end());
+            }
 
             // Create root signature with these parameters
             CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc = {};
-            //rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data()); // TODO: Add back
+            
+            if (!parameters.empty())
+                rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data());
+            
             rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
             DxPtr<ID3DBlob> serializedRootSig;

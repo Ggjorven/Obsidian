@@ -66,7 +66,7 @@ namespace Nano::Graphics::Internal
 					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
 					.SetImageDimension(ImageDimension::Image2D)
 					.SetIsRenderTarget(true)
-					.SetDebugName(std::format("Swapchain image for: {0}", m_Specification.DebugName));
+					.SetDebugName(std::format("Image({0}) for: {1}", i, m_Specification.DebugName));
 				
 				Dx12Image& dxImage = *api_cast<Dx12Image*>(&m_Images[i].Get());
 
@@ -81,6 +81,13 @@ namespace Nano::Graphics::Internal
 				// Start tracking to allow transitioning
 				{
 					m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Present);
+				}
+
+				// Debug naming
+				if constexpr (Information::Validation)
+				{
+					if (!m_Specification.DebugName.empty())
+						m_Device.GetContext().SetDebugName(resource.Get(), imageSpecs.DebugName);
 				}
 			}
 		}
@@ -170,7 +177,7 @@ namespace Nano::Graphics::Internal
 					.SetWidthAndHeight(m_Specification.WindowTarget->GetSize().x, m_Specification.WindowTarget->GetSize().y)
 					.SetImageDimension(ImageDimension::Image2D)
 					.SetIsRenderTarget(true)
-					.SetDebugName(std::format("Swapchain image for: {0}", m_Specification.DebugName));
+					.SetDebugName(std::format("Image({0}) for: {1}", i, m_Specification.DebugName));
 
 				DxPtr<ID3D12Resource> resource;
 				DX_VERIFY(m_Swapchain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource)));
@@ -179,6 +186,13 @@ namespace Nano::Graphics::Internal
 
 				ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
 				(void)dxImage.GetSubresourceView(imageViewSpec, ImageSubresourceViewUsage::RTV, ImageDimension::Image2D, m_Specification.RequestedFormat); // Note: Makes sure to already lazy initialize the image view
+			
+				// Debug naming
+				if constexpr (Information::Validation)
+				{
+					if (!m_Specification.DebugName.empty())
+						m_Device.GetContext().SetDebugName(resource.Get(), specs.DebugName);
+				}
 			}
 		}
 	}

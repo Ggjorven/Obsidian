@@ -134,11 +134,7 @@ Dependencies =
 	DXC = 
 	{
 		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxcompiler",
-		IncludeDir = "%{wks.location}/vendor/DirectX/DXC/include"
-	},
-	DXIL = 
-	{
-		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxil"
+		IncludeDir = "%{wks.location}/vendor/DirectX/DXC/include",
 	}
 }
 

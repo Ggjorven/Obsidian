@@ -98,11 +98,9 @@ project "Graphics"
 				"dxgi",
 				"dxguid",
 				"dxcompiler",
-				-- "d3dcompiler",
 
 				"%{Dependencies.D3D12MA.LibName}",
 				"%{Dependencies.DXC.LibName}",
-				-- "%{Dependencies.DXIL.LibName}",
 			}
 		end
 

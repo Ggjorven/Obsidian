@@ -634,7 +634,7 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	void Dx12DynamicDescriptorHeap::Free(DescriptorHeapIndex index)
 	{
-		// FUTURE TODO: Better algorithm for this?
+		// Note: This can definitely be improved, but this is the first/simplest thing
 		for (auto& freed : m_FreeEntries)
 		{
 			if ((freed.Index + freed.Amount) == index)

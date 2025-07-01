@@ -219,7 +219,7 @@ namespace Nano::Graphics::Internal
         // Convert to HLSL
         std::string hlslString; 
         {
-            spirv_cross::CompilerHLSL compiler(code.data(), code.size()); // Note: Should probably not reallocate for every shader // FIXME
+            spirv_cross::CompilerHLSL compiler(code.data(), code.size()); 
             spirv_cross::CompilerHLSL::Options options;
             options.shader_model = 67;
             
@@ -227,7 +227,6 @@ namespace Nano::Graphics::Internal
             compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
             
             hlslString = compiler.compile();
-            NG_LOG_TRACE("{0}", hlslString);
         }
 
         // Compile HLSL

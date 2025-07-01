@@ -200,10 +200,14 @@ namespace Nano::Graphics::Internal
 
         // Create root params
         {
-            GetSRVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
-            GetUAVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
-            GetCBVRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
-            GetSamplerRootParameter().InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
+            if (!m_SRVRanges.empty())
+                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
+            if (!m_UAVRanges.empty())
+                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
+            if (!m_CBVRanges.empty())
+                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
+            if (!m_SamplerRanges.empty())
+                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
         }
     }
 
