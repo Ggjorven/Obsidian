@@ -85,10 +85,8 @@ namespace Nano::Graphics::Internal
 
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
-        size_t size = m_Specification.Size;
-
-        if (m_Specification.IsUnorderedAccessed) // Storage buffer
-            size = Nano::Memory::AlignOffset(size, 256ull);
+        if (m_Specification.IsUnorderedAccessed || m_Specification.IsUniformBuffer) // Storage buffer or Uniform buffer
+            m_Specification.Size = Nano::Memory::AlignOffset(m_Specification.Size, 256ull);
 
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
         if (m_Specification.IsUnorderedAccessed)
@@ -103,7 +101,7 @@ namespace Nano::Graphics::Internal
             heapType = D3D12_HEAP_TYPE_UPLOAD;
 
         m_Allocation = dxDevice.GetAllocator().AllocateBuffer(m_Resource,
-            size, initialState,
+            m_Specification.Size, initialState,
             flags, heapType
         );
 

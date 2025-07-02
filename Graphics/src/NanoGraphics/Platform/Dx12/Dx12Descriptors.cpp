@@ -256,6 +256,7 @@ namespace Nano::Graphics::Internal
 	{
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate a CBV from a non CBV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+		NG_ASSERT((specs.Size % 256u == 0), "[Dx12DescriptorHeap] Constant buffer size must be a multiple of 256.");
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
 		viewDesc.BufferLocation = resource->GetGPUVirtualAddress();
@@ -269,6 +270,7 @@ namespace Nano::Graphics::Internal
 	{
 		NG_ASSERT((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV), "[Dx12DescriptorHeap] Cannot allocate a CBV from a non CBV heap.");
 		NG_ASSERT(resource, "[Dx12DescriptorHeap] Resource must not be null.");
+		NG_ASSERT((desc.SizeInBytes % 256u == 0), "[Dx12DescriptorHeap] Constant buffer size must be a multiple of 256.");
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = GetCPUHandleForIndex(index);
 		m_Device.GetContext().GetD3D12Device()->CreateConstantBufferView(&desc, handle);

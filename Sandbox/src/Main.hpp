@@ -9,11 +9,11 @@
 
 #include <string_view>
 
-#include <DirectXMath.h>
+#include "Camera.hpp"
 
 using namespace Nano::Graphics;
 
-#if 1
+#if 0
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
@@ -25,19 +25,19 @@ layout(location = 1) in vec2 a_TexCoord;
 layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec2 v_TexCoord;
 
-//layout(std140, set = 0, binding = 0) uniform CameraSettings
-//{
-//    mat4 View;
-//    mat4 Projection;
-//} u_Camera;
+layout(std140, set = 0, binding = 0) uniform CameraSettings
+{
+    mat4 View;
+    mat4 Projection;
+} u_Camera;
 
 void main()
 {
     v_Position = a_Position;
     v_TexCoord = a_TexCoord;
 
-    //gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
-    gl_Position = vec4(a_Position, 1.0);
+    gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
+    //gl_Position = vec4(a_Position, 1.0);
 }
 )";
 
@@ -57,7 +57,6 @@ void main()
 	// Combine texture and sampler
     o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
 	//o_Colour = vec4(v_TexCoord.x, v_TexCoord.y, 0.0, 1.0);
-	//o_Colour = vec4(0.0, 1.0, 0.0, 1.0);
 }
 )";
 
@@ -77,25 +76,39 @@ struct VSOutput
     float2 v_TexCoord  : TEXCOORD0;
 };
 
+cbuffer u_Camera : register(b0, space0)
+{
+    float4x4 View;
+    float4x4 Proj;
+};
+
 VSOutput main(VSInput input) 
 {
     VSOutput output;
     output.v_TexCoord = input.a_TexCoord;
 
-    output.gl_Position = float4(input.a_Position, 1.0);
+	float4 worldPos = float4(input.a_Position, 1.0);
+    output.gl_Position = mul(Proj, mul(View, worldPos)); // Apply View and Proj transforms
     return output;
+    
+	//output.gl_Position = float4(input.a_Position, 1.0);
+    //return output;
 }
 )";
 
 inline constexpr std::string_view g_FragmentShader = R"(
 struct PSInput 
 {
-    float2 v_TexCoord  : TEXCOORD0;
+    float2 v_TexCoord : TEXCOORD0;
 };
+
+Texture2D u_Texture : register(t1, space0);
+SamplerState u_Sampler : register(s2, space0);
 
 float4 main(PSInput input) : SV_TARGET 
 {
-    return float4(input.v_TexCoord.x, input.v_TexCoord.y, 0.0, 1.0);
+    //return float4(input.v_TexCoord.x, input.v_TexCoord.y, 0.0, 1.0);
+    return u_Texture.Sample(u_Sampler, input.v_TexCoord);
 }
 )";
 
@@ -140,7 +153,11 @@ public:
 			.SetWindow(m_Window.Get())
 			.SetFormat(Format::BGRA8Unorm)
 			.SetColourSpace(ColourSpace::SRGB)
+#if defined(NG_PLATFORM_APPLE)
+			.SetVSync(true) // Note: Vulkan via MoltenVK without VSync causes bad screen tearing.
+#else
 			.SetVSync(false)
+#endif
 			.SetDebugName("Swapchain")
 		);
 
@@ -213,12 +230,12 @@ public:
 			.SetRegisterSpace(0)
 
 			// Vertex
-			//.AddItem(BindingLayoutItem()
-			//	.SetSlot(0)
-			//	.SetVisibility(ShaderStage::Vertex)
-			//	.SetType(ResourceType::UniformBuffer)
-			//	.SetDebugName("u_Camera")
-			//)
+			.AddItem(BindingLayoutItem()
+				.SetSlot(0)
+				.SetVisibility(ShaderStage::Vertex)
+				.SetType(ResourceType::UniformBuffer)
+				.SetDebugName("u_Camera")
+			)
 
 			// Fragment
 			.AddItem(BindingLayoutItem()
@@ -362,6 +379,22 @@ public:
 
 			m_Sampler.Construct(m_Device.Get(), SamplerSpecification().SetDebugName(std::format("Sampler for: {0}", m_Image->GetSpecification().DebugName)));
 
+			// Uniformbuffer
+			m_UniformBuffer.Construct(m_Device.Get(), BufferSpecification()
+				.SetSize(sizeof(CameraData))
+				.SetIsUniformBuffer(true)
+				.SetCPUAccess(CpuAccessMode::Write)
+				.SetDebugName("Camera Uniform")
+			);
+			m_Device->StartTracking(m_UniformBuffer.Get(), ResourceState::Unknown);
+
+			m_Device->MapBuffer(m_UniformBuffer.Get(), m_UniformMemory);
+
+			m_Camera.Construct(m_Window.Get());
+
+			if (m_UniformMemory)
+				std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
+
 			// Destroy
 			m_Device->UnmapStagingImage(stagingImage);
 			m_Device->UnmapBuffer(stagingBuffer);
@@ -372,6 +405,7 @@ public:
 			// Upload to bindinsets
 			for (auto& set : m_Set0s)
 			{
+				set->SetItem(0, m_UniformBuffer.Get(), BufferRange());
 				set->SetItem(1, m_Image.Get(), ImageSubresourceSpecification());
 				set->SetItem(2, m_Sampler.Get());
 			}
@@ -381,9 +415,18 @@ public:
 			m_Device->DestroyBuffer(stagingBuffer);
 			m_Device->DestroyStagingImage(stagingImage);
 		}
+
+		// Uniform
+		{
+			
+		}
 	}
 	~Application()
 	{
+		m_Device->UnmapBuffer(m_UniformBuffer.Get());
+
+		m_Device->DestroyBuffer(m_UniformBuffer.Get());
+
 		m_Device->DestroySampler(m_Sampler.Get());
 		m_Device->DestroyImage(m_Image.Get());
 
@@ -482,6 +525,8 @@ private:
 			m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
 			m_Renderpass->ResizeFramebuffers();
 		});
+
+		m_Camera->OnEvent(e);
 	}
 
 	void OnDeviceMessage(DeviceMessageType msgType, const std::string& message)
@@ -511,6 +556,10 @@ private:
 
 	void Update(float deltaTime)
 	{
+		m_Camera->OnUpdate(deltaTime);
+
+		if (m_UniformMemory)
+			std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 	}
 
 private:
@@ -536,6 +585,10 @@ private:
 
 	Nano::Memory::DeferredConstruct<Image> m_Image = {};
 	Nano::Memory::DeferredConstruct<Sampler> m_Sampler = {};
+
+	void* m_UniformMemory;
+	Nano::Memory::DeferredConstruct<Buffer> m_UniformBuffer = {};
+	Nano::Memory::DeferredConstruct<Camera> m_Camera = {};
 
 	std::queue<DeviceDestroyFn> m_DestroyQueue = {};
 };
