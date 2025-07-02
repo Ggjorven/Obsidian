@@ -75,7 +75,7 @@ namespace Nano::Graphics::Internal
 		{
 		case ImageSubresourceViewUsage::SRV:
 		case ImageSubresourceViewUsage::UAV:
-			return m_Image.GetDx12Device().GetResources().GetSRVAndUAVHeap().GetCPUHandleForIndex(m_Index);
+			return m_Image.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().GetCPUHandleForIndex(m_Index);
 		
 		case ImageSubresourceViewUsage::RTV:
 			return m_Image.GetDx12Device().GetResources().GetRTVHeap().GetCPUHandleForIndex(m_Index);
@@ -198,10 +198,10 @@ namespace Nano::Graphics::Internal
 		switch (usage)
 		{
 		case ImageSubresourceViewUsage::SRV:
-			m_Device.GetResources().GetSRVAndUAVHeap().CreateSRV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
+			m_Device.GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
 			break;
 		case ImageSubresourceViewUsage::UAV:
-			m_Device.GetResources().GetSRVAndUAVHeap().CreateUAV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
+			m_Device.GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, m_Specification, specs, m_Resource.Get(), format, dimension);
 			break;
 
 		default:

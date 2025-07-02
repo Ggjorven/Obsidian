@@ -49,6 +49,9 @@ namespace Nano::Graphics::Internal
         inline constexpr void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { (void)image; (void)subresources; (void)currentState; }
         inline constexpr void StartTracking(const StagingImage& image, ResourceState currentState) { (void)image; (void)currentState; }
         inline constexpr void StartTracking(const Buffer& buffer, ResourceState currentState) { (void)buffer; (void)currentState; }
+        inline constexpr void StopTracking(const Image& image) { (void)image; }
+        inline constexpr void StopTracking(const StagingImage& image) { (void)image; }
+        inline constexpr void StopTracking(const Buffer& buffer) { (void)buffer; }
 
         // Destruction methods
         inline constexpr void DestroySwapchain(Swapchain& swapchain) const { (void)swapchain; }

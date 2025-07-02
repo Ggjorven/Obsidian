@@ -13,7 +13,7 @@
 
 using namespace Nano::Graphics;
 
-#if 0
+#if 1
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
@@ -49,14 +49,14 @@ layout(location = 0) out vec4 o_Colour;
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
-//layout (set = 0, binding = 1) uniform texture2D u_Texture;
-//layout (set = 0, binding = 2) uniform sampler u_Sampler;
+layout (set = 0, binding = 1) uniform texture2D u_Texture;
+layout (set = 0, binding = 2) uniform sampler u_Sampler;
 
 void main()
 {
 	// Combine texture and sampler
-    //o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
-	o_Colour = vec4(v_TexCoord.x, v_TexCoord.y, 0.0, 1.0);
+    o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
+	//o_Colour = vec4(v_TexCoord.x, v_TexCoord.y, 0.0, 1.0);
 	//o_Colour = vec4(0.0, 1.0, 0.0, 1.0);
 }
 )";
@@ -211,6 +211,30 @@ public:
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
+
+			// Vertex
+			//.AddItem(BindingLayoutItem()
+			//	.SetSlot(0)
+			//	.SetVisibility(ShaderStage::Vertex)
+			//	.SetType(ResourceType::UniformBuffer)
+			//	.SetDebugName("u_Camera")
+			//)
+
+			// Fragment
+			.AddItem(BindingLayoutItem()
+				.SetSlot(1)
+				.SetVisibility(ShaderStage::Fragment)
+				.SetType(ResourceType::Image)
+				.SetDebugName("u_Texture")
+			)
+			.AddItem(BindingLayoutItem()
+				.SetSlot(2)
+				.SetVisibility(ShaderStage::Fragment)
+				.SetType(ResourceType::Sampler)
+				.SetDebugName("u_Sampler")
+			)
+
+			.SetDebugName("Layout for: Set0")
 		);
 
 		// BindingPool & Sets
@@ -276,14 +300,16 @@ public:
 			);
 			initCommand.Open();
 
+			// Buffers
+			// StagingBuffer
 			Buffer stagingBuffer = m_Device->CreateBuffer(BufferSpecification()
 				.SetSize(sizeof(g_VertexData) + sizeof(g_IndexData))
 				.SetCPUAccess(CpuAccessMode::Write)
 			);
 			m_Device->StartTracking(stagingBuffer, ResourceState::Unknown);
 
-			void* memory;
-			m_Device->MapBuffer(stagingBuffer, memory);
+			void* bufferMemory;
+			m_Device->MapBuffer(stagingBuffer, bufferMemory);
 
 			m_VertexBuffer.Construct(m_Device.Get(), BufferSpecification()
 				.SetSize(sizeof(g_VertexData))
@@ -291,7 +317,7 @@ public:
 				.SetDebugName("Vertexbuffer")
 			);
 			m_Device->StartTracking(m_VertexBuffer.Get(), ResourceState::VertexBuffer);
-			std::memcpy(memory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
+			if (bufferMemory) std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
 			initCommand.CopyBuffer(m_VertexBuffer.Get(), stagingBuffer, sizeof(g_VertexData));
 
 			m_IndexBuffer.Construct(m_Device.Get(), BufferSpecification()
@@ -301,21 +327,66 @@ public:
 				.SetDebugName("Indexbuffer")
 			);
 			m_Device->StartTracking(m_IndexBuffer.Get(), ResourceState::IndexBuffer);
-			std::memcpy(static_cast<uint8_t*>(memory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
+			if (bufferMemory) std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
 			initCommand.CopyBuffer(m_IndexBuffer.Get(), stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData));
 
+			// Image & Sampler
+			// StagingImage
+			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
+				.SetImageFormat(Format::RGBA8Unorm)
+				.SetWidthAndHeight(1, 1)
+				.SetImageDimension(ImageDimension::Image2D)
+				.SetIsShaderResource(true),
+				CpuAccessMode::Write
+			);
+			m_Device->StartTracking(stagingImage, ResourceState::Unknown);
+
+			void* imageMemory;
+			m_Device->MapStagingImage(stagingImage, imageMemory);
+
+			m_Image.Construct(m_Device.Get(), ImageSpecification()
+				.SetImageFormat(Format::RGBA8Unorm)
+				.SetImageDimension(ImageDimension::Image2D)
+				.SetPermanentState(ResourceState::ShaderResource)
+				.SetIsShaderResource(true)
+				.SetWidthAndHeight(1, 1)
+				.SetMipLevels(1)
+				.SetDebugName("Temp image")
+			);
+			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
+
+			uint32_t imageColour = 0xFFFF0000;
+			if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
+
+			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
+
+			m_Sampler.Construct(m_Device.Get(), SamplerSpecification().SetDebugName(std::format("Sampler for: {0}", m_Image->GetSpecification().DebugName)));
+
+			// Destroy
+			m_Device->UnmapStagingImage(stagingImage);
 			m_Device->UnmapBuffer(stagingBuffer);
 
 			initCommand.Close();
 			initCommand.Submit(CommandListSubmitArgs());
 
+			// Upload to bindinsets
+			for (auto& set : m_Set0s)
+			{
+				set->SetItem(1, m_Image.Get(), ImageSubresourceSpecification());
+				set->SetItem(2, m_Sampler.Get());
+			}
+
 			initCommand.WaitTillComplete();
 
 			m_Device->DestroyBuffer(stagingBuffer);
+			m_Device->DestroyStagingImage(stagingImage);
 		}
 	}
 	~Application()
 	{
+		m_Device->DestroySampler(m_Sampler.Get());
+		m_Device->DestroyImage(m_Image.Get());
+
 		m_Device->DestroyBuffer(m_IndexBuffer.Get());
 		m_Device->DestroyBuffer(m_VertexBuffer.Get());
 
@@ -378,6 +449,8 @@ public:
 
 				list->BindVertexBuffer(m_VertexBuffer.Get());
 				list->BindIndexBuffer(m_IndexBuffer.Get());
+
+				list->BindBindingSet(m_Set0s[m_Swapchain->GetCurrentFrame()]);
 
 				list->DrawIndexed(DrawArguments()
 					.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
@@ -460,6 +533,9 @@ private:
 
 	Nano::Memory::DeferredConstruct<Buffer> m_VertexBuffer = {};
 	Nano::Memory::DeferredConstruct<Buffer> m_IndexBuffer = {};
+
+	Nano::Memory::DeferredConstruct<Image> m_Image = {};
+	Nano::Memory::DeferredConstruct<Sampler> m_Sampler = {};
 
 	std::queue<DeviceDestroyFn> m_DestroyQueue = {};
 };

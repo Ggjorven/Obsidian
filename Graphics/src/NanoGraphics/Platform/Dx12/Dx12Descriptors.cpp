@@ -431,11 +431,17 @@ namespace Nano::Graphics::Internal
 				reductionType
 			);
 
+		UINT maxAnisotropy = 1u;
+		if (specs.MaxAnisotropy == SamplerSpecification::MaxMaxAnisotropyValue)
+			maxAnisotropy = 16u;
+		else
+			maxAnisotropy = std::max(static_cast<UINT>(specs.MaxAnisotropy), 1u);
+
 		samplerDesc.AddressU = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressU);
 		samplerDesc.AddressV = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressV);
 		samplerDesc.AddressW = SamplerAddresModeToD3D12TextureAddressMode(specs.AddressW);
 		samplerDesc.MipLODBias = specs.MipBias;
-		samplerDesc.MaxAnisotropy = std::max(static_cast<UINT>(specs.MaxAnisotropy), 1u);
+		samplerDesc.MaxAnisotropy = maxAnisotropy;
 		samplerDesc.ComparisonFunc = ((specs.ReductionType == SamplerReductionType::Comparison) ? D3D12_COMPARISON_FUNC_LESS : D3D12_COMPARISON_FUNC_NEVER);
 		samplerDesc.BorderColor[0] = specs.BorderColour.r;
 		samplerDesc.BorderColor[1] = specs.BorderColour.g;
@@ -511,6 +517,14 @@ namespace Nano::Graphics::Internal
 	CD3DX12_CPU_DESCRIPTOR_HANDLE Dx12DescriptorHeap::GetCPUHandleForIndex(DescriptorHeapIndex index) const
 	{
 		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = m_CPUStart;
+		return handle.Offset(index, m_DescriptorSize);
+	}
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE Dx12DescriptorHeap::GetGPUHandleForIndex(DescriptorHeapIndex index) const
+	{
+		NG_ASSERT(m_IsShaderVisible, "[Dx12DescriptorHeap] To be able to retrieve a GPU the heap must be shader visible.");
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = m_GPUStart;
 		return handle.Offset(index, m_DescriptorSize);
 	}
 

@@ -65,6 +65,10 @@ namespace Nano::Graphics::Internal
 
         // Getters
         CD3DX12_CPU_DESCRIPTOR_HANDLE GetCPUHandleForIndex(DescriptorHeapIndex index) const;
+        CD3DX12_GPU_DESCRIPTOR_HANDLE GetGPUHandleForIndex(DescriptorHeapIndex index) const;
+
+        // Internal getters
+        inline DxPtr<ID3D12DescriptorHeap> GetD3D12DescriptorHeap() const { return m_DescriptorHeap; }
 
     protected:
         const Dx12Device& m_Device;
@@ -124,6 +128,10 @@ namespace Nano::Graphics::Internal
 
         // Getters
         using Dx12DescriptorHeap::GetCPUHandleForIndex;
+        using Dx12DescriptorHeap::GetGPUHandleForIndex;
+
+        // Internal getters
+        using Dx12DescriptorHeap::GetD3D12DescriptorHeap;
 
     private:
         // Private methods
@@ -148,6 +156,8 @@ namespace Nano::Graphics::Internal
 
         // Getters
         using Dx12DescriptorHeap::GetCPUHandleForIndex;
+        using Dx12DescriptorHeap::GetGPUHandleForIndex;
+
         DescriptorHeapIndex GetNextPoolIndex(uint32_t setCount, uint32_t resourceCount);
 
     private:

@@ -89,7 +89,7 @@ namespace Nano::Graphics
     public:
         inline constexpr static size_t MaxBindings = 16;
     public:
-        uint32_t RegisterSpace = 0; // In Vulkan maps to descriptor set index, in dx12 to space0/space1
+        uint8_t RegisterSpace = 0; // In Vulkan maps to descriptor set index, in dx12 to space0/space1
 
         Nano::Memory::StaticVector<BindingLayoutItem, MaxBindings> Bindings;
 
@@ -97,8 +97,8 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr BindingLayoutSpecification& SetBindingSet(uint32_t index) { RegisterSpace = index; return *this; }
-        inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint32_t space) { RegisterSpace = space; return *this; }
+        inline constexpr BindingLayoutSpecification& SetBindingSet(uint8_t index) { RegisterSpace = index; return *this; }
+        inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint8_t space) { RegisterSpace = space; return *this; }
         inline BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
         inline BindingLayoutSpecification& SetDebugName(const std::string_view& name) { DebugName = name; return *this; }
     };

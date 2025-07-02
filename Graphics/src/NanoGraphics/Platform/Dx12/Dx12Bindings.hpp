@@ -39,8 +39,6 @@ namespace Nano::Graphics::Internal
     class Dx12BindingLayout
     {
     public:
-        inline constexpr static size_t ParameterCount = 4;
-    public:
         // Constructors & Destructor
         Dx12BindingLayout(const Device& device, const BindingLayoutSpecification& specs);
         Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs);
@@ -53,13 +51,19 @@ namespace Nano::Graphics::Internal
         inline bool IsBindless() const { return std::holds_alternative<BindlessLayoutSpecification>(m_Specification); }
 
         // Internal getters
+        const BindingLayoutSpecification& GetBindingSpecification() const { NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Getting BindingLayout but the layout is bindless."); return std::get<BindingLayoutSpecification>(m_Specification); }
+        const BindlessLayoutSpecification& GetBindlessSpecification() const { NG_ASSERT(IsBindless(), "[Dx12BindingLayout] Getting BindlessLayout but the layout isn't bindless."); return std::get<BindlessLayoutSpecification>(m_Specification); }
+
         std::span<const BindingLayoutItem> GetBindingItems() const;
 
         inline const std::vector<std::pair<ResourceType, uint32_t>>& GetResourceCounts() const { return m_ResourceCounts; }
         inline uint32_t GetSlotToHeapOffset(uint32_t slot) const { return m_SlotToHeapOffset[slot]; }
         inline const std::vector<uint32_t>& GetSlotToHeapOffsets() const { return m_SlotToHeapOffset; }
 
-        inline const Nano::Memory::StaticVector<CD3DX12_ROOT_PARAMETER, ParameterCount>& GetD3D12RootParameters() const { return m_Parameters; }
+        inline const std::vector<CD3DX12_DESCRIPTOR_RANGE>& GetD3D12SRVAndUAVAndCBVRanges() const { return m_SRVAndUAVAndCBVRanges; }
+        inline ShaderStage GetSRVAndUAVAndCBVVisibility() const { return m_SRVAndUAVAndCBVVisibility; }
+        inline const std::vector<CD3DX12_DESCRIPTOR_RANGE>& GetD3D12SamplerRanges() const { return m_SamplerRanges; }
+        inline ShaderStage GetSamplerVisibility() const { return m_SamplerVisibility; }
     
     private:
         // Private methods
@@ -72,12 +76,11 @@ namespace Nano::Graphics::Internal
         std::vector<std::pair<ResourceType, uint32_t>> m_ResourceCounts = { };
         std::vector<uint32_t> m_SlotToHeapOffset = {};
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SRVRanges;
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_UAVRanges;
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_CBVRanges;
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SamplerRanges;
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SRVAndUAVAndCBVRanges;
+        ShaderStage m_SRVAndUAVAndCBVVisibility = ShaderStage::None;
 
-        Nano::Memory::StaticVector<CD3DX12_ROOT_PARAMETER, ParameterCount> m_Parameters = {};
+        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SamplerRanges;
+        ShaderStage m_SamplerVisibility = ShaderStage::None;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -98,11 +101,17 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const BindingSetSpecification& GetSpecification() const { return m_Specification; }
 
+        // Internal getters
+        const Dx12BindingSetPool& GetDx12BindingSetPool() const { return m_Pool; }
+
+        inline DescriptorHeapIndex GetSRVAndUAVAndCBVBeginIndex() const { return m_SRVAndUAVAndCBVBeginIndex; }
+        inline DescriptorHeapIndex GetSamplerBeginIndex() const { return m_SamplerBeginIndex; }
+
     private:
         Dx12BindingSetPool& m_Pool;
         BindingSetSpecification m_Specification;
 
-        DescriptorHeapIndex m_SRVAndUAVBeginIndex = 0;
+        DescriptorHeapIndex m_SRVAndUAVAndCBVBeginIndex = 0;
         DescriptorHeapIndex m_SamplerBeginIndex = 0;
     };
 
@@ -129,12 +138,12 @@ namespace Nano::Graphics::Internal
         const Dx12Device& m_Device;
         BindingSetPoolSpecification m_Specification;
 
-        uint32_t m_SRVAndUAVCountPerSet = 0;
+        uint32_t m_SRVAndUAVAndCBVCountPerSet = 0;
         uint32_t m_SamplerCountPerSet = 0;
 
         uint32_t m_CurrentSet = 0;
 
-        DescriptorHeapIndex m_SRVAndUAVBeginIndex = 0;
+        DescriptorHeapIndex m_SRVAndUAVAndCBVBeginIndex = 0;
         DescriptorHeapIndex m_SamplerBeginIndex = 0;
     };
 #endif

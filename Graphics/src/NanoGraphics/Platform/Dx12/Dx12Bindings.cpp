@@ -87,7 +87,10 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12BindingLayout::InitResourceCounts(std::span<const BindingLayoutItem> items)
     {
-        m_SlotToHeapOffset.reserve(items.size());
+        // Note: We resize instead of reserve and emplace_back to be able to directly index
+        // into the vector (which is faster than searching for the slot)
+        if (!GetBindingSpecification().Bindings.empty())
+            m_SlotToHeapOffset.resize(static_cast<size_t>(GetBindingSpecification().Bindings.back().Slot) + 1);
 
         // Map the counts & Map the offsets
         uint32_t offset = 0;
@@ -101,8 +104,7 @@ namespace Nano::Graphics::Internal
                 counts[item.Type] += item.GetArraySize();
 
             // Map the offsets
-            m_SlotToHeapOffset.emplace_back(offset);
-            offset += item.GetArraySize();
+            m_SlotToHeapOffset[item.Slot] = offset;;
         }
 
         // Add to vector
@@ -115,16 +117,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Root parameters can currently only be made for bindingsets instead of bindless.");
 
-        ShaderStage srvStage = ShaderStage::None;
-        m_SRVRanges.reserve(items.size());
-
-        ShaderStage uavStage = ShaderStage::None;
-        m_UAVRanges.reserve(items.size());
-
-        ShaderStage cbvStage = ShaderStage::None;
-        m_CBVRanges.reserve(items.size());
-
-        ShaderStage samplerStage = ShaderStage::None;
+        m_SRVAndUAVAndCBVRanges.reserve(items.size());
         m_SamplerRanges.reserve(items.size());
 
         // Create ranges
@@ -137,41 +130,19 @@ namespace Nano::Graphics::Internal
                 {
                 case ResourceType::TextureSRV:
                 case ResourceType::TypedBufferSRV:
-                {
-                    CD3DX12_DESCRIPTOR_RANGE& range = m_SRVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace);
-
-                    if ((srvStage != ShaderStage::None) && (srvStage != item.Visibility))
-                        srvStage = ShaderStage::AllGraphics;
-                    else
-                        srvStage = item.Visibility;
-
-                    break;
-                }
-
+                // Note: These are all in the same heap
                 case ResourceType::TextureUAV:
                 case ResourceType::TypedBufferUAV:
-                {
-                    CD3DX12_DESCRIPTOR_RANGE& range = m_UAVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace);
-
-                    if ((uavStage != ShaderStage::None) && (uavStage != item.Visibility))
-                        uavStage = ShaderStage::AllGraphics;
-                    else
-                        uavStage = item.Visibility;
-
-                    break;
-                }
-
+                // Note: These are all in the same heap
                 case ResourceType::ConstantBuffer:
                 {
-                    CD3DX12_DESCRIPTOR_RANGE& range = m_CBVRanges.emplace_back();
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace);
+                    CD3DX12_DESCRIPTOR_RANGE& range = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace);
 
-                    if ((cbvStage != ShaderStage::None) && (cbvStage != item.Visibility))
-                        cbvStage = ShaderStage::AllGraphics;
+                    if ((m_SRVAndUAVAndCBVVisibility != ShaderStage::None) && (m_SRVAndUAVAndCBVVisibility != item.Visibility))
+                        m_SRVAndUAVAndCBVVisibility = ShaderStage::AllGraphics;
                     else
-                        cbvStage = item.Visibility;
+                        m_SRVAndUAVAndCBVVisibility = item.Visibility;
 
                     break;
                 }
@@ -181,10 +152,10 @@ namespace Nano::Graphics::Internal
                     CD3DX12_DESCRIPTOR_RANGE& range = m_SamplerRanges.emplace_back();
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace);
 
-                    if ((samplerStage != ShaderStage::None) && (samplerStage != item.Visibility))
-                        samplerStage = ShaderStage::AllGraphics;
+                    if ((m_SamplerVisibility != ShaderStage::None) && (m_SamplerVisibility != item.Visibility))
+                        m_SamplerVisibility = ShaderStage::AllGraphics;
                     else
-                        samplerStage = item.Visibility;
+                        m_SamplerVisibility = item.Visibility;
 
                     break;
                 }
@@ -194,18 +165,6 @@ namespace Nano::Graphics::Internal
                     break;
                 }
             }
-        }
-
-        // Create root params
-        {
-            if (!m_SRVRanges.empty())
-                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_SRVRanges.size()), m_SRVRanges.data(), ShaderStageToD3D12ShaderVisibility(srvStage));
-            if (!m_UAVRanges.empty())
-                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_UAVRanges.size()), m_UAVRanges.data(), ShaderStageToD3D12ShaderVisibility(uavStage));
-            if (!m_CBVRanges.empty())
-                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_CBVRanges.size()), m_CBVRanges.data(), ShaderStageToD3D12ShaderVisibility(cbvStage));
-            if (!m_SamplerRanges.empty())
-                m_Parameters.emplace_back().InitAsDescriptorTable(static_cast<UINT>(m_SamplerRanges.size()), m_SamplerRanges.data(), ShaderStageToD3D12ShaderVisibility(samplerStage));
         }
     }
 
@@ -218,7 +177,7 @@ namespace Nano::Graphics::Internal
         // Get indices
         {
             // Modifies m_XXXBeginIndex variables.
-            m_Pool.GetNextSetIndices(m_SRVAndUAVBeginIndex, m_SamplerBeginIndex);
+            m_Pool.GetNextSetIndices(m_SRVAndUAVAndCBVBeginIndex, m_SamplerBeginIndex);
         }
     }
 
@@ -237,16 +196,16 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(((item.Type == ResourceType::TextureSRV) || (item.Type == ResourceType::TextureUAV)), "[Dx12BindingSet] When uploading an image the ResourceType must be TextureSRV or TextureUAV.");
 
         Dx12Image& dxImage = *api_cast<Dx12Image*>(&image);
-        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
+        DescriptorHeapIndex index = m_SRVAndUAVAndCBVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         switch (item.Type)
         {
         case ResourceType::TextureSRV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
             break;
 
         case ResourceType::TextureUAV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, image.GetSpecification(), subresources, dxImage.GetD3D12Resource().Get());
             break;
 
         default:
@@ -276,20 +235,20 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(((item.Type == ResourceType::TypedBufferSRV) || (item.Type == ResourceType::TypedBufferUAV) || (item.Type == ResourceType::ConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be TypedBufferSRV, TypedBufferUAV or ConstantBuffer.");
 
         Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
-        DescriptorHeapIndex index = m_SRVAndUAVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
+        DescriptorHeapIndex index = m_SRVAndUAVAndCBVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         switch (item.Type)
         {
         case ResourceType::StorageBuffer:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateSRV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::StorageBufferUnordered:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateUAV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::UniformBuffer:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVHeap().CreateCBV(index, buffer.GetSpecification(), dxBuffer.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateCBV(index, buffer.GetSpecification(), dxBuffer.GetD3D12Resource().Get());
             break;
 
         default:
@@ -313,11 +272,12 @@ namespace Nano::Graphics::Internal
                 {
                 case ResourceType::TextureSRV:
                 case ResourceType::TypedBufferSRV:
-                case ResourceType::ConstantBuffer:
-                // Purposeful fallthrough
+                // Note: These are all in the descriptor heap
                 case ResourceType::TextureUAV:
                 case ResourceType::TypedBufferUAV:
-                    m_SRVAndUAVCountPerSet += count;
+                // Note: These are all in the descriptor heap
+                case ResourceType::ConstantBuffer:
+                    m_SRVAndUAVAndCBVCountPerSet += count;
                     break;
 
                 case ResourceType::Sampler:
@@ -333,8 +293,8 @@ namespace Nano::Graphics::Internal
 
         // Allocating
         {
-            m_SRVAndUAVBeginIndex = m_Device.GetResources().GetSRVAndUAVHeap().GetNextPoolIndex(m_Specification.SetAmount, m_SRVAndUAVCountPerSet);
-            m_SRVAndUAVBeginIndex = m_Device.GetResources().GetSamplerHeap().GetNextPoolIndex(m_Specification.SetAmount, m_SamplerCountPerSet);
+            m_SRVAndUAVAndCBVBeginIndex = m_Device.GetResources().GetSRVAndUAVAndCBVHeap().GetNextPoolIndex(m_Specification.SetAmount, m_SRVAndUAVAndCBVCountPerSet);
+            m_SamplerBeginIndex = m_Device.GetResources().GetSamplerHeap().GetNextPoolIndex(m_Specification.SetAmount, m_SamplerCountPerSet);
         }
     }
 
@@ -349,7 +309,7 @@ namespace Nano::Graphics::Internal
     {
         NG_ASSERT(((m_CurrentSet + 1) <= m_Specification.SetAmount), "[Dx12BindingSetPool] Using more bindingsets than specified in specification.");
         
-        outSRVAndUAVBeginIndex = m_SRVAndUAVBeginIndex + (m_CurrentSet * m_SRVAndUAVCountPerSet);
+        outSRVAndUAVBeginIndex = m_SRVAndUAVAndCBVBeginIndex + (m_CurrentSet * m_SRVAndUAVAndCBVCountPerSet);
         outSamplerBeginIndex = m_SamplerBeginIndex + (m_CurrentSet * m_SamplerCountPerSet);
 
         m_CurrentSet++;

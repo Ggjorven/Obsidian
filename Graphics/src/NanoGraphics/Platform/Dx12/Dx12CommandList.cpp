@@ -13,6 +13,7 @@
 #include "NanoGraphics/Renderer/Buffer.hpp"
 #include "NanoGraphics/Renderer/Image.hpp"
 #include "NanoGraphics/Renderer/Pipeline.hpp"
+#include "NanoGraphics/Renderer/Bindings.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Buffer.hpp"
@@ -21,6 +22,7 @@
 #include "NanoGraphics/Platform/Dx12/Dx12Renderpass.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Framebuffer.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Pipeline.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Bindings.hpp"
 
 namespace Nano::Graphics::Internal
 {
@@ -373,9 +375,16 @@ namespace Nano::Graphics::Internal
         m_CurrentGraphicsPipeline = &pipeline;
         const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
 
+        // Bind pipeline
         m_CommandList->SetPipelineState(dxPipeline.GetD3D12PipelineState().Get());
         m_CommandList->SetGraphicsRootSignature(dxPipeline.GetD3D12RootSignature().Get());
         m_CommandList->IASetPrimitiveTopology(PrimitiveTypeToD3DPrimitiveTopology(dxPipeline.GetSpecification().Primitive));
+
+        // Bind heaps for BindingSet(s)
+        const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
+
+        auto heaps = std::to_array<ID3D12DescriptorHeap*>({ resources.GetSRVAndUAVAndCBVHeap().GetD3D12DescriptorHeap().Get(), resources.GetSamplerHeap().GetD3D12DescriptorHeap().Get() });
+        m_CommandList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
     }
 
     void Dx12CommandList::BindPipeline(const ComputePipeline& pipeline)
@@ -389,6 +398,38 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::BindBindingSet()");
 
+        NG_ASSERT(m_CurrentGraphicsPipeline, "[Dx12CommandList] A pipeline must be bound to bind bindingsets.");
+        const Dx12BindingSet& dxSet = *api_cast<const Dx12BindingSet*>(&set);
+        const Dx12GraphicsPipeline& graphicsPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
+        const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
+
+        NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
+
+        uint16_t srvAndUAVandCBVRootIndex = graphicsPipeline.GetSRVAndUAVAndCBVRootIndex(layout.GetBindingSpecification().RegisterSpace);
+        uint16_t samplerRootIndex = graphicsPipeline.GetSamplerRootIndex(layout.GetBindingSpecification().RegisterSpace);
+
+        if constexpr (Information::Validation)
+        {
+            const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
+            const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+
+            if (srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndex != Dx12GraphicsPipeline::RootParameterIndices::Invalid))
+                NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+            if (samplerRanges.empty() && (samplerRootIndex != Dx12GraphicsPipeline::RootParameterIndices::Invalid))
+                NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+        }
+
+        const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
+        if (srvAndUAVandCBVRootIndex != Dx12GraphicsPipeline::RootParameterIndices::Invalid)
+        {
+            CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex());
+            m_CommandList->SetGraphicsRootDescriptorTable(srvAndUAVandCBVRootIndex, handle);
+        }
+        if (samplerRootIndex != Dx12GraphicsPipeline::RootParameterIndices::Invalid)
+        {
+            CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex());
+            m_CommandList->SetGraphicsRootDescriptorTable(samplerRootIndex, handle);
+        }
     }
 
     void Dx12CommandList::BindBindingSets(std::span<const BindingSet*> sets)
@@ -559,7 +600,7 @@ namespace Nano::Graphics::Internal
         m_CommandList->CopyTextureRegion(&dstLocation, resDstSlice.X, resDstSlice.Y, resDstSlice.Z, &srcLocation, &srcBox);
 
         // Update back to permanent state
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc));
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc.GetDx12Buffer()));
         m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Image*>(&dxDst), dstSubresourceSpec);
         CommitBarriers();
     }

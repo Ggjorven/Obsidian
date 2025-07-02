@@ -636,8 +636,8 @@ namespace Nano::Graphics::Internal
     class Dx12Resources
     {
     public:
-        inline constexpr static uint32_t s_SRVAndUAVStartSize = 1024;               // Shader visible
-        inline constexpr static uint32_t s_SamplerStartSize = s_SRVAndUAVStartSize; // Shader visible
+        inline constexpr static uint32_t s_SRVAndUAVAndCBVStartSize = 1024;               // Shader visible
+        inline constexpr static uint32_t s_SamplerStartSize = s_SRVAndUAVAndCBVStartSize; // Shader visible
         inline constexpr static uint32_t s_DSVStartSize = 16;
         inline constexpr static uint32_t s_RTVStartSize = 16;
 
@@ -648,7 +648,7 @@ namespace Nano::Graphics::Internal
         ~Dx12Resources();
 
         // (Internal) Getters
-        inline Dx12ManagedDescriptorHeap& GetSRVAndUAVHeap() const { return m_SRVAndUAVHeap; }
+        inline Dx12ManagedDescriptorHeap& GetSRVAndUAVAndCBVHeap() const { return m_SRVAndUAVAndCBVHeap; }
         inline Dx12ManagedDescriptorHeap& GetSamplerHeap() const { return m_SamplerHeap; }
         inline Dx12DynamicDescriptorHeap& GetDSVHeap() const { return m_DSVHeap; }
         inline Dx12DynamicDescriptorHeap& GetRTVHeap() const { return m_RTVHeap; }
@@ -656,8 +656,8 @@ namespace Nano::Graphics::Internal
     private:
         const Dx12Device& m_Device;
 
-        mutable Dx12ManagedDescriptorHeap m_SRVAndUAVHeap;  // Shader visible
-        mutable Dx12ManagedDescriptorHeap m_SamplerHeap;    // Shader visible
+        mutable Dx12ManagedDescriptorHeap m_SRVAndUAVAndCBVHeap;    // Shader visible
+        mutable Dx12ManagedDescriptorHeap m_SamplerHeap;            // Shader visible
         mutable Dx12DynamicDescriptorHeap m_DSVHeap;
         mutable Dx12DynamicDescriptorHeap m_RTVHeap;
     };

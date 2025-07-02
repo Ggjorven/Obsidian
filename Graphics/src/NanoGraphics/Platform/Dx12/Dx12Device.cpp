@@ -69,20 +69,29 @@ namespace Nano::Graphics::Internal
     void Dx12Device::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
-        m_StateTracker.StartTracking(image, subresources, currentState);
+
+        // Note: On Dx12 we create the resource already initialized with the PermanentState, so check
+        // if it was set if so, when currentState == ResourceState::Unknown it's actually the PermanentState.
+        m_StateTracker.StartTracking(image, subresources, (image.GetSpecification().HasPermanentState() ? image.GetSpecification().PermanentState : currentState));
     }
 
     void Dx12Device::StartTracking(const StagingImage& image, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
         const Dx12StagingImage& dxStagingImage = *api_cast<const Dx12StagingImage*>(&image);
-        m_StateTracker.StartTracking(*api_cast<const Buffer*>(&dxStagingImage.GetDx12Buffer()), currentState);
+
+        // Note: On Dx12 we create the resource already initialized with the PermanentState, so check
+        // if it was set if so, when currentState == ResourceState::Unknown it's actually the PermanentState.
+        m_StateTracker.StartTracking(*api_cast<const Buffer*>(&dxStagingImage.GetDx12Buffer()), (image.GetSpecification().HasPermanentState() ? image.GetSpecification().PermanentState : currentState));
     }
 
     void Dx12Device::StartTracking(const Buffer& buffer, ResourceState currentState)
     {
         NG_PROFILE("Dx12Device::StartTracking()");
-        m_StateTracker.StartTracking(buffer, currentState);
+
+        // Note: On Dx12 we create the resource already initialized with the PermanentState, so check
+        // if it was set if so, when currentState == ResourceState::Unknown it's actually the PermanentState.
+        m_StateTracker.StartTracking(buffer, (buffer.GetSpecification().HasPermanentState() ? buffer.GetSpecification().PermanentState : currentState));
     }
 
     void Dx12Device::StopTracking(const Image& image)

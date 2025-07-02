@@ -47,6 +47,9 @@ namespace Nano::Graphics
         inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, subresources, currentState); }
         inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, currentState); }
         inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(buffer, currentState); }
+        inline void StopTracking(const Image& image) { m_Impl->StopTracking(image); }
+        inline void StopTracking(const StagingImage& image) { m_Impl->StopTracking(image); }
+        inline void StopTracking(const Buffer& buffer) { m_Impl->StopTracking(buffer); }
 
         inline void MapBuffer(const Buffer& buffer, void*& memory) const { return m_Impl->MapBuffer(buffer, memory); }
         inline void UnmapBuffer(const Buffer& buffer) const { return m_Impl->UnmapBuffer(buffer); }

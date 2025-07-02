@@ -220,6 +220,7 @@ namespace Nano::Graphics
         
         inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
+        // Getters
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
 
         // Operators
@@ -237,9 +238,9 @@ namespace Nano::Graphics
         inline constexpr static ArraySlice AllArraySlices = std::numeric_limits<uint32_t>::max();
     public:
         MipLevel BaseMipLevel = 0;
-        MipLevel NumMipLevels = 1;
+        MipLevel NumMipLevels = AllMipLevels;
         ArraySlice BaseArraySlice = 0;
-        ArraySlice NumArraySlices = 1;
+        ArraySlice NumArraySlices = AllArraySlices;
 
     public:
         // Setters
@@ -329,7 +330,7 @@ namespace Nano::Graphics
         inline constexpr static float MaxMaxAnisotropyValue = -1.0f;
     public:
         Maths::Vec4<float> BorderColour = { 1.0f, 1.0f, 1.0f, 1.0f };
-        float MaxAnisotropy = MaxMaxAnisotropyValue;
+        float MaxAnisotropy = DisableMaxAnisotropyValue;
         float MipBias = 0.0f;
 
         FilterMode MinFilter = FilterMode::Nearest;
