@@ -64,7 +64,7 @@ namespace Nano::Graphics::Internal
     private:
         // Private methods
         void InitResourceCounts(std::span<const BindingLayoutItem> items);
-        void CreateRootParameters(const Device& device, std::span<const BindingLayoutItem> items);
+        void CreateRootParameters(std::span<const BindingLayoutItem> items);
 
     private:
         std::variant<BindingLayoutSpecification, BindlessLayoutSpecification> m_Specification;

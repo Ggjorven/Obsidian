@@ -33,7 +33,37 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12Device::Wait() const
     {
-        //NG_ASSERT(false, "Not implemented.");
+        NG_PROFILE("Dx12Device::Wait()");
+
+        uint64_t fenceValue = 1;
+
+        Nano::Memory::StaticVector<HANDLE, static_cast<size_t>(CommandQueue::Count)> events;
+        std::unordered_set<ID3D12CommandQueue*> queues;
+        queues.reserve(events.size());
+
+        // Retrieve all queues
+        for (const auto& queue : m_Context.GetD3D12CommandQueues())
+            queues.insert(queue.Get());
+        // Create an event for all unique queues
+        for (size_t i = 0; i < queues.size(); i++)
+            events.emplace_back() = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+        DxPtr<ID3D12Fence> fence; // Note: Will be destroyed at end of the scope
+        m_Context.GetD3D12Device()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+
+        // Signal all unique queues
+        for (auto& queue : queues)
+            queue->Signal(fence.Get(), fenceValue);
+        // Create the event wait
+        for (auto& event : events)
+            fence->SetEventOnCompletion(fenceValue, event);
+
+        // Wait for all events and destroy
+        for (auto& event : events)
+        {
+            WaitForSingleObject(event, INFINITE);
+            CloseHandle(event);
+        }
     }
 
     void Dx12Device::StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState)

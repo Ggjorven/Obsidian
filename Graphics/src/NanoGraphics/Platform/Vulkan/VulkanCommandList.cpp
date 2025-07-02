@@ -126,7 +126,7 @@ namespace Nano::Graphics::Internal
         m_CurrentGraphicsPipeline = nullptr;
     }
 
-    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
+    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) 
     {
         NG_PROFILE("VulkanCommandBuffer::Submit()");
 

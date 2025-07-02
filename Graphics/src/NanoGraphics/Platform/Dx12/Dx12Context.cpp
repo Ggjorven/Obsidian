@@ -88,12 +88,16 @@ namespace Nano::Graphics::Internal
         {
             if constexpr (Information::Validation)
             {
-                DX_VERIFY(D3D12GetDebugInterface(IID_PPV_ARGS(&m_DebugController)));
-                m_DebugController->EnableDebugLayer();
-                factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+                DxPtr<ID3D12Debug> debug;
+                DX_VERIFY(D3D12GetDebugInterface(IID_PPV_ARGS(&debug)));
 
-                DX_VERIFY(m_DebugController->QueryInterface(IID_PPV_ARGS(&m_GPUDebugController)));
-                m_GPUDebugController->SetEnableGPUBasedValidation(TRUE);
+                DX_VERIFY(debug->QueryInterface(IID_PPV_ARGS(&m_DebugController)));
+                m_DebugController->EnableDebugLayer();
+                m_DebugController->SetEnableGPUBasedValidation(TRUE);
+                m_DebugController->SetEnableSynchronizedCommandQueueValidation(TRUE);
+
+                //m_GPUDebugController->ReportLiveObjects();
+                factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
             }
 
             NG_ASSERT(m_DebugController, "[Dx12Context] Failed to create debug controller.");
@@ -172,6 +176,13 @@ namespace Nano::Graphics::Internal
 
     Dx12Context::~Dx12Context()
     {
+        if constexpr (Information::Validation)
+        {
+            DxPtr<ID3D12DebugDevice> debugDevice = nullptr;
+            DX_VERIFY(m_Device->QueryInterface(IID_PPV_ARGS(&debugDevice)));
+
+            //debugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

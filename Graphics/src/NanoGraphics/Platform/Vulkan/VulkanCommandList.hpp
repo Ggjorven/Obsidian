@@ -76,7 +76,7 @@ namespace Nano::Graphics::Internal
 		void Open();
 		void Close();
 
-		void Submit(const CommandListSubmitArgs& args) const;
+		void Submit(const CommandListSubmitArgs& args);
 
 		void WaitTillComplete() const;
 

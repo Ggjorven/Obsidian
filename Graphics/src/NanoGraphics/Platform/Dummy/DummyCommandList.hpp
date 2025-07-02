@@ -67,7 +67,7 @@ namespace Nano::Graphics::Internal
 		inline constexpr void Open() {}
 		inline constexpr void Close() {}
 
-		inline constexpr void Submit(const CommandListSubmitArgs& args) const { (void)args; }
+		inline constexpr void Submit(const CommandListSubmitArgs& args) { (void)args; }
 
 		inline constexpr void WaitTillComplete() const {}
 

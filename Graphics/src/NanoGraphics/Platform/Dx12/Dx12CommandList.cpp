@@ -78,7 +78,7 @@ namespace Nano::Graphics::Internal
 	{
         Dx12CommandList& dxCommandList = *api_cast<Dx12CommandList*>(&list);
 
-        m_Swapchain.GetDx12Device().GetContext().Destroy([commandList = dxCommandList.GetID3D12GraphicsCommandList()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+        m_Swapchain.GetDx12Device().GetContext().Destroy([commandList = dxCommandList.GetID3D12GraphicsCommandList(), idleEvent = dxCommandList.GetWaitIdleEvent()]() { CloseHandle(idleEvent); }); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
 
         dxCommandList.m_CommandList = nullptr;
 	}
@@ -106,6 +106,8 @@ namespace Nano::Graphics::Internal
         DX_VERIFY(list->QueryInterface(IID_PPV_ARGS(&m_CommandList)));
 
         DX_VERIFY(m_CommandList->Close());
+
+        m_WaitIdleEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
         if constexpr (Information::Validation)
         {
@@ -135,7 +137,7 @@ namespace Nano::Graphics::Internal
         m_CurrentGraphicsPipeline = nullptr;
     }
 
-    void Dx12CommandList::Submit(const CommandListSubmitArgs& args) const
+    void Dx12CommandList::Submit(const CommandListSubmitArgs& args)
     {
         NG_PROFILE("VulkanCommandBuffer::Submit()");
 
@@ -153,21 +155,28 @@ namespace Nano::Graphics::Internal
         {
             DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(&list))));
         }
+
+        // Note: Waiting on swapchain image is not a thing that needs to handled manually for DX12
         
         ID3D12CommandList* lists[] = { m_CommandList.Get() };
         queue->ExecuteCommandLists(1, lists);
 
-        uint64_t signalValue = m_Pool.GetDx12Swapchain().RetrieveCommandListWaitValue(*this);
-        DX_VERIFY(queue->Signal(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), signalValue));
+        m_SignaledValue = m_Pool.GetDx12Swapchain().RetrieveCommandListWaitValue(*this);
+        DX_VERIFY(queue->Signal(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_SignaledValue));
         
         if (args.OnFinishMakeSwapchainPresentable)
-            m_Pool.GetDx12Swapchain().SetPresentableValue(signalValue);
+            m_Pool.GetDx12Swapchain().SetPresentableValue(m_SignaledValue);
     }
 
     void Dx12CommandList::WaitTillComplete() const
     {
         NG_PROFILE("Dx12CommandList::WaitTillComplete()");
-        // TODO: ...
+
+        DxPtr<ID3D12CommandQueue> queue = m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().GetD3D12CommandQueue(m_Pool.GetSpecification().Queue);
+        DxPtr<ID3D12Fence> fence = m_Pool.GetDx12Swapchain().GetD3D12Fence();
+
+        fence->SetEventOnCompletion(m_SignaledValue, m_WaitIdleEvent);
+        WaitForSingleObject(m_WaitIdleEvent, INFINITE);
     }
 
     void Dx12CommandList::CommitBarriers()
@@ -386,6 +395,8 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("Dx12CommandList::BindBindingSets()");
 
+        for (const auto set : sets)
+            BindBindingSet(*set);
     }
 
     void Dx12CommandList::SetViewport(const Viewport& viewport) const
@@ -400,14 +411,6 @@ namespace Nano::Graphics::Internal
         d3d12Viewport.Height = -viewport.GetHeight(); // Flip Y-axis
         d3d12Viewport.MinDepth = viewport.MinZ;
         d3d12Viewport.MaxDepth = viewport.MaxZ;
-
-        //D3D12_VIEWPORT d3d12Viewport = {};
-        //d3d12Viewport.TopLeftX = viewport.MinX;
-        //d3d12Viewport.TopLeftY = viewport.MinY;
-        //d3d12Viewport.Width = viewport.GetWidth();
-        //d3d12Viewport.Height = viewport.GetHeight();
-        //d3d12Viewport.MinDepth = viewport.MinZ;
-        //d3d12Viewport.MaxDepth = viewport.MaxZ;
 
         m_CommandList->RSSetViewports(1, &d3d12Viewport);
     }

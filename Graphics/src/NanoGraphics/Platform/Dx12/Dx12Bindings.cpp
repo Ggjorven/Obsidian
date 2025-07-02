@@ -28,7 +28,7 @@ namespace Nano::Graphics::Internal
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
-        CreateRootParameters(device, items);
+        CreateRootParameters(items);
     }
 
     Dx12BindingLayout::Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
@@ -37,10 +37,10 @@ namespace Nano::Graphics::Internal
         (void)device;
 
         BindlessLayoutSpecification& mSpecs = std::get<BindlessLayoutSpecification>(m_Specification);
-
+        
+        // Sort the bindings by slot item from lowest to highest
         std::sort(mSpecs.Bindings.begin(), mSpecs.Bindings.end(), [](const BindingLayoutItem& a, const BindingLayoutItem& b) { return a.Slot < b.Slot; });
 
-        // Sort the bindings by slot item from lowest to highest
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
@@ -111,11 +111,9 @@ namespace Nano::Graphics::Internal
             m_ResourceCounts.emplace_back(type, count);
     }
 
-    void Dx12BindingLayout::CreateRootParameters(const Device& device, std::span<const BindingLayoutItem> items)
+    void Dx12BindingLayout::CreateRootParameters(std::span<const BindingLayoutItem> items)
     {
         NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Root parameters can currently only be made for bindingsets instead of bindless.");
-
-        const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
         ShaderStage srvStage = ShaderStage::None;
         m_SRVRanges.reserve(items.size());
@@ -191,8 +189,8 @@ namespace Nano::Graphics::Internal
                     break;
                 }
 
-                case ResourceType::PushConstants:
-                    // Note: There is no Dx12 equivalent // FUTURE TODO: ...
+                default:
+                    NG_UNREACHABLE();
                     break;
                 }
             }
@@ -324,10 +322,6 @@ namespace Nano::Graphics::Internal
 
                 case ResourceType::Sampler:
                     m_SamplerCountPerSet += count;
-                    break;
-
-                case ResourceType::PushConstants:
-                    // FUTURE TODO: Pushconstants don't do anything on dx12
                     break;
 
                 default:

@@ -239,6 +239,23 @@ namespace Nano::Graphics
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // PushConstantSpecification
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct PushConstantSpecification
+    {
+    public:
+        inline constexpr static uint16_t MaxSize = 128; // 128 bytes
+    public:
+        ShaderStage Visibility = ShaderStage::None;
+        uint16_t Size = 0;
+
+    public:
+        // Setters
+        inline constexpr PushConstantSpecification& SetVisibility(ShaderStage stage) { Visibility = stage; return *this; }
+        inline constexpr PushConstantSpecification& SetSize(uint16_t size) { Size = size; return *this; }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // GraphicsPipelineSpecification
     ////////////////////////////////////////////////////////////////////////////////////
     struct GraphicsPipelineSpecification
@@ -259,6 +276,7 @@ namespace Nano::Graphics
         Renderpass* Pass = nullptr;
 
         Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
+        PushConstantSpecification PushConstants = {};
 
         std::string DebugName = {};
 
@@ -280,6 +298,8 @@ namespace Nano::Graphics
         inline constexpr GraphicsPipelineSpecification& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
 
         inline GraphicsPipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetPushConstants(const PushConstantSpecification& pushConstants) { PushConstants = pushConstants; return *this; }
+
         inline GraphicsPipelineSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
@@ -294,13 +314,17 @@ namespace Nano::Graphics
         Shader* ComputeShader;
 
         Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
+        PushConstantSpecification PushConstants = {};
 
         std::string DebugName = {};
 
     private:
         // Setters
         inline constexpr ComputePipelineSpecification& SetComputeShader(Shader& shader) { ComputeShader = &shader; return *this; }
+        
         inline ComputePipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
+        inline constexpr ComputePipelineSpecification& SetPushConstants(const PushConstantSpecification& pushConstants) { PushConstants = pushConstants; return *this; }
+
         inline ComputePipelineSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
     };

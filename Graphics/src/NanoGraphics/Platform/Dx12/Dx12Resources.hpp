@@ -8,6 +8,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BindingsSpec.hpp"
 #include "NanoGraphics/Renderer/PipelineSpec.hpp"
+#include "NanoGraphics/Renderer/SwapchainSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 #include "NanoGraphics/Platform/Dx12/Dx12Descriptors.hpp"
@@ -241,6 +242,28 @@ namespace Nano::Graphics::Internal
         { Format::BC6HSFloat,           DXGI_FORMAT_BC6H_TYPELESS,          DXGI_FORMAT_BC6H_SF16,                  DXGI_FORMAT_BC6H_SF16              },
         { Format::BC7Unorm,             DXGI_FORMAT_BC7_TYPELESS,           DXGI_FORMAT_BC7_UNORM,                  DXGI_FORMAT_BC7_UNORM              },
         { Format::BC7UnormSRGB,         DXGI_FORMAT_BC7_TYPELESS,           DXGI_FORMAT_BC7_UNORM_SRGB,             DXGI_FORMAT_BC7_UNORM_SRGB         },
+    });
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourSpaceMapping
+    ////////////////////////////////////////////////////////////////////////////////////
+    struct ColourSpaceMapping
+    {
+    public:
+        ColourSpace Space;
+
+        DXGI_COLOR_SPACE_TYPE SpaceType;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // ColourSpaceMapping array
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline constexpr const auto g_ColourSpaceMapping = std::to_array<ColourSpaceMapping>({
+        // Space                        SpaceType
+        { ColourSpace::SRGB,            DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709 },
+        { ColourSpace::HDR,             DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020 },
+        { ColourSpace::LinearSRGB,      DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709 },
+        { ColourSpace::DisplayNative,   DXGI_COLOR_SPACE_CUSTOM }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -568,6 +591,8 @@ namespace Nano::Graphics::Internal
     inline constexpr D3D12_FILTER_TYPE FilterModeToD3D12FilterType(FilterMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_FilterModeMapping.size()), "Mode value exceeds mappings."); return g_FilterModeMapping[static_cast<size_t>(mode)].D3D12FilterType; }
     inline constexpr D3D12_TEXTURE_ADDRESS_MODE SamplerAddresModeToD3D12TextureAddressMode(SamplerAddressMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_SamplerAddressModeMapping.size()), "Mode value exceeds mappings."); return g_SamplerAddressModeMapping[static_cast<size_t>(mode)].D3D12TextureAddressMode; }
     inline constexpr D3D12_FILTER_REDUCTION_TYPE SamplerReductionTypeToD3D12FilterReductionType(SamplerReductionType type) { NG_ASSERT((static_cast<size_t>(type) < g_SamplerReductionTypeMapping.size()), "Type value exceeds mappings."); return g_SamplerReductionTypeMapping[static_cast<size_t>(type)].D3D12ReductionType; }
+
+    inline constexpr DXGI_COLOR_SPACE_TYPE ColourSpaceToD3D12ColourSpace(ColourSpace space) { NG_ASSERT((static_cast<size_t>(space) < g_ColourSpaceMapping.size()), "Space value exceeds mappings."); return g_ColourSpaceMapping[static_cast<size_t>(space)].SpaceType; }
 
     inline constexpr D3D12_SHADER_VISIBILITY ShaderStageToD3D12ShaderVisibility(ShaderStage stage) // Note: We take the first stage, since D3D12 visibility are not bit flags
     {

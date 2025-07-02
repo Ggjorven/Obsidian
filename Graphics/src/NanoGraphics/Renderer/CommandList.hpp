@@ -41,7 +41,7 @@ namespace Nano::Graphics
         inline void Open() { m_Impl->Open(); }
         inline void Close() { m_Impl->Close(); }
 
-        inline void Submit(const CommandListSubmitArgs& args) const { return m_Impl->Submit(args); }
+        inline void Submit(const CommandListSubmitArgs& args) { return m_Impl->Submit(args); }
 
         inline void WaitTillComplete() const { m_Impl->WaitTillComplete(); }
 

@@ -29,8 +29,8 @@ namespace Nano::Graphics::Internal
 		// Swapchain
 		{
 			DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
-			swapchainDesc.Width = specs.WindowTarget->GetSize().x;
-			swapchainDesc.Height = specs.WindowTarget->GetSize().y;
+			swapchainDesc.Width = m_Specification.WindowTarget->GetSize().x;
+			swapchainDesc.Height = m_Specification.WindowTarget->GetSize().y;
 			swapchainDesc.Format = FormatToFormatMapping(specs.RequestedFormat).RTVFormat;
 			swapchainDesc.SampleDesc.Count = 1;
 			swapchainDesc.SampleDesc.Quality = 0;
@@ -51,8 +51,7 @@ namespace Nano::Graphics::Internal
 			DX_VERIFY(m_Device.GetContext().GetIDXGIFactory()->CreateSwapChainForHwnd(m_Device.GetContext().GetD3D12CommandQueue(CommandQueue::Present).Get(), hwnd, &swapchainDesc, nullptr, nullptr, &tempSwapchain));
 
 			DX_VERIFY(tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain)));
-			m_Swapchain->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
-			// TODO: Set ColourSpace
+			DX_VERIFY(m_Swapchain->SetColorSpace1(ColourSpaceToD3D12ColourSpace(m_Specification.RequestedColourSpace)));
 		}
 
 		// Images
@@ -166,7 +165,7 @@ namespace Nano::Graphics::Internal
 			}
 
 			DX_VERIFY(m_Swapchain->ResizeBuffers(static_cast<UINT>(Information::FramesInFlight), width, height, FormatToFormatMapping(colourFormat).RTVFormat, (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0)));
-			// TODO: Set ColourSpace
+			DX_VERIFY(m_Swapchain->SetColorSpace1(ColourSpaceToD3D12ColourSpace(colourSpace)));
 
 			for (size_t i = 0; i < m_Images.size(); i++)
 			{

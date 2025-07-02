@@ -48,9 +48,6 @@ namespace Nano::Graphics::Internal
 
         for (const BindingLayoutItem& item : specs.Bindings)
         {
-            if (item.Type == ResourceType::PushConstants) // Note: No descriptor needed for PushConstants
-                continue;
-
             VkDescriptorType descriptorType = ResourceTypeToVkDescriptorType(item.Type);
             uint32_t descriptorCount = item.Size;
 
@@ -413,9 +410,6 @@ namespace Nano::Graphics::Internal
 
         for (const auto& item : bindingLayout.GetBindingItems())
         {
-            if (item.Type == ResourceType::PushConstants)
-                continue;
-
             NG_ASSERT((item.Size != 0), "[VkBindingSetPool] BindingLayoutItem.Size == 0.");
 
             uint32_t maxBinding = item.Size - 1;

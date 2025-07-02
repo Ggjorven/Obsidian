@@ -42,7 +42,7 @@ namespace Nano::Graphics
         ~Device() = default;
 
         // Methods 
-        inline void Wait() const { m_Impl->Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
+        inline void Wait() const { m_Impl->Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations // Note: Should not be used frequently
 
         inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, subresources, currentState); }
         inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, currentState); }

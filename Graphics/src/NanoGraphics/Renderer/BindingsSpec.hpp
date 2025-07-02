@@ -41,7 +41,6 @@ namespace Nano::Graphics
         UniformBuffer,
         ConstantBuffer = UniformBuffer,
         Sampler,
-        PushConstants,
         //RayTracingAccelStruct,
         
         // Note: CombinedImageSampler is not supported, since only Vulkan supports it
@@ -79,7 +78,7 @@ namespace Nano::Graphics
         inline constexpr bool operator != (const BindingLayoutItem& other) const { return !(*this == other); }
 
         // Getters
-        inline constexpr uint32_t GetArraySize() const { return (Type == ResourceType::PushConstants) ? 1 : Size; }
+        inline constexpr uint32_t GetArraySize() const { return /*(Type == ResourceType::PushConstants) ? 1 :*/ Size; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +89,7 @@ namespace Nano::Graphics
     public:
         inline constexpr static size_t MaxBindings = 16;
     public:
-        uint32_t RegisterSpace = 0; // In Vulkan maps to descriptor set index. Other API's not implemented.
+        uint32_t RegisterSpace = 0; // In Vulkan maps to descriptor set index, in dx12 to space0/space1
 
         Nano::Memory::StaticVector<BindingLayoutItem, MaxBindings> Bindings;
 
@@ -98,6 +97,7 @@ namespace Nano::Graphics
 
     public:
         // Setters
+        inline constexpr BindingLayoutSpecification& SetBindingSet(uint32_t index) { RegisterSpace = index; return *this; }
         inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint32_t space) { RegisterSpace = space; return *this; }
         inline BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
         inline BindingLayoutSpecification& SetDebugName(const std::string_view& name) { DebugName = name; return *this; }

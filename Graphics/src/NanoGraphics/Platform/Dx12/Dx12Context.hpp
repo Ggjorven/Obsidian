@@ -50,6 +50,8 @@ namespace Nano::Graphics::Internal
         inline DxPtr<IDXGIFactory7> GetIDXGIFactory() const { return m_Factory; }
         inline DxPtr<ID3D12CommandQueue> GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }
 
+        inline const std::array<DxPtr<ID3D12CommandQueue>, static_cast<size_t>(CommandQueue::Count)>& GetD3D12CommandQueues() const { return m_Queues; }
+
     private:
         DeviceDestroyCallback m_DestroyCallback;
 
@@ -57,8 +59,7 @@ namespace Nano::Graphics::Internal
         DxPtr<IDXGIAdapter1> m_Adapter = nullptr; // Physical device
         DxPtr<ID3D12Device> m_Device = nullptr; // Logical device
 
-        DxPtr<ID3D12Debug> m_DebugController = nullptr;
-        DxPtr<ID3D12Debug1> m_GPUDebugController = nullptr;
+        DxPtr<ID3D12Debug6> m_DebugController = nullptr;
         DxPtr<ID3D12InfoQueue> m_MessageQueue = nullptr;
 
         std::array<DxPtr<ID3D12CommandQueue>, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};

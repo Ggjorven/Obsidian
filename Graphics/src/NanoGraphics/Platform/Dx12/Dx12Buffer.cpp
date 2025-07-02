@@ -17,6 +17,8 @@ namespace Nano::Graphics::Internal
     Dx12InputLayout::Dx12InputLayout(const Device& device, std::span<const VertexAttributeSpecification> attributes)
         : m_Attributes(attributes.begin(), attributes.end())
     {
+        (void)device;
+
         CalculateOffsetsAndStride();
 
         m_InputElements.reserve(attributes.size() * 2);

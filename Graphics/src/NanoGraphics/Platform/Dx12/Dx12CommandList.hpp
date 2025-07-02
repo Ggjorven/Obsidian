@@ -77,7 +77,7 @@ namespace Nano::Graphics::Internal
 		void Open();
 		void Close();
 
-		void Submit(const CommandListSubmitArgs& args) const;
+		void Submit(const CommandListSubmitArgs& args);
 
 		void WaitTillComplete() const;
 
@@ -113,6 +113,7 @@ namespace Nano::Graphics::Internal
 
 		// Internal Getters
 		inline DxPtr<ID3D12GraphicsCommandList10> GetID3D12GraphicsCommandList() const { return m_CommandList; }
+		inline HANDLE GetWaitIdleEvent() const { return m_WaitIdleEvent; }
 
 	private:
 		Dx12CommandListPool& m_Pool;
@@ -121,6 +122,9 @@ namespace Nano::Graphics::Internal
 		DxPtr<ID3D12GraphicsCommandList10> m_CommandList = nullptr;
 
 		const GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
+
+		uint64_t m_SignaledValue = 0;
+		HANDLE m_WaitIdleEvent = nullptr;
 
 		friend class Dx12CommandListPool;
 	};
