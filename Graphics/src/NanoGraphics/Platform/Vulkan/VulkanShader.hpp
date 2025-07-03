@@ -9,9 +9,7 @@
 
 #include <Nano/Nano.hpp>
 
-#if defined(NG_API_VULKAN)
-    #include <shaderc/shaderc.hpp>
-#endif
+#include <shaderc/shaderc.hpp>
 
 #include <vector>
 
@@ -64,7 +62,7 @@ namespace Nano::Graphics::Internal
         ~VulkanShaderCompiler();
 
         // Methods
-        std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language);
+        std::vector<uint32_t> CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language);
 
     private:
         shaderc::Compiler m_Compiler = {};

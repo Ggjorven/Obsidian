@@ -9,7 +9,7 @@
 #include <limits>
 #include <string>
 #include <numeric>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -122,6 +122,14 @@ namespace Nano::Graphics
         StencilOnly
     };
 
+    enum class ImageSubresourceViewUsage : uint8_t
+    {
+        SRV = 0,
+        UAV,
+        RTV,
+        DSV, 
+    };
+
     using MipLevel = uint32_t;
     using ArraySlice = uint32_t;
 
@@ -170,15 +178,18 @@ namespace Nano::Graphics
         uint32_t Width = 0, Height = 0, Depth = 1;
         uint32_t ArraySize = 1;
         uint32_t MipLevels = 1; // Note: Max = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1;
+        
         uint32_t SampleCount = 1;
+        uint32_t SampleQuality = 0;
 
         bool IsShaderResource = false;
         bool IsUnorderedAccessed = false;
         bool IsRenderTarget = false;
 
+        bool IsTypeless = false; // For storage?
+
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
-        //std::string_view DebugName = {};
         std::string DebugName = {};
 
     public:
@@ -195,17 +206,21 @@ namespace Nano::Graphics
         inline constexpr ImageSpecification& SetArraySize(uint32_t size) { ArraySize = size; return *this; }
         inline constexpr ImageSpecification& SetMipLevels(uint32_t mipLevels) { MipLevels = mipLevels; return *this; }
         inline ImageSpecification& SetMipLevelsToMax() { MipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(Width, Height)))) + 1; return *this; } // Note: Will auto set miplevels
+        
         inline constexpr ImageSpecification& SetSampleCount(uint32_t count) { SampleCount = count; return *this; }
+        inline constexpr ImageSpecification& SetSampleQuality(uint32_t quality) { SampleQuality = quality; return *this; }
         
         inline constexpr ImageSpecification& SetIsShaderResource(bool enabled) { IsShaderResource = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
         inline constexpr ImageSpecification& SetIsRenderTarget(bool enabled) { IsRenderTarget = enabled; return *this; }
         
         inline constexpr ImageSpecification& SetPermanentState(ResourceState state) { PermanentState = state; return *this; }
-        
-        //inline constexpr ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
-        inline ImageSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
 
+        inline constexpr ImageSpecification& SetIsTypeless(bool enabled) { IsTypeless = enabled; return *this; }
+        
+        inline ImageSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
+
+        // Getters
         inline constexpr bool HasPermanentState() const { return (PermanentState != ResourceState::Unknown); }
 
         // Operators
@@ -223,9 +238,9 @@ namespace Nano::Graphics
         inline constexpr static ArraySlice AllArraySlices = std::numeric_limits<uint32_t>::max();
     public:
         MipLevel BaseMipLevel = 0;
-        MipLevel NumMipLevels = 1;
+        MipLevel NumMipLevels = AllMipLevels;
         ArraySlice BaseArraySlice = 0;
-        ArraySlice NumArraySlices = 1;
+        ArraySlice NumArraySlices = AllArraySlices;
 
     public:
         // Setters
@@ -242,14 +257,15 @@ namespace Nano::Graphics
 
             switch (imageSpecs.Dimension)
             {
-            case ImageDimension::Image1DArray:      //[[falthrough]];
-            case ImageDimension::Image2DArray:      //[[falthrough]];
-            case ImageDimension::ImageCube:         //[[falthrough]];
-            case ImageDimension::ImageCubeArray:    //[[falthrough]];
-            case ImageDimension::Image2DMSArray:    //[[falthrough]];
+            case ImageDimension::Image1DArray:  
+            case ImageDimension::Image2DArray:  
+            case ImageDimension::ImageCube:     
+            case ImageDimension::ImageCubeArray:
+            case ImageDimension::Image2DMSArray:
             {
                 if (BaseArraySlice > 0u || BaseArraySlice + NumArraySlices < imageSpecs.ArraySize)
                     return false;
+                break;
             }
 
             default:
@@ -314,7 +330,7 @@ namespace Nano::Graphics
         inline constexpr static float MaxMaxAnisotropyValue = -1.0f;
     public:
         Maths::Vec4<float> BorderColour = { 1.0f, 1.0f, 1.0f, 1.0f };
-        float MaxAnisotropy = MaxMaxAnisotropyValue;
+        float MaxAnisotropy = DisableMaxAnisotropyValue;
         float MipBias = 0.0f;
 
         FilterMode MinFilter = FilterMode::Nearest;
@@ -327,7 +343,7 @@ namespace Nano::Graphics
 
         SamplerReductionType ReductionType = SamplerReductionType::Standard;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -342,7 +358,7 @@ namespace Nano::Graphics
         inline constexpr SamplerSpecification& SetAddressModeW(SamplerAddressMode w) { AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetUVW(SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w) { AddressU = u; AddressV = v; AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetReductionType(SamplerReductionType type) { ReductionType = type; return *this; }
-        inline constexpr SamplerSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline SamplerSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
 
     };
 

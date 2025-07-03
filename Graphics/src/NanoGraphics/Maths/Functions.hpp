@@ -31,6 +31,8 @@ namespace Nano::Graphics::Maths
 
 	Mat4<float> Rotate(const Mat4<float>& matrix, float angle, const Vec3<float>& axis); // Note: Angle in radians
 
+	Mat4<float> Inverse(const Mat4<float>& matrix);
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Trigonometry 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -43,5 +45,10 @@ namespace Nano::Graphics::Maths
 	////////////////////////////////////////////////////////////////////////////////////
 	float Radians(float degrees);
 	float AspectRatio(uint32_t width, uint32_t height);
+
+	// Note: The underlying maths library is glm, glm works in the opengl coordinate space
+	// we support multiple API's and not every API has the same projection space, so we have
+	// one general function to correct the projection matrix after all calculations have been done to it.
+	Mat4<float> ApplyProjectionCorrection(const Mat4<float>& matrix);
 
 }

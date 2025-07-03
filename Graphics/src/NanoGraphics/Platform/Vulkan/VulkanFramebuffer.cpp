@@ -90,34 +90,37 @@ namespace Nano::Graphics::Internal
         {
             VulkanImage& vulkanImage = *api_cast<VulkanImage*>(m_Specification.ColourAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.ColourAttachment.ImagePtr->GetSpecification();
+            ImageSubresourceSpecification resSubresources = ResolveImageSubresource(m_Specification.ColourAttachment.Subresources, imageSpec, false);
 
-            width = std::max(imageSpec.Width >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
-            height = std::max(imageSpec.Height >> m_Specification.ColourAttachment.Subresources.BaseMipLevel, 1u);
-            layers = m_Specification.ColourAttachment.Subresources.NumArraySlices;
+            width = std::max(imageSpec.Width >> resSubresources.BaseMipLevel, 1u);
+            height = std::max(imageSpec.Height >> resSubresources.BaseMipLevel, 1u);
+            layers = resSubresources.NumArraySlices;
 
-            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.ColourAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
+            attachments.push_back(vulkanImage.GetSubresourceView(resSubresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
         }
 
         if (m_Specification.DepthAttachment.IsValid())
         {
             VulkanImage& vulkanImage = *api_cast<VulkanImage*>(m_Specification.DepthAttachment.ImagePtr);
             const ImageSpecification& imageSpec = m_Specification.DepthAttachment.ImagePtr->GetSpecification();
+            ImageSubresourceSpecification resSubresources = ResolveImageSubresource(m_Specification.DepthAttachment.Subresources, imageSpec, false);
 
+            // Validation checks
             if constexpr (Information::Validation)
             {
-                if (width != 0 || height != 0) // Validation checks
+                if (width != 0 || height != 0) // If width/height are set, make sure the colour width/height is the same as the depth width/height
                 {
-                    NG_ASSERT((width == std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's width doesn't match the colour attachment's width.");
-                    NG_ASSERT((height == std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's height doesn't match the colour attachment's height.");
-                    NG_ASSERT((layers == m_Specification.DepthAttachment.Subresources.NumArraySlices), "[VkFramebuffer] Depth attachment's arrayslices doesn't match the colour attachment's arrayslices.");
+                    NG_ASSERT((width == std::max(imageSpec.Width >> resSubresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's width doesn't match the colour attachment's width.");
+                    NG_ASSERT((height == std::max(imageSpec.Height >> resSubresources.BaseMipLevel, 1u)), "[VkFramebuffer] Depth attachment's height doesn't match the colour attachment's height.");
+                    NG_ASSERT((layers == resSubresources.NumArraySlices), "[VkFramebuffer] Depth attachment's arrayslices doesn't match the colour attachment's arrayslices.");
                 }
             }
 
-            width = std::max(imageSpec.Width >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
-            height = std::max(imageSpec.Height >> m_Specification.DepthAttachment.Subresources.BaseMipLevel, 1u);
-            layers = m_Specification.DepthAttachment.Subresources.NumArraySlices;
+            width = std::max(imageSpec.Width >> resSubresources.BaseMipLevel, 1u);
+            height = std::max(imageSpec.Height >> resSubresources.BaseMipLevel, 1u);
+            layers = resSubresources.NumArraySlices;
 
-            attachments.push_back(vulkanImage.GetSubresourceView(m_Specification.DepthAttachment.Subresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
+            attachments.push_back(vulkanImage.GetSubresourceView(resSubresources, imageSpec.Dimension, imageSpec.ImageFormat, 0, ImageSubresourceViewType::AllAspects).GetVkImageView());
         }
 
         VkFramebufferCreateInfo framebufferInfo = {};

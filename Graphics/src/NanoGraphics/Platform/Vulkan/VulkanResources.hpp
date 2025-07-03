@@ -370,8 +370,8 @@ namespace Nano::Graphics::Internal
         { PrimitiveType::TriangleStrip,                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
         { PrimitiveType::TriangleFan,                   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
         { PrimitiveType::TriangleListWithAdjacency,     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY },
-        { PrimitiveType::TriangleStripWithAdjacency,    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY },
-        { PrimitiveType::PatchList,                     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST },
+        { PrimitiveType::TriangleStripWithAdjacency,    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY }
+        //{ PrimitiveType::PatchList,                     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -570,11 +570,11 @@ namespace Nano::Graphics::Internal
         { ResourceType::ImageUnordered,         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
         { ResourceType::StorageBuffer,          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
         { ResourceType::StorageBufferUnordered, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER },
-        { ResourceType::DynamicStorageBuffer,   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC },
+        //{ ResourceType::DynamicStorageBuffer,   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC },
         { ResourceType::UniformBuffer,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-        { ResourceType::DynamicUniformBuffer,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
+        //{ ResourceType::DynamicUniformBuffer,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
         { ResourceType::Sampler,                VK_DESCRIPTOR_TYPE_SAMPLER },
-        { ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, // Note: Not really, but there is no PushConstants descriptor
+        //{ ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, // Note: Not really, but there is no PushConstants descriptor
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -916,14 +916,6 @@ namespace Nano::Graphics::Internal
 
         return std::numeric_limits<uint8_t>::max();
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // Resolving methods
-    ////////////////////////////////////////////////////////////////////////////////////
-    ImageSliceSpecification ResolveImageSlice(const ImageSliceSpecification& sliceSpec, const ImageSpecification& imageSpec);
-    ImageSubresourceSpecification ResolveImageSubresouce(const ImageSubresourceSpecification& subresourceSpec, const ImageSpecification& imageSpec, bool singleMip);
-
-    BufferRange ResolveBufferRange(const BufferRange& range, const BufferSpecification& specs);
 #endif
 
 }

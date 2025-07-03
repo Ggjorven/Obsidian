@@ -45,4 +45,43 @@ namespace Nano::Graphics
 
     NANO_DEFINE_BITWISE(CpuAccessMode)
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Helper methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    inline std::string ResourceStateToString(ResourceState state)
+    {
+        std::string str = {};
+
+        if (static_cast<bool>(state & ResourceState::Common))
+            str += "Common";
+        if (static_cast<bool>(state & ResourceState::StorageBuffer))
+            str += (str.empty() ? "" : " | ") + std::string("StorageBuffer");
+        if (static_cast<bool>(state & ResourceState::VertexBuffer))
+            str += (str.empty() ? "" : " | ") + std::string("VertexBuffer");
+        if (static_cast<bool>(state & ResourceState::IndexBuffer))
+            str += (str.empty() ? "" : " | ") + std::string("IndexBuffer");
+        if (static_cast<bool>(state & ResourceState::IndirectArgument))
+            str += (str.empty() ? "" : " | ") + std::string("IndirectArgument");
+        if (static_cast<bool>(state & ResourceState::ShaderResource))
+            str += (str.empty() ? "" : " | ") + std::string("ShaderResource");
+        if (static_cast<bool>(state & ResourceState::UnorderedAccess))
+            str += (str.empty() ? "" : " | ") + std::string("UnorderedAccess");
+        if (static_cast<bool>(state & ResourceState::RenderTarget))
+            str += (str.empty() ? "" : " | ") + std::string("RenderTarget");
+        if (static_cast<bool>(state & ResourceState::DepthWrite))
+            str += (str.empty() ? "" : " | ") + std::string("DepthWrite");
+        if (static_cast<bool>(state & ResourceState::DepthRead))
+            str += (str.empty() ? "" : " | ") + std::string("DepthRead");
+        if (static_cast<bool>(state & ResourceState::StreamOut))
+            str += (str.empty() ? "" : " | ") + std::string("StreamOut");
+        if (static_cast<bool>(state & ResourceState::CopyDst))
+            str += (str.empty() ? "" : " | ") + std::string("CopyDst");
+        if (static_cast<bool>(state & ResourceState::CopySrc))
+            str += (str.empty() ? "" : " | ") + std::string("CopySrc");
+        if (static_cast<bool>(state & ResourceState::Present))
+            str += (str.empty() ? "" : " | ") + std::string("Present");
+
+        return (str.empty() ? "Unknown" : str);
+    }
+
 }

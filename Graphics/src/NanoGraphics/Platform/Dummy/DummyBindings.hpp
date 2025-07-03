@@ -55,15 +55,20 @@ namespace Nano::Graphics::Internal
     {
     public:
         // Constructor & Destructor
-        inline constexpr DummyBindingSet(BindingSetPool& pool) { (void)pool; };
+        inline constexpr DummyBindingSet(BindingSetPool& pool, const BindingSetSpecification& specs) 
+            : m_Specification(specs) { (void)pool; };
         inline constexpr ~DummyBindingSet() = default;
 
         // Methods
-        inline constexpr void Upload(Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) { (void)image; (void)subresources; (void)resourceType; (void)slot; (void)arrayIndex; }
-        inline constexpr void Upload(Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) { (void)sampler; (void)resourceType; (void)slot; (void)arrayIndex; }
-        inline constexpr void Upload(Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) { (void)buffer; (void)range; (void)resourceType; (void)slot; (void)arrayIndex; }
+        inline constexpr void SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources, uint32_t arrayIndex) { (void)slot; (void)image; (void)subresources; (void)arrayIndex; }
+        inline constexpr void SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex) { (void)slot; (void)sampler; (void)arrayIndex; }
+        inline constexpr void SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex) { (void)slot; (void)buffer; (void)range; (void)arrayIndex; }
+    
+        // Getters
+        inline const BindingSetSpecification& GetSpecification() const { return m_Specification; }
 
-        void UploadList(std::span<const BindingSetUploadable> uploadables) { (void)uploadables; }
+    private:
+        BindingSetSpecification m_Specification;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

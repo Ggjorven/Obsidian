@@ -69,17 +69,17 @@ void Camera::OnEvent(Event& e)
     Nano::Events::EventHandler handler(e);
 
     handler.Handle<MouseScrolledEvent>([this](MouseScrolledEvent& mse) -> bool
-    {
-        constexpr const float s_BaseZoomSpeed = 0.25f;
+        {
+            constexpr const float s_BaseZoomSpeed = 0.25f;
 
-        SetZoom(m_Zoom - (mse.GetYOffset() * s_BaseZoomSpeed));
-        return false;
-    });
+            SetZoom(m_Zoom - (mse.GetYOffset() * s_BaseZoomSpeed));
+            return false;
+        });
     handler.Handle<WindowResizeEvent>([this](WindowResizeEvent&) -> bool
-    {
-        RecalculateProjectionMatrix();
-        return false;
-    });
+        {
+            RecalculateProjectionMatrix();
+            return false;
+        });
 }
 
 void Camera::SetPosition(const Maths::Vec3<float>& position)
@@ -100,7 +100,7 @@ void Camera::RecalculateViewMatrix()
 {
     Maths::Mat4<float> transform = Maths::Translate(Maths::Mat4<float>(1.0f), m_Position) * Maths::Rotate(Maths::Mat4<float>(1.0f), Maths::Radians(m_Rotation), Maths::Vec3<float>(0.0f, 0.0f, 1.0f));
 
-    m_Camera.ViewMatrix = glm::inverse(transform);
+    m_Camera.ViewMatrix = Maths::Inverse(transform);
 }
 
 void Camera::RecalculateProjectionMatrix()
@@ -108,5 +108,5 @@ void Camera::RecalculateProjectionMatrix()
     float aspectRatio = Maths::AspectRatio(m_Window.GetSize().x, m_Window.GetSize().y);
 
     m_Camera.ProjectionMatrix = Maths::Orthographic(aspectRatio, m_Zoom);
-    m_Camera.ProjectionMatrix[1][1] *= -1.0f;
+    m_Camera.ProjectionMatrix = Maths::ApplyProjectionCorrection(m_Camera.ProjectionMatrix);
 }

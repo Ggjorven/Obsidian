@@ -101,10 +101,6 @@ Dependencies =
 	{
 		IncludeDir = "%{wks.location}/vendor/glm/glm"
 	},
-	stb = 
-	{
-		IncludeDir = "%{wks.location}/vendor/stb/include"
-	},
 	Tracy = 
 	{
 		LibName = "Tracy",
@@ -115,10 +111,31 @@ Dependencies =
 		IncludeDir = "%{wks.location}/vendor/Nano/Nano/Nano/include"
 	},
 
+	shaderc = 
+	{
+		LibName = "shaderc",
+		IncludeDir = "%{wks.location}/vendor/shaderc/ShaderCompiler/ShaderCompiler/include"
+	},
+	SPIRVCross = 
+	{
+		LibName = "SPIRVCross",
+		IncludeDir = "%{wks.location}/vendor/SPIRV-Cross/SPIRV-Cross" 
+	},
+
 	DX12 = 
 	{
 		IncludeDir = "%{wks.location}/vendor/DirectX/DirectX-Headers/include"
 	},
+	D3D12MA = 
+	{
+		LibName = "D3D12MA",
+		IncludeDir = "%{wks.location}/vendor/DirectX/D3D12MA/include"
+	},
+	DXC = 
+	{
+		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxcompiler",
+		IncludeDir = "%{wks.location}/vendor/DirectX/DXC/include",
+	}
 }
 
 ------------------------------------------------------------------------------
@@ -132,7 +149,6 @@ if gfxapi == "vulkan" then
 			IncludeDir = "%{VULKAN_SDK}/Include/",
 			LibDir = "%{VULKAN_SDK}/Lib/"
 		}
-		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
 	elseif platform == "linux" then
 		Dependencies.Vulkan =
@@ -141,7 +157,6 @@ if gfxapi == "vulkan" then
 			IncludeDir = "%{VULKAN_SDK}/include/",
 			LibDir = "%{VULKAN_SDK}/lib/"
 		}
-		Dependencies.ShaderC = { LibName = "shaderc_shared" }
 
 	elseif platform == "macosx" then
 		Dependencies.Vulkan = -- Note: Vulkan on MacOS is currently dynamic. (Example: libvulkan1.3.290.dylib)
@@ -150,7 +165,6 @@ if gfxapi == "vulkan" then
 			IncludeDir = "%{VULKAN_SDK}/../macOS/include/",
 			LibDir = "%{VULKAN_SDK}/../macOS/lib/",
 		}
-		Dependencies.ShaderC = { LibName = "shaderc_combined" }
 	else
 		error("Failed to initialize Vulkan headers for current platform.")
 	end
@@ -181,6 +195,13 @@ workspace "NanoGraphics"
 group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
+
+	if gfxapi == "dx12" then
+		include "vendor/DirectX"
+	end
+
+	include "vendor/shaderc"
+	include "vendor/SPIRV-Cross"
 group ""
 
 group "NanoGraphics"

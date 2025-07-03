@@ -10,8 +10,6 @@
 #include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
 
-#include <type_traits>
-
 namespace Nano::Graphics
 {
 	class Device;
@@ -21,7 +19,6 @@ namespace Nano::Graphics
 namespace Nano::Graphics::Internal
 {
 
-	class VulkanImage;
 	class VulkanDevice;
 	class VulkanImageSubresourceView;
 	class VulkanImage;

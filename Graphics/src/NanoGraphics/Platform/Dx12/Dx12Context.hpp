@@ -1,8 +1,10 @@
 #pragma once
 
 #include "NanoGraphics/Core/Information.hpp"
+#include "NanoGraphics/Core/Logging.hpp"
 
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
+#include "NanoGraphics/Renderer/CommandListSpec.hpp"
 
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
@@ -30,21 +32,37 @@ namespace Nano::Graphics::Internal
         ~Dx12Context();
 
         // Methods
-        void Warn(const std::string& message);
-        void Error(const std::string& message);
+        void Warn(const std::string& message) const;
+        void Error(const std::string& message) const;
+        void OutputMessages() const;
 
-        void Destroy(DeviceDestroyFn fn);
+        void Destroy(DeviceDestroyFn fn) const;
 
         // Internal methods
-        void InitMessageQueue(ID3D12Device* device);
+        void SetDebugName(ID3D12Object* object, const std::string& name) const;
+        void SetDebugName(ID3D12Object* object, const std::wstring& name) const;
 
-        void SetDebugName(ID3D12Object* object, const std::wstring& name);
+        // Internal getters
+        bool AllowsTearing() const;
+
+        inline DxPtr<IDXGIAdapter1> GetD3D12Adapter() const { return m_Adapter; }
+        inline DxPtr<ID3D12Device> GetD3D12Device() const { return m_Device; }
+        inline DxPtr<IDXGIFactory7> GetIDXGIFactory() const { return m_Factory; }
+        inline DxPtr<ID3D12CommandQueue> GetD3D12CommandQueue(CommandQueue queue) const { NG_ASSERT((static_cast<size_t>(queue) < static_cast<size_t>(CommandQueue::Count)), "[Dx12Context] Invalid CommandQueue passed in."); return m_Queues[static_cast<size_t>(queue)]; }
+
+        inline const std::array<DxPtr<ID3D12CommandQueue>, static_cast<size_t>(CommandQueue::Count)>& GetD3D12CommandQueues() const { return m_Queues; }
 
     private:
-        ID3D12Debug* m_DebugController = nullptr;
-        ID3D12InfoQueue* m_MessageQueue = nullptr;
-        
         DeviceDestroyCallback m_DestroyCallback;
+
+        DxPtr<IDXGIFactory7> m_Factory = nullptr;
+        DxPtr<IDXGIAdapter1> m_Adapter = nullptr; // Physical device
+        DxPtr<ID3D12Device> m_Device = nullptr; // Logical device
+
+        DxPtr<ID3D12Debug6> m_DebugController = nullptr;
+        DxPtr<ID3D12InfoQueue> m_MessageQueue = nullptr;
+
+        std::array<DxPtr<ID3D12CommandQueue>, static_cast<size_t>(CommandQueue::Count)> m_Queues = {};
     };
 #endif
 
