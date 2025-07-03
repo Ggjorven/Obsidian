@@ -33,10 +33,9 @@ namespace Nano::Graphics::Internal
         struct RootParameterIndices
         {
         public:
-            inline constexpr static uint16_t Invalid = std::numeric_limits<uint16_t>::max();
-        public:
-            uint16_t SRVAndUAVAndCBVIndex = Invalid;
-            uint16_t SamplerIndex = Invalid;
+            //                    Slot      Index
+            std::vector<std::pair<uint32_t, uint16_t>> SRVAndUAVAndCBVIndices = { };
+            std::vector<std::pair<uint32_t, uint16_t>> SamplerIndices = { };
         };
     public:
         // Constructor & Destructor
@@ -50,8 +49,8 @@ namespace Nano::Graphics::Internal
         inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
         inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
 
-        uint16_t GetSRVAndUAVAndCBVRootIndex(uint8_t registerSpace) const;
-        uint16_t GetSamplerRootIndex(uint8_t registerSpace) const;
+        const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
 
     private:
         GraphicsPipelineSpecification m_Specification;

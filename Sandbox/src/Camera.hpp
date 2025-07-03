@@ -9,7 +9,7 @@
 
 using namespace Nano::Graphics;
 
-struct alignas(256) CameraData
+struct CameraData
 {
 public:
     Maths::Mat4<float> ViewMatrix = Maths::Mat4<float>(1.0f);

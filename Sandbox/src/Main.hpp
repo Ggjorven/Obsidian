@@ -102,8 +102,8 @@ struct PSInput
     float2 v_TexCoord : TEXCOORD0;
 };
 
-Texture2D u_Texture : register(t1, space0);
-SamplerState u_Sampler : register(s2, space0);
+SamplerState u_Sampler : register(s1, space0);
+Texture2D u_Texture : register(t2, space0);
 
 float4 main(PSInput input) : SV_TARGET 
 {
@@ -239,13 +239,13 @@ public:
 
 			// Fragment
 			.AddItem(BindingLayoutItem()
-				.SetSlot(1)
+				.SetSlot(2)
 				.SetVisibility(ShaderStage::Fragment)
 				.SetType(ResourceType::Image)
 				.SetDebugName("u_Texture")
 			)
 			.AddItem(BindingLayoutItem()
-				.SetSlot(2)
+				.SetSlot(1)
 				.SetVisibility(ShaderStage::Fragment)
 				.SetType(ResourceType::Sampler)
 				.SetDebugName("u_Sampler")
@@ -406,8 +406,8 @@ public:
 			for (auto& set : m_Set0s)
 			{
 				set->SetItem(0, m_UniformBuffer.Get(), BufferRange());
-				set->SetItem(1, m_Image.Get(), ImageSubresourceSpecification());
-				set->SetItem(2, m_Sampler.Get());
+				set->SetItem(2, m_Image.Get(), ImageSubresourceSpecification());
+				set->SetItem(1, m_Sampler.Get());
 			}
 
 			initCommand.WaitTillComplete();

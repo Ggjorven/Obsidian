@@ -60,10 +60,8 @@ namespace Nano::Graphics::Internal
         inline uint32_t GetSlotToHeapOffset(uint32_t slot) const { return m_SlotToHeapOffset[slot]; }
         inline const std::vector<uint32_t>& GetSlotToHeapOffsets() const { return m_SlotToHeapOffset; }
 
-        inline const std::vector<CD3DX12_DESCRIPTOR_RANGE>& GetD3D12SRVAndUAVAndCBVRanges() const { return m_SRVAndUAVAndCBVRanges; }
-        inline ShaderStage GetSRVAndUAVAndCBVVisibility() const { return m_SRVAndUAVAndCBVVisibility; }
-        inline const std::vector<CD3DX12_DESCRIPTOR_RANGE>& GetD3D12SamplerRanges() const { return m_SamplerRanges; }
-        inline ShaderStage GetSamplerVisibility() const { return m_SamplerVisibility; }
+        inline const std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>>& GetD3D12SRVAndUAVAndCBVRanges() const { return m_SRVAndUAVAndCBVRanges; }
+        inline const std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>>& GetD3D12SamplerRanges() const { return m_SamplerRanges; }
     
     private:
         // Private methods
@@ -76,11 +74,9 @@ namespace Nano::Graphics::Internal
         std::vector<std::pair<ResourceType, uint32_t>> m_ResourceCounts = { };
         std::vector<uint32_t> m_SlotToHeapOffset = {};
 
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SRVAndUAVAndCBVRanges;
-        ShaderStage m_SRVAndUAVAndCBVVisibility = ShaderStage::None;
-
-        std::vector<CD3DX12_DESCRIPTOR_RANGE> m_SamplerRanges;
-        ShaderStage m_SamplerVisibility = ShaderStage::None;
+        //                     Slot      Visibility   Range
+        std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>> m_SRVAndUAVAndCBVRanges;
+        std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>> m_SamplerRanges;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
