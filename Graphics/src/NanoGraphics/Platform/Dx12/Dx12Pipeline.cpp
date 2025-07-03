@@ -22,10 +22,10 @@ namespace Nano::Graphics::Internal
         // Create root signature
         {
             std::vector<CD3DX12_ROOT_PARAMETER> parameters;
-            parameters.reserve(specs.BindingLayouts.size() * 5);
+            parameters.reserve(m_Specification.BindingLayouts.size() * 5);
 
-            // Create one big list of parameters
-            for (auto& layout : specs.BindingLayouts)
+            // Create one big list of parameters for descriptors
+            for (auto& layout : m_Specification.BindingLayouts)
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
                 
@@ -51,6 +51,12 @@ namespace Nano::Graphics::Internal
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
                     m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
+            }
+
+            // Push constants
+            {
+                // TODO: ...
+                NG_ASSERT((m_Specification.PushConstants.Size == 0), "[Dx12GraphicsPipeline] PushConstants are currently not supported on dx12.");
             }
 
             // Create root signature with these parameters
@@ -153,6 +159,8 @@ namespace Nano::Graphics::Internal
             desc.NumRenderTargets = 1;
             desc.SampleMask = ~0u;
 
+            // FUTURE TODO: Cached pipeline state like vulkans pipeline cache.
+
             DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
         }
 
@@ -193,13 +201,105 @@ namespace Nano::Graphics::Internal
     Dx12ComputePipeline::Dx12ComputePipeline(const Device& device, const ComputePipelineSpecification& specs)
         : m_Specification(specs)
     {
+        NG_ASSERT(m_Specification.ComputeShader, "[Dx12ComputePipeline] To create a compute pipeline a compute shader must be passed in.");
+
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
-        // TODO: ...
+        // Create root signature
+        {
+            std::vector<CD3DX12_ROOT_PARAMETER> parameters;
+            parameters.reserve(m_Specification.BindingLayouts.size() * 5);
+
+            // Create one big list of parameters for descriptors
+            for (auto& layout : m_Specification.BindingLayouts)
+            {
+                Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
+
+                // TODO: ...
+                NG_ASSERT(!dxLayout.IsBindless(), "[Dx12GraphicsPipeline] A bindless layout is currently not supported.");
+
+                BindingLayoutSpecification bindingSpecs = dxLayout.GetBindingSpecification();
+
+                const auto& srvAndUAVAndCBVRanges = dxLayout.GetD3D12SRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = dxLayout.GetD3D12SamplerRanges();
+
+                // Reserve space
+                m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
+                m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.reserve(samplerRanges.size());
+
+                for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
+                {
+                    parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
+                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                }
+                for (const auto& [slot, visibility, range] : samplerRanges)
+                {
+                    parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
+                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                }
+            }
+
+            // Push constants
+            {
+                // TODO: ...
+                NG_ASSERT((m_Specification.PushConstants.Size == 0), "[Dx12ComputePipeline] PushConstants are currently not supported on dx12.");
+            }
+
+            // Create root signature with these parameters
+            CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc = {};
+
+            if (!parameters.empty())
+                rootSigDesc.Init(static_cast<UINT>(parameters.size()), parameters.data());
+
+            rootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+            DxPtr<ID3DBlob> serializedRootSig;
+            DxPtr<ID3DBlob> errorBlob;
+            DX_VERIFY(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSig, &errorBlob));
+
+            DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&m_RootSignature)));
+        }
+
+        // Create pipeline state
+        {
+            D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
+            desc.pRootSignature = m_RootSignature.Get();
+            desc.CS = api_cast<Dx12Shader*>(m_Specification.ComputeShader)->GetD3D12ShaderByteCode();
+            desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+            // FUTURE TODO: Cached pipeline state like vulkans pipeline cache.
+
+            DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
+
+            if constexpr (Information::Validation)
+            {
+                if (!m_Specification.DebugName.empty())
+                {
+                    dxDevice.GetContext().SetDebugName(m_PipelineState.Get(), m_Specification.DebugName);
+                    dxDevice.GetContext().SetDebugName(m_RootSignature.Get(), std::format("RootSignature for: {0}", m_Specification.DebugName));
+                }
+            }
+        }
     }
 
     Dx12ComputePipeline::~Dx12ComputePipeline()
     {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Internal getters
+    ////////////////////////////////////////////////////////////////////////////////////
+    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
+    {
+        NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
+        //NG_ASSERT((m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for SRVAndUAVAndCBV root parameter, but this index was never initialized.");
+        return m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices;
+    }
+
+    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSamplerRootIndices(uint8_t registerSpace) const
+    {
+        NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
+        //NG_ASSERT((m_RootParameterIndices[registerSpace].SamplerIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for Sampler root parameter, but this index was never initialized.");
+        return m_RootParameterIndices[registerSpace].SamplerIndices;
     }
 
 }

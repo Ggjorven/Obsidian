@@ -122,6 +122,7 @@ namespace Nano::Graphics::Internal
 		DxPtr<ID3D12GraphicsCommandList10> m_CommandList = nullptr;
 
 		const GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
+		const ComputePipeline* m_CurrentComputePipeline = nullptr;
 
 		uint64_t m_SignaledValue = 0;
 		HANDLE m_WaitIdleEvent = nullptr;

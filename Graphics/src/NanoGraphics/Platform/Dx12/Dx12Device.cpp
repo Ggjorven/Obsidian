@@ -265,7 +265,12 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::DestroyComputePipeline(ComputePipeline& pipeline) const
     {
-        // TODO: ...
+        Dx12ComputePipeline& dxPipeline = *api_cast<Dx12ComputePipeline*>(&pipeline);
+
+        m_Context.Destroy([rootSignature = dxPipeline.GetD3D12RootSignature(), pipelineState = dxPipeline.GetD3D12PipelineState()]() {}); // Note: Holding a reference to the resource is enough to keep it alive (and destroy when the scope ends)
+
+        dxPipeline.m_RootSignature = nullptr;
+        dxPipeline.m_PipelineState = nullptr;
     }
 
 }

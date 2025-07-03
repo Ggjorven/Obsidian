@@ -373,6 +373,8 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("Dx12CommandList::BindPipeline()");
 
         m_CurrentGraphicsPipeline = &pipeline;
+        m_CurrentComputePipeline = nullptr;
+
         const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
 
         // Bind pipeline
@@ -392,47 +394,103 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("Dx12CommandList::BindPipeline()");
 
         m_CurrentGraphicsPipeline = nullptr;
+        m_CurrentComputePipeline = &pipeline;
+
+        const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
+
+        // Bind pipeline
+        m_CommandList->SetPipelineState(dxPipeline.GetD3D12PipelineState().Get());
+        m_CommandList->SetComputeRootSignature(dxPipeline.GetD3D12RootSignature().Get());
+
+        // Bind heaps for BindingSet(s)
+        const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
+
+        auto heaps = std::to_array<ID3D12DescriptorHeap*>({ resources.GetSRVAndUAVAndCBVHeap().GetD3D12DescriptorHeap().Get(), resources.GetSamplerHeap().GetD3D12DescriptorHeap().Get() });
+        m_CommandList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
     }
 
     void Dx12CommandList::BindBindingSet(const BindingSet& set)
     {
         NG_PROFILE("Dx12CommandList::BindBindingSet()");
 
-        NG_ASSERT(m_CurrentGraphicsPipeline, "[Dx12CommandList] A pipeline must be bound to bind bindingsets.");
+        NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[Dx12CommandList] A pipeline must be bound to bind bindingsets.");
         const Dx12BindingSet& dxSet = *api_cast<const Dx12BindingSet*>(&set);
-        const Dx12GraphicsPipeline& graphicsPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
-        const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
 
-        NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
-
-        const auto& srvAndUAVandCBVRootIndices = graphicsPipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
-        const auto& samplerRootIndices = graphicsPipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
-
-        if constexpr (Information::Validation)
+        // Graphics pipeline
+        if (m_CurrentGraphicsPipeline)
         {
-            const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
-            const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+            const Dx12GraphicsPipeline& graphicsPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
+            const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
 
-            if (!srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndices.empty()))
-                NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
-            if (!samplerRanges.empty() && (samplerRootIndices.empty()))
-                NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+            NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
+
+            const auto& srvAndUAVandCBVRootIndices = graphicsPipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
+            const auto& samplerRootIndices = graphicsPipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
+
+            if constexpr (Information::Validation)
+            {
+                const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+
+                if (!srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+                if (!samplerRanges.empty() && (samplerRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+            }
+
+            const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
+
+            // SRVs, UAVs & CBVs
+            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
+            {
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
+                m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
+            }
+
+            // Samplers
+            for (const auto& [slot, index] : samplerRootIndices)
+            {
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex() + layout.GetSlotToHeapOffset(slot));
+                m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
+            }
         }
-
-        const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
-
-        // SRVs, UAVs & CBVs
-        for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
+        // Compute pipeline
+        else
         {
-            CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
-            m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
-        }
+            const Dx12ComputePipeline& computePipeline = *api_cast<const Dx12ComputePipeline*>(m_CurrentComputePipeline);
+            const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
 
-        // Samplers
-        for (const auto& [slot, index] : samplerRootIndices)
-        {
-            CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex() + layout.GetSlotToHeapOffset(slot));
-            m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
+            NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
+
+            const auto& srvAndUAVandCBVRootIndices = computePipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
+            const auto& samplerRootIndices = computePipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
+
+            if constexpr (Information::Validation)
+            {
+                const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+
+                if (!srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+                if (!samplerRanges.empty() && (samplerRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+            }
+
+            const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
+
+            // SRVs, UAVs & CBVs
+            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
+            {
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
+                m_CommandList->SetComputeRootDescriptorTable(index, handle);
+            }
+
+            // Samplers
+            for (const auto& [slot, index] : samplerRootIndices)
+            {
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex() + layout.GetSlotToHeapOffset(slot));
+                m_CommandList->SetComputeRootDescriptorTable(index, handle);
+            }
         }
     }
 

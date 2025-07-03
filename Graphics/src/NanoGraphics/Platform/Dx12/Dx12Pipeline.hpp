@@ -70,6 +70,8 @@ namespace Nano::Graphics::Internal
     class Dx12ComputePipeline
     {
     public:
+        using RootParameterIndices = Dx12GraphicsPipeline::RootParameterIndices;
+    public:
         // Constructors & Destructor
         Dx12ComputePipeline(const Device& device, const ComputePipelineSpecification& specs);
         ~Dx12ComputePipeline();
@@ -77,8 +79,21 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const ComputePipelineSpecification& GetSpecification() const { return m_Specification; }
 
+        // Internal getters
+        inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
+        inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
+
+        const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
+
     private:
         ComputePipelineSpecification m_Specification;
+
+        DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
+        DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
+
+        // Note: The index is the Set ID / Register space
+        std::array<RootParameterIndices, GraphicsPipelineSpecification::MaxBindings> m_RootParameterIndices = {};
 
         friend class Dx12Device;
     };
