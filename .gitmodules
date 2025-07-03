@@ -22,3 +22,6 @@
 [submodule "vendor/shaderc/ShaderCompiler"]
 	path = vendor/shaderc/ShaderCompiler
 	url = https://github.com/Ggjorven/ShaderCompiler.git
+[submodule "vendor/SPIRV-Cross/SPIRV-Cross"]
+	path = vendor/SPIRV-Cross/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

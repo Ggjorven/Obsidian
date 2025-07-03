@@ -159,8 +159,6 @@ namespace Nano::Graphics::Internal
             desc.NumRenderTargets = 1;
             desc.SampleMask = ~0u;
 
-            // FUTURE TODO: Cached pipeline state like vulkans pipeline cache.
-
             DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
         }
 
@@ -266,7 +264,6 @@ namespace Nano::Graphics::Internal
             desc.pRootSignature = m_RootSignature.Get();
             desc.CS = api_cast<Dx12Shader*>(m_Specification.ComputeShader)->GetD3D12ShaderByteCode();
             desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-            // FUTURE TODO: Cached pipeline state like vulkans pipeline cache.
 
             DX_VERIFY(dxDevice.GetContext().GetD3D12Device()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
 

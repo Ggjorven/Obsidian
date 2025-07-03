@@ -9,11 +9,11 @@
 
 #include <string_view>
 
-#include "Camera.hpp"
+#include "Common/Camera.hpp"
 
 using namespace Nano::Graphics;
 
-#if 0
+#if 1
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
 inline constexpr std::string_view g_VertexShader = R"(
@@ -49,8 +49,8 @@ layout(location = 0) out vec4 o_Colour;
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec2 v_TexCoord;
 
-layout (set = 0, binding = 1) uniform texture2D u_Texture;
-layout (set = 0, binding = 2) uniform sampler u_Sampler;
+layout (set = 0, binding = 1) uniform sampler u_Sampler;
+layout (set = 0, binding = 2) uniform texture2D u_Texture;
 
 void main()
 {

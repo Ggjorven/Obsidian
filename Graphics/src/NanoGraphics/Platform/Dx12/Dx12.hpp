@@ -68,6 +68,7 @@ namespace Nano::Graphics::Internal
         //void SetData(VmaAllocation allocation, void* data, size_t size) const;
         //void SetMappedData(void* mappedData, void* data, size_t size) const;
 
+        // Static getters
         inline static const D3D12MA::ALLOCATION_CALLBACKS* GetCallbacks() { return &s_Callbacks; }
 
     private:

@@ -491,7 +491,7 @@ namespace Nano::Graphics::Internal
 		{
 			if (m_IsShaderVisible)
 			{
-				NG_ASSERT((newSize < ((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) ? static_cast<uint32_t>(D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1) : static_cast<uint32_t>(D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE))), "[Dx12Resources::Heap] Size of new descriptor heap exceeds maximum size.");
+				NG_ASSERT((newSize < ((m_Type == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) ? static_cast<uint32_t>(D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1) : static_cast<uint32_t>(D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE))), "[Dx12DescriptorHeap] Size of new descriptor heap exceeds maximum size.");
 			}
 		}
 
