@@ -182,11 +182,11 @@ namespace Nano::Graphics
         uint32_t SampleCount = 1;
         uint32_t SampleQuality = 0;
 
-        bool IsShaderResource = false;
-        bool IsUnorderedAccessed = false;
-        bool IsRenderTarget = false;
+        bool IsShaderResource : 1 = false;
+        bool IsUnorderedAccessed : 1 = false;
+        bool IsRenderTarget : 1 = false;
 
-        bool IsTypeless = false; // For storage?
+        bool IsTypeless : 5 = false; // For storage
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 

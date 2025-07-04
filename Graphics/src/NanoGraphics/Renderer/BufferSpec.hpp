@@ -73,14 +73,14 @@ namespace Nano::Graphics
         size_t Size = 0;
         Format BufferFormat = Format::Unknown; // Note: Only necessary for Indexbuffer like R32UInt or R16UInt
 
-        bool IsVertexBuffer = false;
-        bool IsIndexBuffer = false;
-        bool IsUniformBuffer = false;
+        bool IsVertexBuffer : 1 = false;
+        bool IsIndexBuffer : 1 = false;
+        bool IsUniformBuffer : 1 = false;
         //bool IsAccelStructBuildInput = false;
         //bool IsAccelStructStorage = false;
 
-        bool IsTexel = false;
-        bool IsUnorderedAccessed = false;
+        bool IsTexel : 1 = false;
+        bool IsUnorderedAccessed : 4 = false;
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 

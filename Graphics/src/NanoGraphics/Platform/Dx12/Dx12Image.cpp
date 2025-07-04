@@ -217,7 +217,7 @@ namespace Nano::Graphics::Internal
 	// Constructor & Destructor
 	////////////////////////////////////////////////////////////////////////////////////
 	Dx12StagingImage::Dx12StagingImage(const Device& device, const ImageSpecification& specs, CpuAccessMode cpuAccessMode)
-		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs), m_SubresourceOffsets(GetSubresourceOffsets()), m_Buffer(device, BufferSpecification()
+		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(ImageSpecification(specs).SetIsShaderResource(true)), m_SubresourceOffsets(GetSubresourceOffsets()), m_Buffer(device, BufferSpecification()
 			.SetSize(GetBufferSize())
 			.SetCPUAccess(cpuAccessMode)
 			.SetPermanentState(specs.PermanentState)

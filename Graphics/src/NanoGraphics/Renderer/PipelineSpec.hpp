@@ -157,11 +157,11 @@ namespace Nano::Graphics
         RasterFillMode FillMode = RasterFillMode::Solid;
         RasterCullingMode CullingMode = RasterCullingMode::Back;
 
-        bool FrontCounterClockwise = false;
-        bool DepthClipEnable = false;
-        bool ScissorEnable = false;
-        bool MultisampleEnable = false;
-        bool AntialiasedLineEnable = false;
+        bool FrontCounterClockwise : 1 = false;
+        bool DepthClipEnable : 1 = false;
+        bool ScissorEnable : 1 = false;
+        bool MultisampleEnable : 1 = false;
+        bool AntialiasedLineEnable : 4 = false;
         int DepthBias = 0;
         float DepthBiasClamp = 0.f;
         float SlopeScaledDepthBias = 0.f;

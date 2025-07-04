@@ -352,8 +352,7 @@ public:
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
 				.SetWidthAndHeight(1, 1)
-				.SetImageDimension(ImageDimension::Image2D)
-				.SetIsShaderResource(true),
+				.SetImageDimension(ImageDimension::Image2D),
 				CpuAccessMode::Write
 			);
 			m_Device->StartTracking(stagingImage, ResourceState::Unknown);
