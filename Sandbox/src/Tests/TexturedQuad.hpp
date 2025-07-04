@@ -127,6 +127,46 @@ inline constexpr auto g_IndexData = std::to_array<uint32_t>({
 	2u, 3u, 0u
 });
 
+#include <cstdint>
+
+inline constexpr uint32_t g_Width = 8;
+inline constexpr uint32_t g_Height = 8;
+
+// RGBA pixel format, flipped vertically (bottom row first)
+inline constexpr uint8_t g_PixelArray[g_Width * g_Height * 4] = {
+	// Row 7 (bottom row)
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+
+	// Row 6
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+
+	// Row 5
+	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,
+	0, 0, 0, 255,       0, 0, 0, 255,   0, 0, 0, 255,	255, 255, 0, 255,
+
+	// Row 4
+	255, 255, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255,
+	255, 255, 0, 255,   255, 255, 0, 255,   0, 0, 0, 255, 255, 255, 0, 255,
+
+	// Row 3
+	255, 255, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+	255, 255, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+
+	// Row 2
+	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
+	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
+
+	// Row 1
+	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
+	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
+
+	// Row 0 (top row in original image)
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
+	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255
+};
+
 class Application
 {
 public:
@@ -224,7 +264,7 @@ public:
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-		});
+			});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
@@ -283,11 +323,11 @@ public:
 				.SetBlendState(BlendState()
 					.SetRenderTarget(BlendState::RenderTarget()
 						.SetBlendEnable(true)
-						.SetSrcBlend(BlendFactor::One)
-						.SetDstBlend(BlendFactor::Zero)
+						.SetSrcBlend(BlendFactor::SrcAlpha)
+						.SetDstBlend(BlendFactor::OneMinusSrcAlpha)
 						.SetBlendOperation(BlendOperation::Add)
 						.SetSrcBlendAlpha(BlendFactor::One)
-						.SetDstBlendAlpha(BlendFactor::Zero)
+						.SetDstBlendAlpha(BlendFactor::OneMinusSrcAlpha)
 						.SetBlendOpAlpha(BlendOperation::Add)
 						.SetColourWriteMask(ColourMask::All)
 					)
@@ -351,7 +391,7 @@ public:
 			// StagingImage
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
-				.SetWidthAndHeight(1, 1)
+				.SetWidthAndHeight(g_Width, g_Height)
 				.SetImageDimension(ImageDimension::Image2D),
 				CpuAccessMode::Write
 			);
@@ -365,14 +405,13 @@ public:
 				.SetImageDimension(ImageDimension::Image2D)
 				.SetPermanentState(ResourceState::ShaderResource)
 				.SetIsShaderResource(true)
-				.SetWidthAndHeight(1, 1)
+				.SetWidthAndHeight(g_Width, g_Height)
 				.SetMipLevels(1)
 				.SetDebugName("Temp image")
 			);
 			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 
-			uint32_t imageColour = 0xFFFF0000;
-			if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
+			if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), g_PixelArray, sizeof(g_PixelArray));
 
 			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 
@@ -413,11 +452,6 @@ public:
 
 			m_Device->DestroyBuffer(stagingBuffer);
 			m_Device->DestroyStagingImage(stagingImage);
-		}
-
-		// Uniform
-		{
-			
 		}
 	}
 	~Application()

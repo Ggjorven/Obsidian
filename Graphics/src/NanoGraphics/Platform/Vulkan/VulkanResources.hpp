@@ -394,7 +394,6 @@ namespace Nano::Graphics::Internal
         { BlendFactor::One,                     VK_BLEND_FACTOR_ONE },
         { BlendFactor::SrcColour,               VK_BLEND_FACTOR_SRC_COLOR },
         { BlendFactor::OneMinusSrcColour,       VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
-        { BlendFactor::OneMinusSrcColour,       VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
         { BlendFactor::SrcAlpha,                VK_BLEND_FACTOR_SRC_ALPHA },
         { BlendFactor::OneMinusSrcAlpha,        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA },
         { BlendFactor::DstAlpha,                VK_BLEND_FACTOR_DST_ALPHA },

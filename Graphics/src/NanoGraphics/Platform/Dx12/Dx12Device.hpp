@@ -66,6 +66,9 @@ namespace Nano::Graphics::Internal
         void MapStagingImage(const StagingImage& image, void*& memory) const;
         void UnmapStagingImage(const StagingImage& image) const;
 
+        void WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const;
+        void WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const;
+
         // Destruction methods
         void DestroySwapchain(Swapchain& swapchain) const;
 

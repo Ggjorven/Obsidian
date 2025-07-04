@@ -115,24 +115,59 @@ namespace Nano::Graphics::Internal
 
     void Dx12Device::MapBuffer(const Buffer& buffer, void*& memory) const
     {
+        NG_PROFILE("Dx12Device::MapBuffer()");
         const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
         dxBuffer.GetD3D12Resource()->Map(0, nullptr, &memory);
     }
 
     void Dx12Device::UnmapBuffer(const Buffer& buffer) const
     {
+        NG_PROFILE("Dx12Device::UnmapBuffer()");
         const Dx12Buffer& dxBuffer = *api_cast<const Dx12Buffer*>(&buffer);
         dxBuffer.GetD3D12Resource()->Unmap(0, nullptr);
     }
 
     void Dx12Device::MapStagingImage(const StagingImage& image, void*& memory) const
     {
+        NG_PROFILE("Dx12Device::MapStagingImage()");
         MapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())), memory);
     }
 
     void Dx12Device::UnmapStagingImage(const StagingImage& image) const
     {
+        NG_PROFILE("Dx12Device::UnmapStagingImage()");
         UnmapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())));
+    }
+
+    void Dx12Device::WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const
+    {
+        NG_PROFILE("Dx12Device::WriteBuffer()");
+
+        NG_ASSERT((size + offset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
+
+        void* bufferMemory;
+        MapBuffer(buffer, bufferMemory);
+
+        std::memcpy(static_cast<uint8_t*>(bufferMemory) + offset, memory, size);
+
+        UnmapBuffer(buffer);
+    }
+
+    void Dx12Device::WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const
+    {
+        NG_PROFILE("Dx12Device::WriteImage()");
+        const Dx12StagingImage& dxImage = *api_cast<const Dx12StagingImage*>(&image);
+        // TODO: ...
+        //const Dx12Buffer& dxBuffer = dxImage.GetDx12Buffer();
+        //
+        //NG_ASSERT((size + offset <= dxBuffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds stagingimage size.");
+        //
+        //void* bufferMemory;
+        //MapBuffer(dxBuffer, bufferMemory);
+        //
+        //std::memcpy(static_cast<uint8_t*>(bufferMemory) + offset, memory, size);
+        //
+        //UnmapBuffer(dxBuffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

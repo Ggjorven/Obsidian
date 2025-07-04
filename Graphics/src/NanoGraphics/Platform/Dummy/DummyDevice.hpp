@@ -46,6 +46,9 @@ namespace Nano::Graphics::Internal
         inline constexpr void MapStagingImage(const StagingImage& image, void*& memory) const { (void)image; memory = nullptr; }
         inline constexpr void UnmapStagingImage(const StagingImage& image) const { (void)image; }
 
+        inline constexpr void WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const { (void)buffer; (void)memory; (void)size; (void)offset; }
+        inline constexpr void WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const { (void)image; (void)memory; (void)size; (void)offset; }
+
         inline constexpr void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { (void)image; (void)subresources; (void)currentState; }
         inline constexpr void StartTracking(const StagingImage& image, ResourceState currentState) { (void)image; (void)currentState; }
         inline constexpr void StartTracking(const Buffer& buffer, ResourceState currentState) { (void)buffer; (void)currentState; }
