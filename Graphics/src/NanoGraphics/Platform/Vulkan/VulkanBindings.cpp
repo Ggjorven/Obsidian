@@ -237,10 +237,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex)
     {
-        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
-        const auto& item = vkLayout.GetItem(slot);
-
-        NG_ASSERT((item.Type == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
+        NG_ASSERT((api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout)->GetItem(slot).Type == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
         
         VulkanSampler& vulkanSampler = *api_cast<VulkanSampler*>(&sampler);
 

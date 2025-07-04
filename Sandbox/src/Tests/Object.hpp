@@ -1,6 +1,10 @@
 #include "Tests/TestBase.hpp"
 #include "Common/Camera.hpp"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+//#define TINYOBJLOADER_USE_MAPBOX_EARCUT
+#include <tinyobj/tinyobjloader.h>
+
 ////////////////////////////////////////////////////////////////////////////////////
 // Shaders
 ////////////////////////////////////////////////////////////////////////////////////
@@ -11,10 +15,12 @@ inline constexpr std::string_view g_VertexShader = R"(
 #version 460 core
 
 layout(location = 0) in vec3 a_Position;
-layout(location = 1) in vec2 a_TexCoord;
+layout(location = 1) in vec4 a_Colour;
+layout(location = 2) in vec2 a_TexCoord;
 
 layout(location = 0) out vec3 v_Position;
-layout(location = 1) out vec2 v_TexCoord;
+layout(location = 1) out vec4 v_Colour;
+layout(location = 2) out vec2 v_TexCoord;
 
 layout(std140, set = 0, binding = 0) uniform CameraSettings
 {
@@ -25,10 +31,10 @@ layout(std140, set = 0, binding = 0) uniform CameraSettings
 void main()
 {
     v_Position = a_Position;
+    v_Colour = a_Colour;
     v_TexCoord = a_TexCoord;
 
     gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
-    //gl_Position = vec4(a_Position, 1.0);
 }
 )";
 
@@ -38,16 +44,16 @@ inline constexpr std::string_view g_FragmentShader = R"(
 layout(location = 0) out vec4 o_Colour;
 
 layout(location = 0) in vec3 v_Position;
-layout(location = 1) in vec2 v_TexCoord;
+layout(location = 1) in vec4 v_Colour;
+layout(location = 2) in vec2 v_TexCoord;
 
-layout (set = 0, binding = 1) uniform sampler u_Sampler;
-layout (set = 0, binding = 2) uniform texture2D u_Texture;
+layout (set = 0, binding = 1) uniform texture2D u_Texture;
+layout (set = 0, binding = 2) uniform sampler u_Sampler;
 
 void main()
 {
 	// Combine texture and sampler
-    o_Colour = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
-	//o_Colour = vec4(v_TexCoord.x, v_TexCoord.y, 0.0, 1.0);
+    o_Colour = v_Colour * texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
 }
 )";
 #else
@@ -78,11 +84,8 @@ VSOutput main(VSInput input)
     output.v_TexCoord = input.a_TexCoord;
 
 	float4 worldPos = float4(input.a_Position, 1.0);
-    output.gl_Position = mul(Proj, mul(View, worldPos)); // Apply View and Proj transforms
+    output.gl_Position = mul(Proj, mul(View, worldPos));
     return output;
-    
-	//output.gl_Position = float4(input.a_Position, 1.0);
-    //return output;
 }
 )";
 
@@ -92,8 +95,8 @@ struct PSInput
     float2 v_TexCoord : TEXCOORD0;
 };
 
-SamplerState u_Sampler : register(s1, space0);
-Texture2D u_Texture : register(t2, space0);
+Texture2D u_Texture : register(t1, space0);
+SamplerState u_Sampler : register(s2, space0);
 
 float4 main(PSInput input) : SV_TARGET 
 {
@@ -107,69 +110,40 @@ float4 main(PSInput input) : SV_TARGET
 ////////////////////////////////////////////////////////////////////////////////////
 // Vertex data
 ////////////////////////////////////////////////////////////////////////////////////
-inline constexpr auto g_VertexData = std::to_array<float>({
-	// Positions				// UVs
-	-0.5f, -0.5f, 0.0f,			0.0f, 0.0f,
-	0.5f,  -0.5f, 0.0f,			1.0f, 0.0f,
-	0.5f,  0.5f,  0.0f,			1.0f, 1.0f,
-	-0.5f, 0.5f,  0.0f,			0.0f, 1.0f
-});
+struct Vertex
+{
+public:
+	Maths::Vec3<float> Position = { 0.0f, 0.0f, 0.0f };
+	Maths::Vec4<float> Colour = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Maths::Vec2<float> TexCoord;
 
-inline constexpr auto g_IndexData = std::to_array<uint32_t>({
-	0u, 1u, 2u,
-	2u, 3u, 0u
-});
-
-////////////////////////////////////////////////////////////////////////////////////
-// Image data
-////////////////////////////////////////////////////////////////////////////////////
-inline constexpr uint32_t g_Width = 8;
-inline constexpr uint32_t g_Height = 8;
-
-// RGBA pixel format, flipped vertically (bottom row first)
-inline constexpr uint8_t g_PixelArray[g_Width * g_Height * 4] = {
-	// Row 7 (bottom row)
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-
-	// Row 6
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-
-	// Row 5
-	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,
-	0, 0, 0, 255,       0, 0, 0, 255,   0, 0, 0, 255,	255, 255, 0, 255,
-
-	// Row 4
-	255, 255, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255,
-	255, 255, 0, 255,   255, 255, 0, 255,   0, 0, 0, 255, 255, 255, 0, 255,
-
-	// Row 3
-	255, 255, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-	255, 255, 0, 255,   255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-
-	// Row 2
-	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
-	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
-
-	// Row 1
-	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
-	255, 255, 0, 255,   0, 0, 0, 255,   0, 0, 0, 255,   255, 255, 0, 255,
-
-	// Row 0 (top row in original image)
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255,
-	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255
+public:
+	// Operators
+	inline constexpr bool operator == (const Vertex& other) const { return ((Position == other.Position) && (Colour == other.Colour) && (TexCoord == other.TexCoord)); }
+	inline constexpr bool operator != (const Vertex& other) const { return !(*this == other); }
 };
+
+namespace std 
+{
+	template<> 
+	struct hash<Vertex> 
+	{
+		size_t operator () (Vertex const& vertex) const 
+		{
+			return ((hash<Maths::Vec3<float>>()(vertex.Position) ^ (hash<Maths::Vec4<float>>()(vertex.Colour) << 1)) >> 1) ^ (hash<Maths::Vec2<float>>()(vertex.TexCoord) << 1);
+		}
+	};
+}
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Test
 ////////////////////////////////////////////////////////////////////////////////////
-class TexturedQuad : public TestBase
+class Object : public TestBase
 {
 public:
 	// Constructor & Destructor
-	TexturedQuad()
-		: TestBase(1280, 720, "TexturedQuad", [this](Event e) { OnEvent(e); }, [this](DeviceMessageType type, const std::string& msg) { OnDeviceMessage(type, msg); })
+	Object()
+		: TestBase(1280, 720, "Object", [this](Event e) { OnEvent(e); }, [this](DeviceMessageType type, const std::string& msg) { OnDeviceMessage(type, msg); })
 	{
 		// Commandpools & Commandlists
 		for (auto& pool : m_CommandPools)
@@ -230,11 +204,18 @@ public:
 			VertexAttributeSpecification()
 				.SetBufferIndex(0)
 				.SetLocation(1)
+				.SetFormat(Format::RGBA32Float)
+				.SetSize(VertexAttributeSpecification::AutoSize)
+				.SetOffset(VertexAttributeSpecification::AutoOffset)
+				.SetDebugName("a_Colour"),
+			VertexAttributeSpecification()
+				.SetBufferIndex(0)
+				.SetLocation(2)
 				.SetFormat(Format::RG32Float)
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-		});
+			});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
@@ -249,13 +230,13 @@ public:
 
 			// Fragment
 			.AddItem(BindingLayoutItem()
-				.SetSlot(2)
+				.SetSlot(1)
 				.SetVisibility(ShaderStage::Fragment)
 				.SetType(ResourceType::Image)
 				.SetDebugName("u_Texture")
 			)
 			.AddItem(BindingLayoutItem()
-				.SetSlot(1)
+				.SetSlot(2)
 				.SetVisibility(ShaderStage::Fragment)
 				.SetType(ResourceType::Sampler)
 				.SetDebugName("u_Sampler")
@@ -320,6 +301,61 @@ public:
 		m_Device->DestroyShader(vertexShader);
 		m_Device->DestroyShader(fragmentShader);
 
+		// Loading
+		std::unordered_map<Vertex, uint32_t> uniqueVertices;
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+		{
+			std::string inputfile = "resources/objects/viking_room.obj";
+			tinyobj::ObjReader reader;
+
+			bool success = reader.ParseFromFile(inputfile);
+
+			if (!reader.Error().empty())
+				OnDeviceMessage(DeviceMessageType::Error, reader.Error());
+
+			if (!reader.Warning().empty())
+				OnDeviceMessage(DeviceMessageType::Warn, reader.Warning());
+
+			auto& attrib = reader.GetAttrib();
+			auto& shapes = reader.GetShapes();
+			auto& materials = reader.GetMaterials();
+
+			for (const auto& shape : shapes) 
+			{
+				vertices.reserve(attrib.vertices.size());
+				uniqueVertices.reserve(vertices.capacity());
+				indices.reserve(shape.mesh.indices.size());
+
+				for (const auto& index : shape.mesh.indices) 
+				{
+					Vertex vertex = {};
+
+					vertex.Position = {
+						attrib.vertices[3 * index.vertex_index + 0],
+						attrib.vertices[3 * index.vertex_index + 1],
+						attrib.vertices[3 * index.vertex_index + 2]
+					};
+
+					// Note: We don't need to touch the colour
+
+					vertex.TexCoord = {
+						attrib.texcoords[2 * index.texcoord_index + 0],
+						attrib.texcoords[2 * index.texcoord_index + 1]
+					};
+
+					vertices.push_back(vertex);
+
+					if (uniqueVertices.count(vertex) == 0) {
+						uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+						vertices.push_back(vertex);
+					}
+
+					indices.push_back(uniqueVertices[vertex]);
+				}
+			}
+		}
+
 		// Init resources
 		{
 			CommandList initCommand = m_CommandPools[0]->AllocateList(CommandListSpecification()
@@ -330,7 +366,7 @@ public:
 			// Buffers
 			// StagingBuffer
 			Buffer stagingBuffer = m_Device->CreateBuffer(BufferSpecification()
-				.SetSize(sizeof(g_VertexData) + sizeof(g_IndexData))
+				.SetSize((vertices.size() * sizeof(Vertex)) + (indices.size() * sizeof(uint32_t)))
 				.SetCPUAccess(CpuAccessMode::Write)
 			);
 			m_Device->StartTracking(stagingBuffer, ResourceState::Unknown);
@@ -339,29 +375,29 @@ public:
 			m_Device->MapBuffer(stagingBuffer, bufferMemory);
 
 			m_VertexBuffer.Construct(m_Device.Get(), BufferSpecification()
-				.SetSize(sizeof(g_VertexData))
+				.SetSize((vertices.size() * sizeof(Vertex)))
 				.SetIsVertexBuffer(true)
 				.SetDebugName("Vertexbuffer")
 			);
 			m_Device->StartTracking(m_VertexBuffer.Get(), ResourceState::VertexBuffer);
-			if (bufferMemory) std::memcpy(bufferMemory, static_cast<const void*>(g_VertexData.data()), sizeof(g_VertexData));
-			initCommand.CopyBuffer(m_VertexBuffer.Get(), stagingBuffer, sizeof(g_VertexData));
+			if (bufferMemory) std::memcpy(bufferMemory, static_cast<const void*>(vertices.data()), (vertices.size() * sizeof(Vertex)));
+			initCommand.CopyBuffer(m_VertexBuffer.Get(), stagingBuffer, (vertices.size() * sizeof(Vertex)));
 
 			m_IndexBuffer.Construct(m_Device.Get(), BufferSpecification()
-				.SetSize(sizeof(g_IndexData))
+				.SetSize((indices.size() * sizeof(uint32_t)))
 				.SetFormat(Format::R32UInt)
 				.SetIsIndexBuffer(true)
 				.SetDebugName("Indexbuffer")
 			);
 			m_Device->StartTracking(m_IndexBuffer.Get(), ResourceState::IndexBuffer);
-			if (bufferMemory) std::memcpy(static_cast<uint8_t*>(bufferMemory) + sizeof(g_VertexData), g_IndexData.data(), sizeof(g_IndexData));
-			initCommand.CopyBuffer(m_IndexBuffer.Get(), stagingBuffer, sizeof(g_IndexData), sizeof(g_VertexData));
+			if (bufferMemory) std::memcpy(static_cast<uint8_t*>(bufferMemory) + (vertices.size() * sizeof(Vertex)), indices.data(), (indices.size() * sizeof(uint32_t)));
+			initCommand.CopyBuffer(m_IndexBuffer.Get(), stagingBuffer, (indices.size() * sizeof(uint32_t)), (vertices.size() * sizeof(Vertex)));
 
 			// Image & Sampler
 			// StagingImage
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
-				.SetWidthAndHeight(g_Width, g_Height)
+				.SetWidthAndHeight(1, 1)
 				.SetImageDimension(ImageDimension::Image2D),
 				CpuAccessMode::Write
 			);
@@ -372,14 +408,16 @@ public:
 				.SetImageDimension(ImageDimension::Image2D)
 				.SetPermanentState(ResourceState::ShaderResource)
 				.SetIsShaderResource(true)
-				.SetWidthAndHeight(g_Width, g_Height)
+				.SetWidthAndHeight(1, 1)
 				.SetMipLevels(1)
 				.SetDebugName("Temp image")
 			);
 			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 
-			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), static_cast<const void*>(g_PixelArray), sizeof(g_PixelArray));
-
+			// TODO: Image
+			uint32_t colour = 0xFFFFFFFF;
+			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), &colour, sizeof(uint32_t));
+			
 			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 
 			m_Sampler.Construct(m_Device.Get(), SamplerSpecification().SetDebugName(std::format("Sampler for: {0}", m_Image->GetSpecification().DebugName)));
@@ -410,8 +448,8 @@ public:
 			for (auto& set : m_Set0s)
 			{
 				set->SetItem(0, m_UniformBuffer.Get(), BufferRange());
-				set->SetItem(2, m_Image.Get(), ImageSubresourceSpecification());
-				set->SetItem(1, m_Sampler.Get());
+				set->SetItem(1, m_Image.Get(), ImageSubresourceSpecification());
+				set->SetItem(2, m_Sampler.Get());
 			}
 
 			initCommand.WaitTillComplete();
@@ -421,7 +459,7 @@ public:
 		}
 	}
 
-	~TexturedQuad()
+	~Object()
 	{
 		m_Device->UnmapBuffer(m_UniformBuffer.Get());
 
@@ -492,7 +530,7 @@ public:
 					list->BindBindingSet(m_Set0s[m_Swapchain->GetCurrentFrame()]);
 
 					list->DrawIndexed(DrawArguments()
-						.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
+						.SetVertexCount((m_IndexBuffer->GetSpecification().Size / sizeof(uint32_t)))
 						.SetInstanceCount(1)
 					);
 
@@ -518,10 +556,10 @@ private:
 		Nano::Events::EventHandler handler(e);
 		handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { m_Window->Close(); });
 		handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable
-		{
-			m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
-			m_Renderpass->ResizeFramebuffers();
-		});
+			{
+				m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
+				m_Renderpass->ResizeFramebuffers();
+			});
 
 		m_Camera->OnEvent(e);
 	}
@@ -549,6 +587,14 @@ private:
 			m_DestroyQueue.front()();
 			m_DestroyQueue.pop();
 		}
+	}
+
+	void Update(float deltaTime)
+	{
+		m_Camera->OnUpdate(deltaTime);
+
+		if (m_UniformMemory)
+			std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 	}
 
 private:
@@ -581,7 +627,7 @@ int Main(int argc, char* argv[])
 {
 	(void)argc; (void)argv;
 
-	TexturedQuad app;
+	Object app;
 	app.Run();
 	return 0;
 }

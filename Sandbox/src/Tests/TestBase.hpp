@@ -7,6 +7,7 @@
 
 #include <Nano/Nano.hpp>
 
+#include <cstdint>
 #include <string_view>
 
 using namespace Nano::Graphics;

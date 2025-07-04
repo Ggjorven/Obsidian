@@ -49,6 +49,7 @@ project "Sandbox"
 	includedirs
 	{
 		"src",
+		"vendor",
 
 		"%{wks.location}/Graphics/src",
 
