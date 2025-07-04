@@ -127,47 +127,72 @@ namespace Nano::Graphics::Internal
         dxBuffer.GetD3D12Resource()->Unmap(0, nullptr);
     }
 
-    void Dx12Device::MapStagingImage(const StagingImage& image, void*& memory) const
-    {
-        NG_PROFILE("Dx12Device::MapStagingImage()");
-        MapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())), memory);
-    }
-
-    void Dx12Device::UnmapStagingImage(const StagingImage& image) const
-    {
-        NG_PROFILE("Dx12Device::UnmapStagingImage()");
-        UnmapBuffer(*api_cast<const Buffer*>(&(api_cast<const Dx12StagingImage*>(&image)->GetDx12Buffer())));
-    }
-
-    void Dx12Device::WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const
+    void Dx12Device::WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset, size_t dstOffset) const
     {
         NG_PROFILE("Dx12Device::WriteBuffer()");
 
-        NG_ASSERT((size + offset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
+        NG_ASSERT((size + dstOffset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
 
         void* bufferMemory;
         MapBuffer(buffer, bufferMemory);
 
-        std::memcpy(static_cast<uint8_t*>(bufferMemory) + offset, memory, size);
+        std::memcpy(static_cast<uint8_t*>(bufferMemory) + dstOffset, static_cast<const uint8_t*>(memory) + srcOffset, size);
 
         UnmapBuffer(buffer);
     }
 
-    void Dx12Device::WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const
+    void Dx12Device::WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const
     {
         NG_PROFILE("Dx12Device::WriteImage()");
+
         const Dx12StagingImage& dxImage = *api_cast<const Dx12StagingImage*>(&image);
-        // TODO: ...
-        //const Dx12Buffer& dxBuffer = dxImage.GetDx12Buffer();
-        //
-        //NG_ASSERT((size + offset <= dxBuffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds stagingimage size.");
-        //
-        //void* bufferMemory;
-        //MapBuffer(dxBuffer, bufferMemory);
-        //
-        //std::memcpy(static_cast<uint8_t*>(bufferMemory) + offset, memory, size);
-        //
-        //UnmapBuffer(dxBuffer);
+        const Dx12Buffer& dxBuffer = dxImage.GetDx12Buffer();
+        const Buffer& buffer = *api_cast<const Buffer*>(&dxBuffer);
+
+        const FormatInfo& formatInfo = FormatToFormatInfo(dxImage.GetSpecification().ImageFormat);
+        ImageSliceSpecification resSlice = ResolveImageSlice(slice, image.GetSpecification());
+
+        void* imageMemory = nullptr;
+        MapBuffer(buffer, imageMemory);
+
+        Dx12StagingImage::SliceRegion region = dxImage.GetSliceRegion(resSlice.ImageMipLevel, resSlice.ImageArraySlice);
+
+        // Dimensions
+        UINT width = region.Footprint.Footprint.Width;
+        UINT height = region.Footprint.Footprint.Height;
+        UINT depth = region.Footprint.Footprint.Depth;
+        UINT rowPitch = region.Footprint.Footprint.RowPitch;
+
+        // Block-compressed and uncompressed support
+        UINT blocksWide = (width + formatInfo.BlockSize - 1) / formatInfo.BlockSize;
+        UINT blocksHigh = (height + formatInfo.BlockSize - 1) / formatInfo.BlockSize;
+
+        UINT rowSize = blocksWide * formatInfo.BytesPerBlock;
+        UINT slicePitch = rowPitch * blocksHigh;
+
+        NG_ASSERT((size <= static_cast<size_t>(slicePitch) * depth), "[Dx12Device] Source memory too small.");
+
+        uint8_t* dstBase = static_cast<uint8_t*>(imageMemory) + region.Offset;
+        const uint8_t* srcBase = static_cast<const uint8_t*>(memory);
+
+        // Note: We have to manually do every row, since dx12
+        // doesn't tightly pack the buffer like vulkan.
+        size_t srcOffset = 0;
+        for (UINT z = 0; z < depth; z++)
+        {
+            uint8_t* dstSlice = dstBase + z * slicePitch;
+
+            for (UINT y = 0; y < blocksHigh; y++)
+            {
+                void* dst = dstSlice + y * rowPitch;
+                const void* src = srcBase + srcOffset;
+
+                std::memcpy(dst, src, rowSize);
+                srcOffset += rowSize; // Note: Tightly packed source
+            }
+        }
+
+        UnmapBuffer(buffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

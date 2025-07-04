@@ -43,11 +43,9 @@ namespace Nano::Graphics::Internal
 
         inline constexpr void MapBuffer(const Buffer& buffer, void*& memory) const { (void)buffer; memory = nullptr; }
         inline constexpr void UnmapBuffer(const Buffer& buffer) const { (void)buffer; }
-        inline constexpr void MapStagingImage(const StagingImage& image, void*& memory) const { (void)image; memory = nullptr; }
-        inline constexpr void UnmapStagingImage(const StagingImage& image) const { (void)image; }
 
-        inline constexpr void WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const { (void)buffer; (void)memory; (void)size; (void)offset; }
-        inline constexpr void WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const { (void)image; (void)memory; (void)size; (void)offset; }
+        inline constexpr void WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset, size_t dstOffset) const { (void)buffer; (void)memory; (void)size; (void)srcOffset; (void)dstOffset; }
+        inline constexpr void WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const { (void)image; (void)slice; (void)memory; (void)size; }
 
         inline constexpr void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState) { (void)image; (void)subresources; (void)currentState; }
         inline constexpr void StartTracking(const StagingImage& image, ResourceState currentState) { (void)image; (void)currentState; }

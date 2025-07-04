@@ -639,7 +639,7 @@ namespace Nano::Graphics::Internal
         m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
         CommitBarriers();
 
-        auto srcRegion = dxSrc.GetSliceRegion(resSrcSlice);
+        auto srcRegion = dxSrc.GetSliceRegion(resSrcSlice.ImageMipLevel, resSrcSlice.ImageArraySlice);
 
         D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
         dstLocation.pResource = dxDst.GetD3D12Resource().Get();

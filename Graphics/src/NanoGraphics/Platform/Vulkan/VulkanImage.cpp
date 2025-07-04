@@ -214,7 +214,7 @@ namespace Nano::Graphics::Internal
         return size;
     }
 
-    VulkanStagingImage::Region VulkanStagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z)
+    VulkanStagingImage::Region VulkanStagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z) const
     {
         if (m_Specification.Depth != 1)
         {

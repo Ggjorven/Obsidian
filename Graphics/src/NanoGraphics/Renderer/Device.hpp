@@ -53,11 +53,9 @@ namespace Nano::Graphics
 
         inline void MapBuffer(const Buffer& buffer, void*& memory) const { return m_Impl->MapBuffer(buffer, memory); }
         inline void UnmapBuffer(const Buffer& buffer) const { return m_Impl->UnmapBuffer(buffer); }
-        inline void MapStagingImage(const StagingImage& image, void*& memory) const { return m_Impl->MapStagingImage(image, memory); }
-        inline void UnmapStagingImage(const StagingImage& image) const { return m_Impl->UnmapStagingImage(image); }
 
-        inline void WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset = 0) const { m_Impl->WriteBuffer(buffer, memory, size, offset); }
-        inline void WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset = 0) const { m_Impl->WriteImage(image, memory, size, offset); }
+        inline void WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) const { m_Impl->WriteBuffer(buffer, memory, size, srcOffset, dstOffset); }
+        inline void WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const { m_Impl->WriteImage(image, slice, memory, size); }
 
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline Swapchain CreateSwapchain(const SwapchainSpecification& specs) const { return Swapchain(*this, specs); }

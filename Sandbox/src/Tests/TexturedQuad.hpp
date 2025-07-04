@@ -1,18 +1,9 @@
-#include "NanoGraphics/Core/Logging.hpp"
-#include "NanoGraphics/Core/Window.hpp"
-
-#include "NanoGraphics/Renderer/Device.hpp"
-
-#include "NanoGraphics/Maths/Structs.hpp"
-
-#include <Nano/Nano.hpp>
-
-#include <string_view>
-
+#include "Tests/TestBase.hpp"
 #include "Common/Camera.hpp"
 
-using namespace Nano::Graphics;
-
+////////////////////////////////////////////////////////////////////////////////////
+// Shaders
+////////////////////////////////////////////////////////////////////////////////////
 #if 1
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::GLSL;
 
@@ -59,7 +50,6 @@ void main()
 	//o_Colour = vec4(v_TexCoord.x, v_TexCoord.y, 0.0, 1.0);
 }
 )";
-
 #else
 inline constexpr ShadingLanguage g_ShadingLanguage = ShadingLanguage::HLSL;
 
@@ -167,40 +157,13 @@ inline constexpr uint8_t g_PixelArray[g_Width * g_Height * 4] = {
 	255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255
 };
 
-class Application
+class TexturedQuad : public TestBase
 {
 public:
 	// Constructor & Destructor
-	Application()
+	TexturedQuad()
+		: TestBase(1280, 720, "TexturedQuad", [this](Event e) { OnEvent(e); }, [this](DeviceMessageType type, const std::string& msg) { OnDeviceMessage(type, msg); })
 	{
-		// Window
-		m_Window.Construct(WindowSpecification()
-			.SetTitle("First")
-			.SetWidthAndHeight(1280, 720)
-			.SetFlags(WindowFlags::Resizable | WindowFlags::Decorated | WindowFlags::Visible | WindowFlags::Focused | WindowFlags::FocusOnShow)
-			.SetEventCallback([this](Event e) { OnEvent(e); })
-		);
-
-		// Device
-		m_Device.Construct(DeviceSpecification()
-			.SetNativeWindow(m_Window->GetNativeWindow())
-			.SetMessageCallback([this](DeviceMessageType msgType, const std::string& message) { OnDeviceMessage(msgType, message); })
-			.SetDestroyCallback([this](DeviceDestroyFn fn) { m_DestroyQueue.push(fn); })
-		);
-
-		// Swapchain
-		m_Swapchain.Construct(m_Device.Get(), SwapchainSpecification()
-			.SetWindow(m_Window.Get())
-			.SetFormat(Format::BGRA8Unorm)
-			.SetColourSpace(ColourSpace::SRGB)
-#if defined(NG_PLATFORM_APPLE)
-			.SetVSync(true) // Note: Vulkan via MoltenVK without VSync causes bad screen tearing.
-#else
-			.SetVSync(false)
-#endif
-			.SetDebugName("Swapchain")
-		);
-
 		// Commandpools & Commandlists
 		for (auto& pool : m_CommandPools)
 			pool.Construct(m_Swapchain.Get(), CommandListPoolSpecification()
@@ -264,7 +227,7 @@ public:
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-			});
+		});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
@@ -397,9 +360,6 @@ public:
 			);
 			m_Device->StartTracking(stagingImage, ResourceState::Unknown);
 
-			void* imageMemory;
-			m_Device->MapStagingImage(stagingImage, imageMemory);
-
 			m_Image.Construct(m_Device.Get(), ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
 				.SetImageDimension(ImageDimension::Image2D)
@@ -411,7 +371,7 @@ public:
 			);
 			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 
-			if (imageMemory) std::memcpy(static_cast<uint8_t*>(imageMemory), g_PixelArray, sizeof(g_PixelArray));
+			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), static_cast<const void*>(g_PixelArray), sizeof(g_PixelArray));
 
 			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 
@@ -434,7 +394,6 @@ public:
 				std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 
 			// Destroy
-			m_Device->UnmapStagingImage(stagingImage);
 			m_Device->UnmapBuffer(stagingBuffer);
 
 			initCommand.Close();
@@ -454,7 +413,8 @@ public:
 			m_Device->DestroyStagingImage(stagingImage);
 		}
 	}
-	~Application()
+
+	~TexturedQuad()
 	{
 		m_Device->UnmapBuffer(m_UniformBuffer.Get());
 
@@ -480,70 +440,67 @@ public:
 			m_CommandPools[i]->FreeList(m_CommandLists[i].Get());
 			m_Swapchain->FreePool(m_CommandPools[i].Get());
 		}
-
-		m_Device->DestroySwapchain(m_Swapchain.Get());
-
-		m_Device->Wait();
-		FreeQueue();
 	}
 
 	// Methods
 	void Run()
 	{
-		double lastTime = 0.0;
-
 		while (m_Window->IsOpen())
 		{
-			if (m_Window->IsFocused()) [[likely]]
-				m_Window->PollEvents();
-			else
-				m_Window->WaitEvents(1.0); // Note: When the windows is out of focus it only updates every second
-
+			m_Window->PollEvents();
 			FreeQueue();
 
-			double time = m_Window->GetWindowTime(); // Note: We use m_Window->GetWindowTime() instead of Nano's dedicated timer class because steadyclock on MacOS is very weird and unstable.
-			Update(static_cast<float>(time - lastTime));
-			lastTime = time;
-
-			m_Swapchain->AcquireNextImage();
+			// Update
 			{
-				m_CommandPools[m_Swapchain->GetCurrentFrame()]->Reset();
-				auto& list = m_CommandLists[m_Swapchain->GetCurrentFrame()];
+				double deltaTime = GetDeltaTime();
+				m_Camera->OnUpdate(static_cast<float>(deltaTime));
 
-				list->Open();
-
-				list->StartRenderpass(RenderpassStartArgs()
-					.SetRenderpass(m_Renderpass.Get())
-
-					.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
-					.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
-
-					.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
-				);
-
-				list->BindPipeline(m_Pipeline.Get());
-
-				list->BindVertexBuffer(m_VertexBuffer.Get());
-				list->BindIndexBuffer(m_IndexBuffer.Get());
-
-				list->BindBindingSet(m_Set0s[m_Swapchain->GetCurrentFrame()]);
-
-				list->DrawIndexed(DrawArguments()
-					.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
-					.SetInstanceCount(1)
-				);
-
-				list->EndRenderpass(RenderpassEndArgs()
-					.SetRenderpass(m_Renderpass.Get())
-				);
-
-				list->Close();
-				list->Submit(CommandListSubmitArgs()
-					.SetWaitForSwapchainImage(true)
-					.SetOnFinishMakeSwapchainPresentable(true)
-				);
+				if (m_UniformMemory)
+					std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
 			}
-			m_Swapchain->Present();
+
+			// Rendering
+			{
+				m_Swapchain->AcquireNextImage();
+				{
+					m_CommandPools[m_Swapchain->GetCurrentFrame()]->Reset();
+					auto& list = m_CommandLists[m_Swapchain->GetCurrentFrame()];
+
+					list->Open();
+
+					list->StartRenderpass(RenderpassStartArgs()
+						.SetRenderpass(m_Renderpass.Get())
+
+						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
+						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
+
+						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+					);
+
+					list->BindPipeline(m_Pipeline.Get());
+
+					list->BindVertexBuffer(m_VertexBuffer.Get());
+					list->BindIndexBuffer(m_IndexBuffer.Get());
+
+					list->BindBindingSet(m_Set0s[m_Swapchain->GetCurrentFrame()]);
+
+					list->DrawIndexed(DrawArguments()
+						.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
+						.SetInstanceCount(1)
+					);
+
+					list->EndRenderpass(RenderpassEndArgs()
+						.SetRenderpass(m_Renderpass.Get())
+					);
+
+					list->Close();
+					list->Submit(CommandListSubmitArgs()
+						.SetWaitForSwapchainImage(true)
+						.SetOnFinishMakeSwapchainPresentable(true)
+					);
+				}
+				m_Swapchain->Present();
+			}
 		}
 	}
 
@@ -596,11 +553,6 @@ private:
 	}
 
 private:
-	Nano::Memory::DeferredConstruct<Window> m_Window = {};
-
-	Nano::Memory::DeferredConstruct<Device> m_Device = {};
-	Nano::Memory::DeferredConstruct<Swapchain> m_Swapchain = {};
-
 	std::array<Nano::Memory::DeferredConstruct<CommandListPool>, Information::FramesInFlight> m_CommandPools = { };
 	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_CommandLists = { };
 
@@ -630,7 +582,7 @@ int Main(int argc, char* argv[])
 {
 	(void)argc; (void)argv;
 
-	Application app;
+	TexturedQuad app;
 	app.Run();
 	return 0;
 }

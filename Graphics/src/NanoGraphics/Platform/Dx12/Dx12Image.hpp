@@ -150,7 +150,7 @@ namespace Nano::Graphics::Internal
 		inline Dx12Buffer& GetDx12Buffer() { return m_Buffer; }
 		inline const Dx12Buffer& GetDx12Buffer() const { return m_Buffer; }
 
-		SliceRegion GetSliceRegion(const ImageSliceSpecification& slice) const;
+		SliceRegion GetSliceRegion(MipLevel miplevel, ArraySlice arraySlice) const;
 	
 	private:
 		// Private methods

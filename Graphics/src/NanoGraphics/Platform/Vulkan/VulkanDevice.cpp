@@ -90,40 +90,35 @@ namespace Nano::Graphics::Internal
         m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
     }
 
-    void VulkanDevice::MapStagingImage(const StagingImage& image, void*& memory) const
-    {
-        NG_PROFILE("VulkanDevice::MapStagingImage()");
-        const VulkanBuffer& vulkanBuffer = api_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
-        NG_ASSERT(static_cast<bool>(vulkanBuffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
-        m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
-    }
-
-    void VulkanDevice::UnmapStagingImage(const StagingImage& image) const
-    {
-        NG_PROFILE("VulkanDevice::UnmapStagingImage()");
-        const VulkanBuffer& vulkanBuffer = api_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
-        m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
-    }
-
-    void VulkanDevice::WriteBuffer(const Buffer& buffer, void* memory, size_t size, size_t offset) const
+    void VulkanDevice::WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset, size_t dstOffset) const
     {
         NG_PROFILE("VulkanDevice::WriteBuffer()");
 
-        NG_ASSERT((size + offset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
+        NG_ASSERT((size + dstOffset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
 
         void* bufferMemory;
         MapBuffer(buffer, bufferMemory);
 
-        std::memcpy(static_cast<uint8_t*>(bufferMemory) + offset, memory, size);
+        std::memcpy(static_cast<uint8_t*>(bufferMemory) + dstOffset, static_cast<const uint8_t*>(memory) + srcOffset, size);
 
         UnmapBuffer(buffer);
     }
 
-    void VulkanDevice::WriteImage(const StagingImage& image, void* memory, size_t size, size_t offset) const
+    void VulkanDevice::WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const
     {
         NG_PROFILE("VulkanDevice::WriteImage()");
-        const VulkanStagingImage& dxImage = *api_cast<const VulkanStagingImage*>(&image);
-        WriteBuffer(*api_cast<const Buffer*>(&dxImage.GetVulkanBuffer()), memory, size, offset);
+        const VulkanStagingImage& vkImage = *api_cast<const VulkanStagingImage*>(&image);
+        const VulkanBuffer& vkBuffer = *api_cast<const VulkanBuffer*>(&vkImage.GetVulkanBuffer());
+        const Buffer& buffer = *api_cast<const Buffer*>(&vkBuffer);
+
+        VulkanStagingImage::Region region = vkImage.GetSliceRegion(slice.ImageMipLevel, slice.ImageArraySlice, 0);
+
+        void* imageMemory;
+        MapBuffer(buffer, imageMemory);
+
+        std::memcpy(static_cast<uint8_t*>(imageMemory) + region.Offset, static_cast<const uint8_t*>(memory), size);
+
+        UnmapBuffer(buffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

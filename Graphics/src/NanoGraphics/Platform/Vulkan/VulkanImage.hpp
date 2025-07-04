@@ -132,7 +132,7 @@ namespace Nano::Graphics::Internal
 		inline VulkanBuffer& GetVulkanBuffer() { return m_Buffer; }
 		inline const VulkanBuffer& GetVulkanBuffer() const { return m_Buffer; }
 
-		VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
+		VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z) const;
 
 	private:
 		// Private methods

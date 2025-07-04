@@ -233,10 +233,10 @@ namespace Nano::Graphics::Internal
 	////////////////////////////////////////////////////////////////////////////////////
 	// Internal getters
 	////////////////////////////////////////////////////////////////////////////////////
-	Dx12StagingImage::SliceRegion Dx12StagingImage::GetSliceRegion(const ImageSliceSpecification& slice) const
+	Dx12StagingImage::SliceRegion Dx12StagingImage::GetSliceRegion(MipLevel miplevel, ArraySlice arraySlice) const
 	{
 		SliceRegion ret;
-		const UINT subresource = CalculateSubresource(slice.ImageMipLevel, slice.ImageArraySlice, 0, m_Specification.MipLevels, m_Specification.ArraySize);
+		const UINT subresource = CalculateSubresource(miplevel, arraySlice, 0, m_Specification.MipLevels, m_Specification.ArraySize);
 
 		NG_ASSERT((subresource < m_SubresourceOffsets.size()), "[Dx12StagingImage] Subresource index exceeds internal subresource offsets count.");
 
