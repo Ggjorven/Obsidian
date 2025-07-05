@@ -48,7 +48,8 @@ namespace Nano::Graphics::Maths
 
 	// Note: The underlying maths library is glm, glm works in the opengl coordinate space
 	// we support multiple API's and not every API has the same projection space, so we have
-	// one general function to correct the projection matrix after all calculations have been done to it.
+	// one general function to correct the projection matrix to the current API's space
+	// after all calculations have been done to it.
 	Mat4<float> ApplyProjectionCorrection(const Mat4<float>& matrix);
 
 }

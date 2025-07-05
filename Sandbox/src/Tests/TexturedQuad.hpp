@@ -1,5 +1,5 @@
 #include "Tests/TestBase.hpp"
-#include "Common/Camera.hpp"
+#include "Common/Camera2D.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Shaders
@@ -16,18 +16,18 @@ layout(location = 1) in vec2 a_TexCoord;
 layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec2 v_TexCoord;
 
-layout(std140, set = 0, binding = 0) uniform CameraSettings
+layout(std140, set = 0, binding = 0) uniform Camera2DSettings
 {
     mat4 View;
     mat4 Projection;
-} u_Camera;
+} u_Camera2D;
 
 void main()
 {
     v_Position = a_Position;
     v_TexCoord = a_TexCoord;
 
-    gl_Position = u_Camera.Projection * u_Camera.View * vec4(a_Position, 1.0);
+    gl_Position = u_Camera2D.Projection * u_Camera2D.View * vec4(a_Position, 1.0);
     //gl_Position = vec4(a_Position, 1.0);
 }
 )";
@@ -66,7 +66,7 @@ struct VSOutput
     float2 v_TexCoord  : TEXCOORD0;
 };
 
-cbuffer u_Camera : register(b0, space0)
+cbuffer u_Camera2D : register(b0, space0)
 {
     float4x4 View;
     float4x4 Proj;
@@ -244,7 +244,7 @@ public:
 				.SetSlot(0)
 				.SetVisibility(ShaderStage::Vertex)
 				.SetType(ResourceType::UniformBuffer)
-				.SetDebugName("u_Camera")
+				.SetDebugName("u_Camera2D")
 			)
 
 			// Fragment
@@ -386,19 +386,19 @@ public:
 
 			// Uniformbuffer
 			m_UniformBuffer.Construct(m_Device.Get(), BufferSpecification()
-				.SetSize(sizeof(CameraData))
+				.SetSize(sizeof(Camera2DData))
 				.SetIsUniformBuffer(true)
 				.SetCPUAccess(CpuAccessMode::Write)
-				.SetDebugName("Camera Uniform")
+				.SetDebugName("Camera2D Uniform")
 			);
 			m_Device->StartTracking(m_UniformBuffer.Get(), ResourceState::Unknown);
 
 			m_Device->MapBuffer(m_UniformBuffer.Get(), m_UniformMemory);
 
-			m_Camera.Construct(m_Window.Get());
+			m_Camera2D.Construct(m_Window.Get());
 
 			if (m_UniformMemory)
-				std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
+				std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera2D->GetCamera2D(), sizeof(Camera2DData));
 
 			// Destroy
 			m_Device->UnmapBuffer(stagingBuffer);
@@ -460,10 +460,10 @@ public:
 			// Update
 			{
 				double deltaTime = GetDeltaTime();
-				m_Camera->OnUpdate(static_cast<float>(deltaTime));
+				m_Camera2D->OnUpdate(static_cast<float>(deltaTime));
 
 				if (m_UniformMemory)
-					std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera->GetCamera(), sizeof(CameraData));
+					std::memcpy(static_cast<uint8_t*>(m_UniformMemory), &m_Camera2D->GetCamera2D(), sizeof(Camera2DData));
 			}
 
 			// Rendering
@@ -523,7 +523,7 @@ private:
 			m_Renderpass->ResizeFramebuffers();
 		});
 
-		m_Camera->OnEvent(e);
+		m_Camera2D->OnEvent(e);
 	}
 
 	void OnDeviceMessage(DeviceMessageType msgType, const std::string& message)
@@ -572,7 +572,7 @@ private:
 
 	void* m_UniformMemory;
 	Nano::Memory::DeferredConstruct<Buffer> m_UniformBuffer = {};
-	Nano::Memory::DeferredConstruct<Camera> m_Camera = {};
+	Nano::Memory::DeferredConstruct<Camera2D> m_Camera2D = {};
 
 	std::queue<DeviceDestroyFn> m_DestroyQueue = {};
 };

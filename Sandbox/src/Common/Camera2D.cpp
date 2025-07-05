@@ -1,20 +1,26 @@
-#include "Camera.hpp"
+#include "Camera2D.hpp"
 
 #include "NanoGraphics/Maths/Functions.hpp"
 
 #include <Nano/Nano.hpp>
 
-Camera::Camera(const Window& window)
+////////////////////////////////////////////////////////////////////////////////////
+// Constructor & Destructor
+////////////////////////////////////////////////////////////////////////////////////
+Camera2D::Camera2D(const Window& window)
     : m_Window(window), m_MousePosition({ m_Window.GetInput().GetCursorPosition() })
 {
     RecalculateProjectionMatrix();
 }
 
-Camera::~Camera()
+Camera2D::~Camera2D()
 {
 }
 
-void Camera::OnUpdate(float deltaTime)
+////////////////////////////////////////////////////////////////////////////////////
+// Methods
+////////////////////////////////////////////////////////////////////////////////////
+void Camera2D::OnUpdate(float deltaTime)
 {
     (void)deltaTime;
 
@@ -64,31 +70,34 @@ void Camera::OnUpdate(float deltaTime)
     RecalculateViewMatrix();
 }
 
-void Camera::OnEvent(Event& e)
+void Camera2D::OnEvent(Event& e)
 {
     Nano::Events::EventHandler handler(e);
 
     handler.Handle<MouseScrolledEvent>([this](MouseScrolledEvent& mse) -> bool
-        {
-            constexpr const float s_BaseZoomSpeed = 0.25f;
+    {
+        constexpr const float s_BaseZoomSpeed = 0.25f;
 
-            SetZoom(m_Zoom - (mse.GetYOffset() * s_BaseZoomSpeed));
-            return false;
-        });
+        SetZoom(m_Zoom - (mse.GetYOffset() * s_BaseZoomSpeed));
+        return false;
+    });
     handler.Handle<WindowResizeEvent>([this](WindowResizeEvent&) -> bool
-        {
-            RecalculateProjectionMatrix();
-            return false;
-        });
+    {
+        RecalculateProjectionMatrix();
+        return false;
+    });
 }
 
-void Camera::SetPosition(const Maths::Vec3<float>& position)
+////////////////////////////////////////////////////////////////////////////////////
+// Setters
+////////////////////////////////////////////////////////////////////////////////////
+void Camera2D::SetPosition(const Maths::Vec3<float>& position)
 {
     m_Position = position;
     RecalculateViewMatrix();
 }
 
-void Camera::SetZoom(float zoom)
+void Camera2D::SetZoom(float zoom)
 {
     constexpr const float s_MinZoom = 0.25f;
 
@@ -96,17 +105,20 @@ void Camera::SetZoom(float zoom)
     RecalculateProjectionMatrix();
 }
 
-void Camera::RecalculateViewMatrix()
+////////////////////////////////////////////////////////////////////////////////////
+// Private methods
+////////////////////////////////////////////////////////////////////////////////////
+void Camera2D::RecalculateViewMatrix()
 {
     Maths::Mat4<float> transform = Maths::Translate(Maths::Mat4<float>(1.0f), m_Position) * Maths::Rotate(Maths::Mat4<float>(1.0f), Maths::Radians(m_Rotation), Maths::Vec3<float>(0.0f, 0.0f, 1.0f));
 
-    m_Camera.ViewMatrix = Maths::Inverse(transform);
+    m_Camera2D.ViewMatrix = Maths::Inverse(transform);
 }
 
-void Camera::RecalculateProjectionMatrix()
+void Camera2D::RecalculateProjectionMatrix()
 {
     float aspectRatio = Maths::AspectRatio(m_Window.GetSize().x, m_Window.GetSize().y);
 
-    m_Camera.ProjectionMatrix = Maths::Orthographic(aspectRatio, m_Zoom);
-    m_Camera.ProjectionMatrix = Maths::ApplyProjectionCorrection(m_Camera.ProjectionMatrix);
+    m_Camera2D.ProjectionMatrix = Maths::Orthographic(aspectRatio, m_Zoom);
+    m_Camera2D.ProjectionMatrix = Maths::ApplyProjectionCorrection(m_Camera2D.ProjectionMatrix);
 }
