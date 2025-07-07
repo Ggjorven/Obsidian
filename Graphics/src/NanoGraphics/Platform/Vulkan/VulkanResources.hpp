@@ -713,10 +713,10 @@ namespace Nano::Graphics::Internal
         return Format::Unknown;
     }
 
-    inline constexpr VkFilter FilterModeToVkFilter(FilterMode filter) { return g_FilterMapping[static_cast<size_t>(filter)].VulkanFilter; }
-    inline constexpr VkSamplerAddressMode SamplerAddressModeToVkSamplerAddressMode(SamplerAddressMode mode) { return g_SamplerAddressMapping[static_cast<size_t>(mode)].VulkanSamplerAddressMode; }
+    inline constexpr VkFilter FilterModeToVkFilter(FilterMode filter) { NG_ASSERT((static_cast<size_t>(filter) < g_FilterMapping.size()), "Filter exceeds mapping size."); return g_FilterMapping[static_cast<size_t>(filter)].VulkanFilter; }
+    inline constexpr VkSamplerAddressMode SamplerAddressModeToVkSamplerAddressMode(SamplerAddressMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_SamplerAddressMapping.size()), "Mode exceeds mapping size."); return g_SamplerAddressMapping[static_cast<size_t>(mode)].VulkanSamplerAddressMode; }
 
-    inline constexpr VkColorSpaceKHR ColourSpaceToVkColorSpaceKHR(ColourSpace space) { return g_ColourSpaceMapping[static_cast<size_t>(space)].VulkanColorSpace; }
+    inline constexpr VkColorSpaceKHR ColourSpaceToVkColorSpaceKHR(ColourSpace space) { NG_ASSERT((static_cast<size_t>(space) < g_ColourSpaceMapping.size()), "Space exceeds mapping size."); return g_ColourSpaceMapping[static_cast<size_t>(space)].VulkanColorSpace; }
     inline constexpr ColourSpace VkColorSpaceKHRToColourSpace(VkColorSpaceKHR space)
     {
         switch (space)
@@ -727,15 +727,15 @@ namespace Nano::Graphics::Internal
         case VK_COLOR_SPACE_DISPLAY_NATIVE_AMD:         return ColourSpace::DisplayNative;
 
         default:
+            NG_UNREACHABLE();
             break;
         }
 
-        NG_UNREACHABLE();
         return ColourSpace::SRGB;
     }
 
-    inline constexpr VkAttachmentLoadOp LoadOperationToVkLoadOperation(LoadOperation operation) { return g_LoadOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
-    inline constexpr VkAttachmentStoreOp StoreOperationToVkStoreOperation(StoreOperation operation) { return g_StoreOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
+    inline constexpr VkAttachmentLoadOp LoadOperationToVkLoadOperation(LoadOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_LoadOperationMapping.size()), "Operation exceeds mapping size."); return g_LoadOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
+    inline constexpr VkAttachmentStoreOp StoreOperationToVkStoreOperation(StoreOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_StoreOperationMapping.size()), "Operation exceeds mapping size."); return g_StoreOperationMapping[static_cast<size_t>(operation)].VulkanOperation; }
 
     inline constexpr VkShaderStageFlags ShaderStageToVkShaderStageFlags(ShaderStage stage) 
     { 
@@ -753,10 +753,10 @@ namespace Nano::Graphics::Internal
         return result;
     }
 
-    inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
-    inline constexpr VkPrimitiveTopology PrimitiveTypeToVkPrimitiveTopology(PrimitiveType type) { return g_PrimitiveTypeMapping[static_cast<size_t>(type)].VulkanPrimitiveType; }
-    inline constexpr VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor factor) { return g_BlendFactorMapping[static_cast<size_t>(factor)].VulkanBlendFactor; }
-    inline constexpr VkBlendOp BlendOperationToVkBlendOp(BlendOperation operation) { return g_BlendOperationMapping[static_cast<size_t>(operation)].VulkanBlendOperation; }
+    inline constexpr VkPipelineBindPoint PipelineBindpointToVkBindpoint(PipelineBindpoint point) { NG_ASSERT((static_cast<size_t>(point) < g_PipelineBindpointMapping.size()), "Point exceeds mapping size."); return g_PipelineBindpointMapping[static_cast<size_t>(point)].VulkanBindpoint; }
+    inline constexpr VkPrimitiveTopology PrimitiveTypeToVkPrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeMapping.size()), "Type exceeds mapping size."); return g_PrimitiveTypeMapping[static_cast<size_t>(type)].VulkanPrimitiveType; }
+    inline constexpr VkBlendFactor BlendFactorToVkBlendFactor(BlendFactor factor) { NG_ASSERT((static_cast<size_t>(factor) < g_BlendFactorMapping.size()), "Factor exceeds mapping size."); return g_BlendFactorMapping[static_cast<size_t>(factor)].VulkanBlendFactor; }
+    inline constexpr VkBlendOp BlendOperationToVkBlendOp(BlendOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_BlendOperationMapping.size()), "Operation exceeds mapping size."); return g_BlendOperationMapping[static_cast<size_t>(operation)].VulkanBlendOperation; }
     
     inline constexpr VkColorComponentFlags ColourMaskToVkColorComponentFlags(ColourMask mask)
     {
@@ -774,13 +774,13 @@ namespace Nano::Graphics::Internal
         return result;
     }
 
-    inline constexpr VkPolygonMode RasterFillModeToVkPolygonMode(RasterFillMode mode) { return g_RasterFillModeMapping[static_cast<size_t>(mode)].VulkanPolygonMode; }
-    inline constexpr VkCullModeFlags RasterCullingModeToVkCullModeFlags(RasterCullingMode mode) { return g_RasterCullingModeMapping[static_cast<size_t>(mode)].VulkanCullModeFlags; }
+    inline constexpr VkPolygonMode RasterFillModeToVkPolygonMode(RasterFillMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_RasterFillModeMapping.size()), "Mode exceeds mapping size."); return g_RasterFillModeMapping[static_cast<size_t>(mode)].VulkanPolygonMode; }
+    inline constexpr VkCullModeFlags RasterCullingModeToVkCullModeFlags(RasterCullingMode mode) { NG_ASSERT((static_cast<size_t>(mode) < g_RasterCullingModeMapping.size()), "Mode exceeds mapping size."); return g_RasterCullingModeMapping[static_cast<size_t>(mode)].VulkanCullModeFlags; }
 
-    inline constexpr VkStencilOp StencilOperationToVkStencilOp(StencilOperation operation) { return g_StencilOperationMapping[static_cast<size_t>(operation)].VulkanStencilOperation; }
-    inline constexpr VkCompareOp ComparisonFuncToVkCompareOp(ComparisonFunc func) { return g_ComparisonFuncMapping[static_cast<size_t>(func)].VulkanCompareOperation; }
+    inline constexpr VkStencilOp StencilOperationToVkStencilOp(StencilOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_StencilOperationMapping.size()), "Operation exceeds mapping size."); return g_StencilOperationMapping[static_cast<size_t>(operation)].VulkanStencilOperation; }
+    inline constexpr VkCompareOp ComparisonFuncToVkCompareOp(ComparisonFunc func) { NG_ASSERT((static_cast<size_t>(func) < g_ComparisonFuncMapping.size()), "Func exceeds mapping size."); return g_ComparisonFuncMapping[static_cast<size_t>(func)].VulkanCompareOperation; }
 
-    inline constexpr VkDescriptorType ResourceTypeToVkDescriptorType(ResourceType type) { return g_ResourceTypeMapping[static_cast<size_t>(type)].VulkanDescriptorType; }
+    inline constexpr VkDescriptorType ResourceTypeToVkDescriptorType(ResourceType type) { NG_ASSERT((static_cast<size_t>(type) < g_ResourceTypeMapping.size()), "Type exceeds mapping size."); return g_ResourceTypeMapping[static_cast<size_t>(type)].VulkanDescriptorType; }
     
     inline constexpr VkImageUsageFlags ImageSpecificationToVkImageUsageFlags(const ImageSpecification& specs)
     {

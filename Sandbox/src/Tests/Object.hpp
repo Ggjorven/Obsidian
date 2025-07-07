@@ -218,7 +218,7 @@ public:
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-			});
+		});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
@@ -395,7 +395,6 @@ public:
 			initCommand.CopyBuffer(m_IndexBuffer.Get(), stagingBuffer, (indices.size() * sizeof(uint32_t)), (vertices.size() * sizeof(Vertex)));
 
 			// Image & Sampler
-			// StagingImage
 			// Load image
 			int width, height;
 			stbi_uc* pixels;
@@ -405,6 +404,7 @@ public:
 				NG_ASSERT(pixels, "Failed ot load image.");
 			}
 
+			// StagingImage
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
 				.SetWidthAndHeight(static_cast<uint32_t>(width), static_cast<uint32_t>(height))
@@ -424,7 +424,7 @@ public:
 			);
 			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 
-			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), pixels, static_cast<uint32_t>(width)* height * 4);
+			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), pixels, static_cast<size_t>(width) * height * 4);
 			stbi_image_free((void*)pixels); // Free the pixels
 			
 			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
@@ -528,7 +528,7 @@ public:
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
 
-						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+						.SetColourClear({ 0.0f, 0.0f, 0.0f, 1.0f })
 					);
 
 					list->BindPipeline(m_Pipeline.Get());
@@ -565,10 +565,10 @@ private:
 		Nano::Events::EventHandler handler(e);
 		handler.Handle<WindowCloseEvent>([&](WindowCloseEvent&) mutable { m_Window->Close(); });
 		handler.Handle<WindowResizeEvent>([&](WindowResizeEvent& wre) mutable
-			{
-				m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
-				m_Renderpass->ResizeFramebuffers();
-			});
+		{
+			m_Swapchain->Resize(wre.GetWidth(), wre.GetHeight());
+			m_Renderpass->ResizeFramebuffers();
+		});
 
 		m_Camera3D->OnEvent(e);
 	}

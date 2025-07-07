@@ -39,10 +39,6 @@ public:
     inline const Camera3DData& GetCamera3D() const { return m_Camera3D; }
 
 private:
-    // Private methods
-    bool OnMouseScroll(MouseScrolledEvent& e);
-
-private:
     const Window& m_Window;
     Camera3DData m_Camera3D;
 

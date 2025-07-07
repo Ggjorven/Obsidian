@@ -64,21 +64,8 @@ void Camera3D::OnEvent(Event& e)
 
     handler.Handle<MouseScrolledEvent>([this](MouseScrolledEvent& mse) -> bool
     {
-        OnMouseScroll(mse);
+        float change = m_Change * mse.GetYOffset();
+        m_Radius -= change;
         return false;
     });
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-// Private methods
-////////////////////////////////////////////////////////////////////////////////////
-bool Camera3D::OnMouseScroll(MouseScrolledEvent& e)
-{
-    if (m_Window.GetInput().IsMousePressed(MouseButton::Right))
-    {
-        float change = m_Change * e.GetYOffset();
-        m_Radius -= change;
-    }
-
-    return false;
 }
