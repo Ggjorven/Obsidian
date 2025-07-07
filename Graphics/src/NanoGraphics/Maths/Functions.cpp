@@ -83,6 +83,11 @@ namespace Nano::Graphics::Maths
 		return glm::radians(degrees);
 	}
 
+	float Clamp(float value, float min, float max)
+	{
+		return glm::clamp(value, min, max);
+	}
+
 	float AspectRatio(uint32_t width, uint32_t height)
 	{
 		return static_cast<float>(width) / static_cast<float>(height);

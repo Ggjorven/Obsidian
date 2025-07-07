@@ -24,29 +24,7 @@ void Camera2D::OnUpdate(float deltaTime)
 {
     (void)deltaTime;
 
-    //constexpr const float s_DeltaMovement = 1.0f;
-    //constexpr const float s_MouseSensitivity = 0.002625f;
-    //constexpr const float s_MouseSensitivity = 0.002725f;
     constexpr const float s_MouseSensitivity = 0.002775f;
-
-    /*
-    if (m_Window.GetInput().IsKeyPressed(Key::W))
-    {
-        m_Position.y += s_DeltaMovement * deltaTime;
-    }
-    if (m_Window.GetInput().IsKeyPressed(Key::A))
-    {
-        m_Position.x -= s_DeltaMovement * deltaTime;
-    }
-    if (m_Window.GetInput().IsKeyPressed(Key::S))
-    {
-        m_Position.y -= s_DeltaMovement * deltaTime;
-    }
-    if (m_Window.GetInput().IsKeyPressed(Key::D))
-    {
-        m_Position.x += s_DeltaMovement * deltaTime;
-    }
-    */
 
     if (m_Window.GetInput().IsMousePressed(MouseButton::Right))
     {

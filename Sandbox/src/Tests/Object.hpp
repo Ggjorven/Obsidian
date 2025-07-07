@@ -311,15 +311,11 @@ public:
 
 			bool success = reader.ParseFromFile(inputfile);
 
-			if (!reader.Error().empty())
-				OnDeviceMessage(DeviceMessageType::Error, reader.Error());
-
-			if (!reader.Warning().empty())
-				OnDeviceMessage(DeviceMessageType::Warn, reader.Warning());
+			if (!success && !reader.Error().empty())
+				NG_ASSERT(false, "{0}", reader.Error());
 
 			auto& attrib = reader.GetAttrib();
 			auto& shapes = reader.GetShapes();
-			auto& materials = reader.GetMaterials();
 
 			for (const auto& shape : shapes) 
 			{
@@ -346,7 +342,9 @@ public:
 
 					vertices.push_back(vertex);
 
-					if (uniqueVertices.count(vertex) == 0) {
+					// Cache the vertex
+					if (!uniqueVertices.contains(vertex)) 
+					{
 						uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
 						vertices.push_back(vertex);
 					}
@@ -530,7 +528,7 @@ public:
 					list->BindBindingSet(m_Set0s[m_Swapchain->GetCurrentFrame()]);
 
 					list->DrawIndexed(DrawArguments()
-						.SetVertexCount((m_IndexBuffer->GetSpecification().Size / sizeof(uint32_t)))
+						.SetVertexCount(static_cast<uint32_t>(m_IndexBuffer->GetSpecification().Size / sizeof(uint32_t)))
 						.SetInstanceCount(1)
 					);
 

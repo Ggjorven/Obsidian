@@ -25,8 +25,6 @@ public:
 class Camera3D
 {
 public:
-    enum class State : uint8_t { None = 0, ArcBall, FlyCam };
-public:
     // Constructor & Destructor
     Camera3D(const Window& window);
     ~Camera3D();
@@ -35,28 +33,18 @@ public:
     void OnUpdate(float deltaTime);
     void OnEvent(Event& e);
 
-    void SwitchState();
-
     // Getters
-    inline float& GetFOV() { return m_FOV; }
-    inline float& GetFlyCamSpeed() { return m_MovementSpeed; }
-    inline float& GetArcBallSpeed() { return m_Speed; }
-
-    inline State GetState() const { return m_State; }
-    inline const Camera3DData& GetCamera3D() const { return m_Camera3DData; }
+    inline const Maths::Mat4<float>& GetViewMatrix() const { return m_Camera3D.ViewMatrix; }
+    inline const Maths::Mat4<float>& GetProjectionMatrix() const { return m_Camera3D.ProjectionMatrix; }
+    inline const Camera3DData& GetCamera3D() const { return m_Camera3D; }
 
 private:
     // Private methods
-    void UpdateArcBall(float deltaTime);
-    void UpdateFlyCam(float deltaTime);
-
     bool OnMouseScroll(MouseScrolledEvent& e);
-
-    void UpdateMatrices();
 
 private:
     const Window& m_Window;
-    Camera3DData m_Camera3DData;
+    Camera3DData m_Camera3D;
 
     // Settings
     Maths::Vec3<float> m_Position = { 0.0f, 0.0f, 0.0f };
@@ -72,18 +60,13 @@ private:
     Maths::Vec3<float> m_Up = { 0.0f, 1.0f, 0.0f };
     Maths::Vec3<float> m_Right = { 1.0f, 0.0f, 0.0f };
 
-    // Main
-    State m_State = State::ArcBall; // Set default here
-
-    // Flycam
-    float m_MovementSpeed = 5.0f;
-    float m_MouseSensitivity = 0.1f;
-
-    bool m_FirstUpdate = true;
-    
     // ArcBall
     float m_Radius = 4.0f;
     float m_Change = 0.5f;
 
     float m_Speed = 0.005f;
+
+    float m_Theta = 0.0f;
+    float m_Phi = 0.0f;
+    Maths::Vec2<double> m_LastPosition = { 0.0f, 0.0f };
 };
