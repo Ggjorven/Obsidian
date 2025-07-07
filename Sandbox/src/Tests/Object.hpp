@@ -5,6 +5,9 @@
 //#define TINYOBJLOADER_USE_MAPBOX_EARCUT
 #include <tinyobj/tinyobjloader.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 ////////////////////////////////////////////////////////////////////////////////////
 // Shaders
 ////////////////////////////////////////////////////////////////////////////////////
@@ -337,7 +340,7 @@ public:
 
 					vertex.TexCoord = {
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 					};
 
 					vertices.push_back(vertex);
@@ -393,9 +396,18 @@ public:
 
 			// Image & Sampler
 			// StagingImage
+			// Load image
+			int width, height;
+			stbi_uc* pixels;
+			{
+				int texChannels;
+				pixels = stbi_load("resources/images/viking_room.png", &width, &height, &texChannels, STBI_rgb_alpha);
+				NG_ASSERT(pixels, "Failed ot load image.");
+			}
+
 			StagingImage stagingImage = m_Device->CreateStagingImage(ImageSpecification()
 				.SetImageFormat(Format::RGBA8Unorm)
-				.SetWidthAndHeight(1, 1)
+				.SetWidthAndHeight(static_cast<uint32_t>(width), static_cast<uint32_t>(height))
 				.SetImageDimension(ImageDimension::Image2D),
 				CpuAccessMode::Write
 			);
@@ -406,15 +418,14 @@ public:
 				.SetImageDimension(ImageDimension::Image2D)
 				.SetPermanentState(ResourceState::ShaderResource)
 				.SetIsShaderResource(true)
-				.SetWidthAndHeight(1, 1)
+				.SetWidthAndHeight(static_cast<uint32_t>(width), static_cast<uint32_t>(height))
 				.SetMipLevels(1)
 				.SetDebugName("Temp image")
 			);
 			m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 
-			// TODO: Image
-			uint32_t colour = 0xFFFFFFFF;
-			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), &colour, sizeof(uint32_t));
+			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), pixels, static_cast<uint32_t>(width)* height * 4);
+			stbi_image_free((void*)pixels); // Free the pixels
 			
 			initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 
