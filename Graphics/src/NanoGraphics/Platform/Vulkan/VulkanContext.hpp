@@ -27,7 +27,6 @@ namespace Nano::Graphics::Internal
     public:
         // Settings
         inline constexpr static const std::tuple<uint8_t, uint8_t> Version = { 1, 3 };
-        inline constexpr static const bool Validation = (Information::Configuration != Information::Structs::Configuration::Dist);
         inline constexpr static auto ValidationLayers = std::to_array<const char*>({
             "VK_LAYER_KHRONOS_validation",
 

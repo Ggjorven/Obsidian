@@ -78,8 +78,8 @@ namespace Nano::Graphics::Internal
 		inline constexpr uint8_t GetCurrentFrame() const { return m_CurrentFrame; }
 		inline constexpr uint8_t GetAcquiredImage() const { return m_CurrentFrame; }
 
-		inline Image& GetImage(uint8_t frame) { return *reinterpret_cast<Image*>(&m_Images[frame].Get()); }
-		inline const Image& GetImage(uint8_t frame) const { return *reinterpret_cast<const Image*>(&m_Images[frame].Get()); }
+		inline Image& GetImage(uint8_t frame) { return m_Images[frame].Get(); }
+		inline const Image& GetImage(uint8_t frame) const { return m_Images[frame].Get(); }
 
 		inline constexpr uint8_t GetImageCount() const { return static_cast<uint8_t>(m_Images.size()); }
 

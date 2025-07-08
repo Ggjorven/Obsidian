@@ -6,7 +6,7 @@
 #include <span>
 #include <vector>
 #include <variant>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -57,17 +57,17 @@ namespace Nano::Graphics
     public:
         ShaderStage Stage = ShaderStage::None;
         std::string_view MainName = "main";
-        std::variant<std::vector<char>, std::span<const char>> SPIRV = {};
+        std::variant<std::vector<uint32_t>, std::span<const uint32_t>> SPIRV = {};
         
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
         inline constexpr ShaderSpecification& SetShaderStage(ShaderStage stage) { Stage = stage; return *this; }
         inline constexpr ShaderSpecification& SetMainName(std::string_view name) { MainName = name; return *this; }
-        inline ShaderSpecification& SetSPIRV(std::vector<char>&& ownedSPIRV) { SPIRV = std::move(ownedSPIRV); return *this; }
-        inline constexpr ShaderSpecification& SetSPIRV(std::span<const char> viewedSPIRV) { SPIRV = viewedSPIRV; return *this; }
-        inline constexpr ShaderSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline ShaderSpecification& SetSPIRV(std::vector<uint32_t>&& ownedSPIRV) { SPIRV = std::move(ownedSPIRV); return *this; }
+        inline constexpr ShaderSpecification& SetSPIRV(std::span<const uint32_t> viewedSPIRV) { SPIRV = viewedSPIRV; return *this; }
+        inline ShaderSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
 }

@@ -54,10 +54,9 @@ namespace Nano::Graphics::Internal
         for (const auto& [_, binding] : bindingMap)
             m_BindingDescriptions.push_back(binding);
 
-        // build attribute descriptions
+        // Build attribute descriptions
         m_AttributeDescriptions.resize(static_cast<size_t>(totalAttributeArraySize));
 
-        uint32_t attributeLocation = 0;
         for (const VertexAttributeSpecification& spec : m_Attributes)
         {
             uint32_t elementSize = FormatToFormatInfo(spec.VertexFormat).BytesPerBlock;
@@ -65,15 +64,13 @@ namespace Nano::Graphics::Internal
 
             for (uint32_t slot = 0; slot < spec.ArraySize; slot++)
             {
-                auto& outAttrib = m_AttributeDescriptions[attributeLocation];
+                auto& outAttrib = m_AttributeDescriptions[spec.Location];
 
-                outAttrib.location = attributeLocation;
+                outAttrib.location = spec.Location;
                 outAttrib.binding = spec.BufferIndex;
                 outAttrib.format = FormatToVkFormat(spec.VertexFormat);
                 outAttrib.offset = bufferOffset + spec.Offset;
                 bufferOffset += elementSize;
-
-                ++attributeLocation;
             }
         }
     }
@@ -115,7 +112,7 @@ namespace Nano::Graphics::Internal
         const VulkanDevice& vulkanDevice = *api_cast<const VulkanDevice*>(&device);
 
         // Validation checks
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (m_Specification.IsIndexBuffer)
             {
@@ -156,37 +153,37 @@ namespace Nano::Graphics::Internal
         size_t size = 0;
         // Size helper
         {
-            if (m_Specification.IsDynamic)
-            {
-                NG_ASSERT((m_Specification.DynamicElements != 0), "[VkBuffer] Dynamic element count must not equal zero when dynamic is enabled.");
-
-                VkPhysicalDeviceProperties2 properties = {};
-                properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-
-                vkGetPhysicalDeviceProperties2(vulkanDevice.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
-
-                uint64_t alignment = properties.properties.limits.minUniformBufferOffsetAlignment;
-                uint64_t atomSize = properties.properties.limits.nonCoherentAtomSize;
-
-                alignment = std::max(alignment, atomSize);
-
-                NG_ASSERT(((alignment & (alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
-
-                size = (size + alignment - 1) & ~(alignment - 1);
-                m_Specification.Size = size;
-
-                size *= m_Specification.DynamicElements;
-
-                if constexpr (VulkanContext::Validation)
-                {
-                    if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
-                    {
-                        vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
-                        m_Specification.CpuAccess |= CpuAccessMode::Write;
-                    }
-                }
-            }
-            else if (m_Specification.Size < 65536) // Vulkan allows for <= 64kb buffer updates to be done inline via vkCmdUpdateBuffer, but must be a multiple of 4
+            //if (m_Specification.IsDynamic)
+            //{
+            //    NG_ASSERT((m_Specification.DynamicElements != 0), "[VkBuffer] Dynamic element count must not equal zero when dynamic is enabled.");
+            //
+            //    VkPhysicalDeviceProperties2 properties = {};
+            //    properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            //
+            //    vkGetPhysicalDeviceProperties2(vulkanDevice.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
+            //
+            //    uint64_t alignment = properties.properties.limits.minUniformBufferOffsetAlignment;
+            //    uint64_t atomSize = properties.properties.limits.nonCoherentAtomSize;
+            //
+            //    alignment = std::max(alignment, atomSize);
+            //
+            //    NG_ASSERT(((alignment & (alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
+            //
+            //    size = (size + alignment - 1) & ~(alignment - 1);
+            //    m_Specification.Size = size;
+            //
+            //    size *= m_Specification.DynamicElements;
+            //
+            //    if constexpr (Information::Validation)
+            //    {
+            //        if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
+            //        {
+            //            vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
+            //            m_Specification.CpuAccess |= CpuAccessMode::Write;
+            //        }
+            //    }
+            //}
+            /*else*/ if (m_Specification.Size < 65536) // Vulkan allows for <= 64kb buffer updates to be done inline via vkCmdUpdateBuffer, but must be a multiple of 4
                 size = (m_Specification.Size + 3) & ~3ull;
             else
                 size = m_Specification.Size;
@@ -194,7 +191,7 @@ namespace Nano::Graphics::Internal
 
         m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, size, bufferUsage, 0);
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
             {

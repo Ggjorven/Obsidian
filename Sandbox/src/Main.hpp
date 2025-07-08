@@ -161,16 +161,19 @@ public:
 		);
 
 		// Commandlists
-		m_CommandPool.Construct(m_Swapchain.Get(), CommandListPoolSpecification().SetDebugName("CommandPool"));
 		for (size_t i = 0; i < m_RenderpassLists.size(); i++)
 		{
-			std::string debugName = std::format("RenderpassList({0}) for: {1}", i, m_CommandPool->GetSpecification().DebugName);
-			m_RenderpassLists[i].Construct(m_CommandPool.Get(), CommandListSpecification().SetDebugName(debugName));
+			m_CommandPools[i].Construct(m_Swapchain.Get(), CommandListPoolSpecification().SetDebugName("CommandPool"));
+		}
+		for (size_t i = 0; i < m_RenderpassLists.size(); i++)
+		{
+			std::string debugName = std::format("RenderpassList({0}) for: {1}", i, m_CommandPools[i]->GetSpecification().DebugName);
+			m_RenderpassLists[i].Construct(m_CommandPools[i].Get(), CommandListSpecification().SetDebugName(debugName));
 		}
 		for (size_t i = 0; i < m_ImGuiLists.size(); i++)
 		{
-			std::string debugName = std::format("ImguiList({0}) for: {1}", i, m_CommandPool->GetSpecification().DebugName);
-			m_ImGuiLists[i].Construct(m_CommandPool.Get(), CommandListSpecification().SetDebugName(debugName));
+			std::string debugName = std::format("ImguiList({0}) for: {1}", i, m_CommandPools[i]->GetSpecification().DebugName);
+			m_ImGuiLists[i].Construct(m_CommandPools[i].Get(), CommandListSpecification().SetDebugName(debugName));
 		}
 
 		// Renderpass & Framebuffers
@@ -225,8 +228,8 @@ public:
 
 		// Shaders
 		ShaderCompiler compiler;
-		std::vector<char> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), g_ShadingLanguage);
-		std::vector<char> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), g_ShadingLanguage);
+		std::vector<uint32_t> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), "main", g_ShadingLanguage);
+		std::vector<uint32_t> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), "main", g_ShadingLanguage);
 
 		Shader vertexShader = m_Device->CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" });
 		Shader fragmentShader = m_Device->CreateShader({ ShaderStage::Fragment, "main", fragmentSPIRV, "Fragment Shader" });
@@ -235,12 +238,14 @@ public:
 		m_InputLayout.Construct(m_Device.Get(), std::initializer_list<VertexAttributeSpecification>({
 			VertexAttributeSpecification()
 				.SetBufferIndex(0)
+				.SetLocation(0)
 				.SetFormat(Format::RGB32Float)
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_Position"),
 			VertexAttributeSpecification()
 				.SetBufferIndex(0)
+				.SetLocation(1)
 				.SetFormat(Format::RG32Float)
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
@@ -249,7 +254,6 @@ public:
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
-			.SetRegisterSpaceIsDescriptorSet(true)
 
 			// Vertex
 			.AddItem(BindingLayoutItem()
@@ -284,7 +288,7 @@ public:
 		);
 		for (size_t i = 0; i < m_Set0s.size(); i++)
 		{
-			m_Set0s[i].Construct(m_BindingSetPool0.Get());
+			m_Set0s[i].Construct(m_BindingSetPool0.Get(), BindingSetSpecification());
 		}
 
 		// Pipeline
@@ -333,7 +337,7 @@ public:
 
 		// Initialization
 		{
-			CommandList initCommand = m_CommandPool->AllocateList(CommandListSpecification().SetDebugName("InitCommand"));
+			CommandList initCommand = m_CommandPools[0]->AllocateList(CommandListSpecification().SetDebugName("InitCommand"));
 			initCommand.Open();
 
 			Buffer stagingBuffer = m_Device->CreateBuffer(BufferSpecification()
@@ -400,8 +404,8 @@ public:
 			);
 			m_Device->StartTracking(stagingImage, ResourceState::Unknown);
 
-			void* imageMemory;
-			m_Device->MapStagingImage(stagingImage, imageMemory);
+			uint32_t imageColour = 0xFF00FF00;
+			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), &imageColour, sizeof(uint32_t));
 
 			// Image
 			{
@@ -416,10 +420,6 @@ public:
 				);
 				m_Device->StartTracking(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceState::Unknown);
 				
-				uint32_t imageColour = 0xFF00FF00;
-				if (imageMemory) 
-					std::memcpy(static_cast<uint8_t*>(imageMemory), &imageColour, sizeof(imageColour));
-				
 				initCommand.CopyImage(m_Image.Get(), ImageSliceSpecification(), stagingImage, ImageSliceSpecification());
 			}
 
@@ -428,11 +428,10 @@ public:
 			m_Sampler.Construct(m_Device.Get(), SamplerSpecification().SetDebugName(samplerName));
 
 			// Destroy
-			m_Device->UnmapStagingImage(stagingImage);
 			m_Device->UnmapBuffer(stagingBuffer);
 
 			initCommand.Close();
-			initCommand.Submit(CommandListSubmitArgs().SetQueue(CommandQueue::Graphics));
+			initCommand.Submit(CommandListSubmitArgs());
 
 			initCommand.WaitTillComplete();
 
@@ -442,9 +441,9 @@ public:
 			// Upload
 			for (auto& bindingSet : m_Set0s)
 			{
-				bindingSet->Upload(m_UniformBuffer.Get(), BufferRange(BufferRange::FullSize, 0), ResourceType::UniformBuffer, 0, 0);
-				bindingSet->Upload(m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), ResourceType::Image, 1, 0);
-				bindingSet->Upload(m_Sampler.Get(), ResourceType::Sampler, 2, 0);
+				bindingSet->SetItem(0, m_UniformBuffer.Get(), BufferRange(BufferRange::FullSize, 0), 0);
+				bindingSet->SetItem(1, m_Image.Get(), ImageSubresourceSpecification(0, 1, 0, 1), 0);
+				bindingSet->SetItem(2, m_Sampler.Get(), 0);
 			}
 		}
 	}
@@ -470,7 +469,10 @@ public:
 		m_Device->DestroyRenderpass(m_ImguiPass.Get());
 		m_Device->DestroyRenderpass(m_Renderpass.Get());
 
-		m_Swapchain->FreePool(m_CommandPool.Get());
+		for (size_t i = 0; i < m_CommandPools.size(); i++)
+		{
+			m_Swapchain->FreePool(m_CommandPools[i].Get());
+		}
 		m_Device->DestroySwapchain(m_Swapchain.Get());
 
 		m_Device->Wait();
@@ -491,6 +493,7 @@ public:
 
 			FreeQueue();
 
+			m_CommandPools[m_Swapchain->GetCurrentFrame()]->Reset();
 			CommandList& renderpassList = m_RenderpassLists[m_Swapchain->GetCurrentFrame()].Get();
 			CommandList& imguiList = m_ImGuiLists[m_Swapchain->GetCurrentFrame()].Get();
 			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
@@ -503,32 +506,36 @@ public:
 			{
 				// Main pass
 				{
-					renderpassList.ResetAndOpen();
+					renderpassList.Open();
 
 					// Graphics
-					renderpassList.SetGraphicsState(GraphicsState()
-						.SetPipeline(m_Pipeline.Get())
+					renderpassList.StartRenderpass(RenderpassStartArgs()
 						.SetRenderpass(m_Renderpass.Get())
+
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
-						.SetColourClear({ 0.0f, 0.0f, 0.0f, 1.0f })
-						.AddBindingSet(0, set0)
+
+						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
 					);
 
 					// Rendering
+					renderpassList.BindPipeline(m_Pipeline.Get());
+
 					renderpassList.BindVertexBuffer(m_VertexBuffer.Get());
 					renderpassList.BindIndexBuffer(m_IndexBuffer.Get());
+
+					renderpassList.BindBindingSet(set0);
 
 					renderpassList.DrawIndexed(DrawArguments()
 						.SetVertexCount((sizeof(g_IndexData) / sizeof(g_IndexData[0])))
 						.SetInstanceCount(1)
 					);
 
+					renderpassList.EndRenderpass(RenderpassEndArgs().SetRenderpass(m_Renderpass.Get()));
 					renderpassList.Close();
 
 					// Submission
 					renderpassList.Submit(CommandListSubmitArgs()
-						.SetQueue(CommandQueue::Graphics)
 						.SetWaitForSwapchainImage(true)
 						.SetOnFinishMakeSwapchainPresentable(false)
 					);
@@ -536,27 +543,31 @@ public:
 
 				// Imgui pass
 				{
-					imguiList.ResetAndOpen();
+					imguiList.Open();
 
 					// Imgui
-					imguiList.SetGraphicsState(GraphicsState()
-						.SetPipeline(m_Pipeline.Get())
+					imguiList.StartRenderpass(RenderpassStartArgs()
 						.SetRenderpass(m_ImguiPass.Get())
+
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
+
+						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
 					);
 
 					// Rendering
+					imguiList.BindPipeline(m_Pipeline.Get());
+
 					ImGuiRenderer::Begin();
 
 					ImGui::ShowMetricsWindow();
 
 					ImGuiRenderer::End(imguiList);
 
+					imguiList.EndRenderpass(RenderpassEndArgs().SetRenderpass(m_ImguiPass.Get()));
 					imguiList.Close();
 
 					imguiList.Submit(CommandListSubmitArgs()
-						.SetQueue(CommandQueue::Graphics)
 						.SetWaitOnLists({ &renderpassList })
 						.SetWaitForSwapchainImage(false)
 						.SetOnFinishMakeSwapchainPresentable(true)
@@ -625,7 +636,7 @@ private:
 	Nano::Memory::DeferredConstruct<Device> m_Device = {};
 	Nano::Memory::DeferredConstruct<Swapchain> m_Swapchain = {};
 
-	Nano::Memory::DeferredConstruct<CommandListPool> m_CommandPool = {};
+	std::array<Nano::Memory::DeferredConstruct<CommandListPool>, Information::FramesInFlight> m_CommandPools = {};
 	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_RenderpassLists = {};
 	std::array<Nano::Memory::DeferredConstruct<CommandList>, Information::FramesInFlight> m_ImGuiLists = {};
 

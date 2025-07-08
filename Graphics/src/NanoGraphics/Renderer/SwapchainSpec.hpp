@@ -9,7 +9,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -40,7 +40,7 @@ namespace Nano::Graphics
 
         bool VSync = false;
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -51,7 +51,7 @@ namespace Nano::Graphics
         inline constexpr SwapchainSpecification& SetFormat(Format format) { RequestedFormat = format; return *this; }
         inline constexpr SwapchainSpecification& SetColourSpace(ColourSpace space) { RequestedColourSpace = space; return *this; }
         inline constexpr SwapchainSpecification& SetVSync(bool enabled) { VSync = enabled; return *this; }
-        inline constexpr SwapchainSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline SwapchainSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
 }

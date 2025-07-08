@@ -2,6 +2,7 @@
 #include "VulkanContext.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
+#include "NanoGraphics/Core/Information.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Renderer/Device.hpp"
@@ -126,7 +127,7 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(window, "[VulkanContext] No window was attached.");
         NG_ASSERT(destroyCallback, "[VulkanContext] No destroy callback was passed in.");
 
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             s_MessageCallback = messageCallback;
 
@@ -145,7 +146,7 @@ namespace Nano::Graphics::Internal
         // Note: No need to 'destroy' the physical device since it was something we selected, not created.
         m_LogicalDevice.Destroy();
 
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             if (m_DebugMessenger)
                 VkExtension::g_vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
@@ -217,14 +218,14 @@ namespace Nano::Graphics::Internal
 
         // Check for validation layer support
         bool validationSupport = ValidationLayersSupported();
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             if (!validationSupport)
                 NG_LOG_WARN("[VulkanContext] Requested validation layers, but no support found.");
         }
 
         std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_SURFACE_TYPE_NAME };
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             if (validationSupport)
             {
@@ -247,7 +248,7 @@ namespace Nano::Graphics::Internal
         createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
         createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             if (validationSupport)
             {
@@ -271,7 +272,7 @@ namespace Nano::Graphics::Internal
         debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         debugCreateInfo.pfnUserCallback = &VulkanDebugCallback;
 
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             if (validationSupport)
             {
@@ -297,7 +298,7 @@ namespace Nano::Graphics::Internal
         ///////////////////////////////////////////////////////////
         // Debugger Creation
         ///////////////////////////////////////////////////////////
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             // Load extension function pointers
             LoadFunctionPointers(m_Instance);
@@ -324,7 +325,7 @@ namespace Nano::Graphics::Internal
         m_PhysicalDevice.Construct(m_Instance, surface, std::span<const char*>(fullExtensions));
         m_LogicalDevice.Construct(m_PhysicalDevice, std::span<const char*>(fullExtensions));
 
-        if constexpr (Validation)
+        if constexpr (Information::Validation)
         {
             SetDebugName(m_Instance, VK_OBJECT_TYPE_INSTANCE, "Instance");
             SetDebugName(m_PhysicalDevice.Get().GetVkPhysicalDevice(), VK_OBJECT_TYPE_PHYSICAL_DEVICE, "PhysicalDevice");

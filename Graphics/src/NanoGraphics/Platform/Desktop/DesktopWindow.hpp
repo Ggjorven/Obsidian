@@ -9,6 +9,9 @@
 
 #if defined(NG_PLATFORM_DESKTOP)
 	#include <GLFW/glfw3.h>
+	#if defined(APIENTRY)
+		#undef APIENTRY
+	#endif
 #endif
 
 namespace Nano::Graphics

@@ -14,6 +14,7 @@
 #include "NanoGraphics/Renderer/Pipeline.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12Device.hpp"
 #include "NanoGraphics/Platform/Dummy/DummyDevice.hpp"
 
 #include <Nano/Nano.hpp>
@@ -31,7 +32,7 @@ namespace Nano::Graphics
     public:
         using Type = Types::SelectorType<Information::RenderingAPI,
             Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanDevice>,
-            Types::EnumToType<Information::Structs::RenderingAPI::D3D12, Internal::DummyDevice>,
+            Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::Dx12Device>,
             Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyDevice>,
             Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyDevice>
         >;
@@ -41,16 +42,20 @@ namespace Nano::Graphics
         ~Device() = default;
 
         // Methods 
-        inline void Wait() const { m_Impl->Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations
+        inline void Wait() const { m_Impl->Wait(); } // Note: Makes the CPU wait on the GPU to finish all operations // Note: Should not be used frequently
 
         inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, subresources, currentState); }
         inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, currentState); }
         inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(buffer, currentState); }
+        inline void StopTracking(const Image& image) { m_Impl->StopTracking(image); }
+        inline void StopTracking(const StagingImage& image) { m_Impl->StopTracking(image); }
+        inline void StopTracking(const Buffer& buffer) { m_Impl->StopTracking(buffer); }
 
         inline void MapBuffer(const Buffer& buffer, void*& memory) const { return m_Impl->MapBuffer(buffer, memory); }
         inline void UnmapBuffer(const Buffer& buffer) const { return m_Impl->UnmapBuffer(buffer); }
-        inline void MapStagingImage(const StagingImage& image, void*& memory) const { return m_Impl->MapStagingImage(image, memory); }
-        inline void UnmapStagingImage(const StagingImage& image) const { return m_Impl->UnmapStagingImage(image); }
+
+        inline void WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) const { m_Impl->WriteBuffer(buffer, memory, size, srcOffset, dstOffset); }
+        inline void WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const { m_Impl->WriteImage(image, slice, memory, size); }
 
         // Creation/Destruction methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
         inline Swapchain CreateSwapchain(const SwapchainSpecification& specs) const { return Swapchain(*this, specs); }

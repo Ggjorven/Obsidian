@@ -3,7 +3,7 @@
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 
 #include <cstdint>
-#include <string_view>
+#include <string>
 
 namespace Nano::Graphics
 {
@@ -17,7 +17,7 @@ namespace Nano::Graphics
     {
     public:
         Image* ImagePtr = nullptr;
-        ImageSubresourceSpecification Subresources = ImageSubresourceSpecification(0, 1, 0, 1);
+        ImageSubresourceSpecification Subresources = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
         
         bool IsReadOnly = false;
 
@@ -43,7 +43,7 @@ namespace Nano::Graphics
         FramebufferAttachment ColourAttachment = {};
         FramebufferAttachment DepthAttachment = {};
 
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
@@ -53,7 +53,7 @@ namespace Nano::Graphics
         inline constexpr FramebufferSpecification& SetDepthAttachment(Image& image) { DepthAttachment.ImagePtr = &image; return *this; }
         inline constexpr FramebufferSpecification& SetDepthAttachment(Image& image, const ImageSubresourceSpecification& specs) { DepthAttachment.ImagePtr = &image; DepthAttachment.Subresources = specs; return *this; }
         inline constexpr FramebufferSpecification& SetDepthAttachment(const FramebufferAttachment& attachment) { DepthAttachment = attachment; return *this; }
-        inline constexpr FramebufferSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline FramebufferSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
 }

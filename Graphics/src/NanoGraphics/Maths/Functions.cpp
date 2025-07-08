@@ -52,6 +52,11 @@ namespace Nano::Graphics::Maths
 		return glm::rotate(matrix, angle, axis);
 	}
 
+	Mat4<float> Inverse(const Mat4<float>& matrix)
+	{
+		return glm::inverse(matrix);
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// Trigonometry
 	////////////////////////////////////////////////////////////////////////////////////
@@ -78,9 +83,24 @@ namespace Nano::Graphics::Maths
 		return glm::radians(degrees);
 	}
 
+	float Clamp(float value, float min, float max)
+	{
+		return glm::clamp(value, min, max);
+	}
+
 	float AspectRatio(uint32_t width, uint32_t height)
 	{
 		return static_cast<float>(width) / static_cast<float>(height);
+	}
+
+	Mat4<float> ApplyProjectionCorrection(const Mat4<float>& matrix)
+	{
+		// Note: D3D12 and Vulkan both need this, we internally
+		// already map the D3D12 viewport to the vulkan one, so this
+		// vulkan correction is also the correction necessary for D3D12
+		Mat4<float> mat = matrix;
+		mat[1][1] *= -1.0f;
+		return mat;
 	}
 
 }

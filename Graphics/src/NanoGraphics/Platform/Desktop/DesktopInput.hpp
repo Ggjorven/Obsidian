@@ -7,10 +7,6 @@
 
 #include <Nano/Nano.hpp>
 
-#if defined(NG_PLATFORM_DESKTOP)
-	#include <GLFW/glfw3.h>
-#endif
-
 #include <string>
 
 namespace Nano::Graphics

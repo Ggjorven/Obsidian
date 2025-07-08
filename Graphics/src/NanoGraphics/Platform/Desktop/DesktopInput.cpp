@@ -4,10 +4,11 @@
 #include "NanoGraphics/Core/Logging.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
+#include <GLFW/glfw3.h>
+
 namespace Nano::Graphics::Internal
 {
 
-#if defined(NG_PLATFORM_DESKTOP)
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,5 @@ namespace Nano::Graphics::Internal
     {
         glfwSetClipboardString(static_cast<GLFWwindow*>(m_NativeWindow), input.c_str());
     }
-#endif
 
 }
