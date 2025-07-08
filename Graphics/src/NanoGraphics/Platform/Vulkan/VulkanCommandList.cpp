@@ -28,7 +28,7 @@ namespace Nano::Graphics::Internal
         
         VK_VERIFY(vkCreateCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &poolInfo, VulkanAllocator::GetCallbacks(), &m_CommandPool));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Swapchain.GetVulkanDevice().GetContext().SetDebugName(m_CommandPool, VK_OBJECT_TYPE_COMMAND_POOL, std::string(m_Specification.DebugName));
@@ -72,12 +72,7 @@ namespace Nano::Graphics::Internal
         });
     }
 
-    void VulkanCommandListPool::ResetList(CommandList& list) const
-    {
-        vkResetCommandBuffer((*api_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer(), 0);
-    }
-
-    void VulkanCommandListPool::ResetAll() const
+    void VulkanCommandListPool::Reset() const
     {
         vkResetCommandPool(m_Swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_CommandPool, 0);
     }
@@ -96,7 +91,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkAllocateCommandBuffers(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), &allocInfo, &m_CommandBuffer));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().SetDebugName(m_CommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, std::format("CommandList \"{0}\" from: {1}", m_Specification.DebugName, m_Pool.GetSpecification().DebugName));
@@ -110,18 +105,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanCommandList::Reset() const
-    {
-        NG_PROFILE("VulkanCommandList::Reset()");
-        vkResetCommandBuffer(m_CommandBuffer, 0);
-    }
-
-    void VulkanCommandList::ResetAndOpen()
-    {
-        Reset();
-        Open();
-    }
-
     void VulkanCommandList::Open()
     {
         NG_PROFILE("VulkanCommandList::Open()");
@@ -138,26 +121,12 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::Close()
     {
         NG_PROFILE("VulkanCommandList::Close()");
+        VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
 
-        // Renderpass
-        if (m_GraphicsState.Pass)
-        {
-            VkSubpassEndInfo endInfo = {};
-            endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
-
-            vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
-        }
-
-        m_GraphicsState = GraphicsState();
-        m_ComputeState = ComputeState();
-
-        {
-            NG_PROFILE("VulkanCommandList::Close::End");
-            VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
-        }
+        m_CurrentGraphicsPipeline = nullptr;
     }
 
-    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) const 
+    void VulkanCommandList::Submit(const CommandListSubmitArgs& args) 
     {
         NG_PROFILE("VulkanCommandBuffer::Submit()");
 
@@ -232,7 +201,7 @@ namespace Nano::Graphics::Internal
 #if defined(NG_PLATFORM_APPLE)
         VK_VERIFY(VkExtension::g_vkQueueSubmit2KHR(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
 #else
-        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
+        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(m_Pool.GetSpecification().Queue), 1, &submitInfo, nullptr));
 #endif
     }
 
@@ -254,44 +223,124 @@ namespace Nano::Graphics::Internal
     void VulkanCommandList::CommitBarriers()
     {
         NG_PROFILE("VulkanCommandList::CommitBarriers()");
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().CommitBarriers(m_CommandBuffer);
+
+        auto& imageBarriers = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetImageBarriers(*api_cast<const CommandList*>(this));
+        auto& bufferBarriers = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetBufferBarriers(*api_cast<const CommandList*>(this));
+
+        if (imageBarriers.empty() && bufferBarriers.empty())
+            return;
+
+        std::vector<VkImageMemoryBarrier2> vkImageBarriers;
+        vkImageBarriers.reserve(imageBarriers.size());
+        std::vector<VkBufferMemoryBarrier2> vkBufferBarriers;
+        vkBufferBarriers.reserve(bufferBarriers.size());
+
+        for (const ImageBarrier& imageBarrier : imageBarriers)
+        {
+            const ResourceStateMapping& before = ResourceStateToMapping(imageBarrier.StateBefore);
+            const ResourceStateMapping& after = ResourceStateToMapping(imageBarrier.StateAfter);
+
+            NG_ASSERT((after.ImageLayout != VK_IMAGE_LAYOUT_UNDEFINED), "[VkCommandList] Can't transition to undefined layout.");
+
+            Image& image = *imageBarrier.ImagePtr;
+            VulkanImage& vulkanImage = *api_cast<VulkanImage*>(imageBarrier.ImagePtr);
+
+            VkImageMemoryBarrier2& barrier2 = vkImageBarriers.emplace_back();
+            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = before.StageFlags;
+            barrier2.dstStageMask = after.StageFlags;
+            barrier2.srcAccessMask = before.AccessMask;
+            barrier2.dstAccessMask = after.AccessMask;
+            barrier2.oldLayout = before.ImageLayout;
+            barrier2.newLayout = after.ImageLayout;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.image = vulkanImage.GetVkImage();
+
+            barrier2.subresourceRange.aspectMask = VkFormatToImageAspect(FormatToVkFormat(image.GetSpecification().ImageFormat));
+            barrier2.subresourceRange.baseMipLevel = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageMipLevel);
+            barrier2.subresourceRange.levelCount = (imageBarrier.EntireTexture ? image.GetSpecification().MipLevels : 1);
+            barrier2.subresourceRange.baseArrayLayer = (imageBarrier.EntireTexture ? 0 : imageBarrier.ImageArraySlice);
+            barrier2.subresourceRange.layerCount = (imageBarrier.EntireTexture ? image.GetSpecification().ArraySize : 1);
+        }
+
+        for (const BufferBarrier& bufferBarrier : bufferBarriers)
+        {
+            const ResourceStateMapping& before = ResourceStateToMapping(bufferBarrier.StateBefore);
+            const ResourceStateMapping& after = ResourceStateToMapping(bufferBarrier.StateAfter);
+
+            Buffer& buffer = *bufferBarrier.BufferPtr;
+            VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
+
+            VkBufferMemoryBarrier2& barrier2 = vkBufferBarriers.emplace_back();
+            barrier2.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+            barrier2.srcStageMask = before.StageFlags;
+            barrier2.dstStageMask = after.StageFlags;
+            barrier2.srcAccessMask = before.AccessMask;
+            barrier2.dstAccessMask = after.AccessMask;
+            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier2.buffer = vulkanBuffer.GetVkBuffer();
+            barrier2.offset = 0;
+            barrier2.size = buffer.GetSpecification().Size;
+        }
+
+        if (!vkImageBarriers.empty() || !vkBufferBarriers.empty())
+        {
+            VkDependencyInfo dependencyInfo = {};
+            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependencyInfo.bufferMemoryBarrierCount = static_cast<uint32_t>(vkBufferBarriers.size());
+            dependencyInfo.pBufferMemoryBarriers = vkBufferBarriers.data();
+            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(vkImageBarriers.size());
+            dependencyInfo.pImageMemoryBarriers = vkImageBarriers.data();
+
+#if defined(NG_PLATFORM_APPLE)
+            VkExtension::g_vkCmdPipelineBarrier2KHR(m_CommandBuffer, &dependencyInfo);
+#else
+            vkCmdPipelineBarrier2(m_CommandBuffer, &dependencyInfo);
+#endif
+        }
+
+        bufferBarriers.clear();
+        imageBarriers.clear();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Object methods
     ////////////////////////////////////////////////////////////////////////////////////
-    void VulkanCommandList::SetGraphicsState(const GraphicsState& state)
+    void VulkanCommandList::StartRenderpass(const RenderpassStartArgs& args)
     {
-        NG_PROFILE("VulkanCommandList::SetGraphicsState()");
-        m_GraphicsState = state;
+        NG_PROFILE("VulkanCommandList::StartRenderpass()");
 
-        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
-        NG_ASSERT(m_GraphicsState.Pass, "[VkCommandList] No Renderpass passed in.");
+        NG_ASSERT(args.Pass, "[VkCommandList] No Renderpass passed in.");
 
         // Renderpass
         {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::Renderpass");
+            NG_PROFILE("VulkanCommandList::StartRenderpass::Renderpass");
 
-            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(state.Pass);
-            VulkanFramebuffer* framebuffer = nullptr;
-            if (state.Frame)
-                framebuffer = api_cast<VulkanFramebuffer*>(state.Frame);
-            else
-                framebuffer = api_cast<VulkanFramebuffer*>(&renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage())));
-        
+            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
+
+            Framebuffer* framebuffer = args.Frame;
+            if (!framebuffer)
+            {
+                NG_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetVulkanSwapchain().GetImageCount()), "[VkCommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
+                framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
+            }
+            VulkanFramebuffer& vkFramebuffer = *api_cast<VulkanFramebuffer*>(framebuffer);
+
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderpassInfo.renderPass = renderpass.GetVkRenderPass();
-            renderpassInfo.framebuffer = framebuffer->GetVkFramebuffer();
+            renderpassInfo.framebuffer = vkFramebuffer.GetVkFramebuffer();
             renderpassInfo.renderArea.offset = { 0, 0 };
-            renderpassInfo.renderArea.extent = { static_cast<uint32_t>(state.ViewportState.GetWidth()), static_cast<uint32_t>(state.ViewportState.GetHeight()) };
+            renderpassInfo.renderArea.extent = { static_cast<uint32_t>(args.ViewportState.GetWidth()), static_cast<uint32_t>(args.ViewportState.GetHeight()) };
 
             // Clear values
             Nano::Memory::StaticVector<VkClearValue, 2> clearValues;
-            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
-                clearValues.push_back(VkClearValue({ state.ColourClear.r, state.ColourClear.g, state.ColourClear.b, state.ColourClear.a }));
-            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
-                clearValues.push_back(VkClearValue({ state.DepthClear, 0 }));
+            if (vkFramebuffer.GetSpecification().ColourAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ args.ColourClear.r, args.ColourClear.g, args.ColourClear.b, args.ColourClear.a }));
+            if (vkFramebuffer.GetSpecification().DepthAttachment.IsValid())
+                clearValues.push_back(VkClearValue({ args.DepthClear, 0 }));
 
             renderpassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
             renderpassInfo.pClearValues = clearValues.data();
@@ -300,78 +349,31 @@ namespace Nano::Graphics::Internal
             subpassInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO;
             subpassInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
 
-            vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
-        }
-
-        VulkanGraphicsPipeline& vulkanPipeline = *api_cast<VulkanGraphicsPipeline*>(state.Pipeline);
-        // Pipeline
-        {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::Pipeline");
-
-            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
-        }
-
-        // BindingSets
-        {
-            NG_PROFILE("VulkanCommandList::SetGraphicsState::BindingSets");
-
-            for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
             {
-                if (set != nullptr) //[[likely]]
-                {
-                    BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Graphics/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
-                    break;
-                }
+                NG_PROFILE("VulkanCommandList::StartRenderpass::Begin");
+                vkCmdBeginRenderPass2(m_CommandBuffer, &renderpassInfo, &subpassInfo);
             }
         }
 
-        SetViewport(state.ViewportState);
-        SetScissor(state.Scissor);
+        SetViewport(args.ViewportState);
+        SetScissor(args.Scissor);
     }
 
-    void VulkanCommandList::SetComputeState(const ComputeState& state)
+    void VulkanCommandList::EndRenderpass(const RenderpassEndArgs& args)
     {
-        NG_PROFILE("VulkanCommandList::SetComputeState()");
-        m_ComputeState = state;
+        (void)args;
 
-        NG_ASSERT(m_GraphicsState.Pipeline, "[VkCommandList] No pipeline passed in.");
+        NG_PROFILE("VulkanCommandList::EndRenderpass()");
 
-        VulkanComputePipeline& vulkanPipeline = *api_cast<VulkanComputePipeline*>(state.Pipeline);
+        VkSubpassEndInfo endInfo = {};
+        endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
 
-        // BindingSets
-        {
-            NG_PROFILE("VulkanCommandList::SetComputeState::BindingSets");
-
-            for (auto& [set, dynamicoffsets] : state.BindingSets) // Note: Only bind when there is a non-nullptr set
-            {
-                if (set != nullptr) //[[likely]]
-                {
-                    BindDescriptorSets(state.BindingSets, vulkanPipeline.GetVkPipelineLayout(), PipelineBindpoint::Compute/*, ShaderStage::Vertex | ShaderStage::Fragment*/);
-                    break;
-                }
-            }
-        }
-
-        // Pipeline
-        {
-            NG_PROFILE("VulkanCommandList::SetComputeState::Pipeline");
-
-            vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
-        }
-    }
-
-    void VulkanCommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
-    {
-        NG_PROFILE("VulkanCommandList::Dispatch()");
-        vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
+        vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
     }
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const
     {
         NG_PROFILE("VulkanCommandList::SetViewport()");
-
-        // Note: For future DX coords?
-        //VkViewport(v.minX, v.maxY, v.maxX - v.minX, -(v.maxY - v.minY), v.minZ, v.maxZ);
 
         VkViewport vkViewport = {};
         vkViewport.x = viewport.MinX;
@@ -390,6 +392,47 @@ namespace Nano::Graphics::Internal
         vkScissor.offset = { scissor.MinX, scissor.MinY };
         vkScissor.extent = { static_cast<uint32_t>(scissor.GetWidth()), static_cast<uint32_t>(scissor.GetHeight()) };
         vkCmdSetScissor(m_CommandBuffer, 0, 1, &vkScissor);
+    }
+
+    void VulkanCommandList::BindPipeline(const GraphicsPipeline& pipeline)
+    {
+        NG_PROFILE("VulkanCommandList::BindPipeline()");
+
+        m_CurrentGraphicsPipeline = &pipeline;
+        
+        const VulkanGraphicsPipeline& vulkanPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
+        vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
+    }
+
+    void VulkanCommandList::BindPipeline(const ComputePipeline& pipeline)
+    {
+        NG_PROFILE("VulkanCommandList::BindPipeline()");
+
+        m_CurrentGraphicsPipeline = nullptr;
+
+        const VulkanComputePipeline& vulkanPipeline = *api_cast<const VulkanComputePipeline*>(&pipeline);
+        vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
+    }
+
+    void VulkanCommandList::BindBindingSet(const BindingSet& set)
+    {
+        NG_PROFILE("VulkanCommandList::BindBindingSet()");
+
+        const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline);
+        const VulkanBindingSet& vkSet = *api_cast<const VulkanBindingSet*>(&set);
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(vkSet.GetVulkanBindingSetPool().GetSpecification().Layout);
+        VkDescriptorSet descriptorSet = vkSet.GetVkDescriptorSet();
+
+        vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline.GetVkPipelineLayout(), vkLayout.GetBindingLayoutSpecification().RegisterSpace, 1, &descriptorSet, 0, nullptr);
+    }
+
+    void VulkanCommandList::BindBindingSets(const std::span<const BindingSet*> sets)
+    {
+        NG_PROFILE("VulkanCommandList::BindBindingSets()");
+
+        // TODO: Batch bindings
+        for (auto set : sets)
+            BindBindingSet(*set);
     }
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const
@@ -456,8 +499,8 @@ namespace Nano::Graphics::Internal
             std::min(resSrcSlice.Depth, resDstSlice.Depth)
         );
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyImageInfo2 copyInfo = {};
@@ -493,8 +536,8 @@ namespace Nano::Graphics::Internal
 #endif
 
         // Update back to permanent state
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src, srcSubresource);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst, dstSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), src, srcSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), dst, dstSubresource);
         CommitBarriers();
     }
 
@@ -534,8 +577,8 @@ namespace Nano::Graphics::Internal
         copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
         copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(dst, dstSubresource, ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, dstSubresource, ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyBufferToImageInfo2 copyBufferToImageInfo = {};
@@ -553,8 +596,8 @@ namespace Nano::Graphics::Internal
 #endif
 
         // Update back to permanent state
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<Buffer*>(&srcVulkanBuffer));
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst, dstSubresource);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&srcVulkanBuffer));
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), dst, dstSubresource);
         CommitBarriers();
     }
 
@@ -569,8 +612,8 @@ namespace Nano::Graphics::Internal
         VulkanBuffer& dstVulkanBuffer = *api_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *api_cast<VulkanBuffer*>(&src);
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(src, ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(dst, ResourceState::CopyDst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
         CommitBarriers();
 
         VkBufferCopy2 copyRegion = {};
@@ -593,9 +636,15 @@ namespace Nano::Graphics::Internal
 #endif
 
         // Update back to permanent state
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(src);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(dst);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), src);
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().ResolvePermanentState(*api_cast<const CommandList*>(this), dst);
         CommitBarriers();
+    }
+
+    void VulkanCommandList::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const
+    {
+        NG_PROFILE("VulkanCommandList::Dispatch()");
+        vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -615,59 +664,6 @@ namespace Nano::Graphics::Internal
         VkPipelineStageFlags2 firstStage = GetFirstPipelineStage(waitStage);
         if (GetFirstPipelineStage(firstStage) < GetFirstPipelineStage(m_WaitStage))
             m_WaitStage = firstStage;
-    }
-
-    void VulkanCommandList::BindDescriptorSets(const std::array<GraphicsState::BindPair, GraphicsState::MaxBindingSets>& sets, VkPipelineLayout layout, PipelineBindpoint bindPoint/*, ShaderStage stages*/) const
-    {
-        // Note: This corresponds to SetID               Sets                   DynamicOffsets
-        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>, std::vector<uint32_t>>> descriptorSetsSet;
-        std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.emplace_back()).reserve(sets.size());
-
-        // Runtime validation
-        {
-            for (size_t i = 0; i < sets.size(); i++)
-            {
-                if (sets[i].Set == nullptr)
-                    continue;
-
-                // If SetID doesn't match create a new starting point with current SetID
-                if (std::get<uint32_t>(descriptorSetsSet.back()) != i)
-                {
-                    auto& tuple = descriptorSetsSet.emplace_back(
-                        //std::tuple(
-                            static_cast<uint32_t>(i),
-                            std::vector<VkDescriptorSet>(),
-                            std::vector<uint32_t>(sets[i].DynamicOffsets.begin(), sets[i].DynamicOffsets.end())
-                        //)
-                    );
-                    
-                    std::get<std::vector<VkDescriptorSet>>(tuple).reserve(sets.size());
-                }
-
-                // Add descriptor
-                VulkanBindingSet& vulkanSet = *api_cast<VulkanBindingSet*>(sets[i].Set);
-                std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.back()).push_back(vulkanSet.GetVkDescriptorSet());
-            }
-        }
-
-        // Binding
-        for (const auto& [setID, descriptorSets, dynamicOffsets] : descriptorSetsSet)
-        {
-            /*
-            VkBindDescriptorSetsInfo bindInfo = {};
-            bindInfo.sType = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO;
-            bindInfo.stageFlags = ShaderStageToVkShaderStageFlags(stages);
-            bindInfo.layout = layout;
-            bindInfo.firstSet = setID;
-            bindInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
-            bindInfo.pDescriptorSets = descriptorSets.data();
-            bindInfo.dynamicOffsetCount = static_cast<uint32_t>(dynamicOffsets.size());
-            bindInfo.pDynamicOffsets = dynamicOffsets.data();
-
-            vkCmdBindDescriptorSets2(m_CommandBuffer, &bindInfo);
-            */
-            vkCmdBindDescriptorSets(m_CommandBuffer, PipelineBindpointToVkBindpoint(bindPoint), layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), static_cast<uint32_t>(dynamicOffsets.size()), dynamicOffsets.data());
-        }
     }
 
 }

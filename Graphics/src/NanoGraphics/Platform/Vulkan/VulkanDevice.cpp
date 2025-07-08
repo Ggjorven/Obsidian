@@ -21,7 +21,7 @@ namespace Nano::Graphics::Internal
     // Constructor & Destructor
     ////////////////////////////////////////////////////////////////////////////////////
     VulkanDevice::VulkanDevice(const DeviceSpecification& specs)
-        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.DestroyCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice()), m_StateTracker(*this)
+        : m_Context(specs.NativeWindow, specs.MessageCallback, specs.DestroyCallback, specs.Extensions), m_Allocator(m_Context.GetVkInstance(), m_Context.GetVulkanPhysicalDevice().GetVkPhysicalDevice(), m_Context.GetVulkanLogicalDevice().GetVkDevice()), m_StateTracker(*api_cast<const Device*>(this))
     {
     }
 
@@ -77,6 +77,7 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::MapBuffer(const Buffer& buffer, void*& memory) const
     {
+        NG_PROFILE("VulkanDevice::MapBuffer()");
         const VulkanBuffer& vulkanBuffer = *api_cast<const VulkanBuffer*>(&buffer);
         NG_ASSERT(static_cast<bool>(buffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
         m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
@@ -84,21 +85,40 @@ namespace Nano::Graphics::Internal
 
     void VulkanDevice::UnmapBuffer(const Buffer& buffer) const
     {
+        NG_PROFILE("VulkanDevice::UnmapBuffer()");
         const VulkanBuffer& vulkanBuffer = *api_cast<const VulkanBuffer*>(&buffer);
         m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
     }
 
-    void VulkanDevice::MapStagingImage(const StagingImage& image, void*& memory) const
+    void VulkanDevice::WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset, size_t dstOffset) const
     {
-        const VulkanBuffer& vulkanBuffer = api_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
-        NG_ASSERT(static_cast<bool>(vulkanBuffer.GetSpecification().CpuAccess & CpuAccessMode::Write), "[VkDevice] Can't map buffer without CpuAccessMode::Write flag.");
-        m_Allocator.MapMemory(vulkanBuffer.GetVmaAllocation(), memory);
+        NG_PROFILE("VulkanDevice::WriteBuffer()");
+
+        NG_ASSERT((size + dstOffset <= buffer.GetSpecification().Size), "[VkDevice] Size + offset exceeds buffer size.");
+
+        void* bufferMemory;
+        MapBuffer(buffer, bufferMemory);
+
+        std::memcpy(static_cast<uint8_t*>(bufferMemory) + dstOffset, static_cast<const uint8_t*>(memory) + srcOffset, size);
+
+        UnmapBuffer(buffer);
     }
 
-    void VulkanDevice::UnmapStagingImage(const StagingImage& image) const
+    void VulkanDevice::WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const
     {
-        const VulkanBuffer& vulkanBuffer = api_cast<const VulkanStagingImage*>(&image)->GetVulkanBuffer();
-        m_Allocator.UnmapMemory(vulkanBuffer.GetVmaAllocation());
+        NG_PROFILE("VulkanDevice::WriteImage()");
+        const VulkanStagingImage& vkImage = *api_cast<const VulkanStagingImage*>(&image);
+        const VulkanBuffer& vkBuffer = *api_cast<const VulkanBuffer*>(&vkImage.GetVulkanBuffer());
+        const Buffer& buffer = *api_cast<const Buffer*>(&vkBuffer);
+
+        VulkanStagingImage::Region region = vkImage.GetSliceRegion(slice.ImageMipLevel, slice.ImageArraySlice, 0);
+
+        void* imageMemory;
+        MapBuffer(buffer, imageMemory);
+
+        std::memcpy(static_cast<uint8_t*>(imageMemory) + region.Offset, static_cast<const uint8_t*>(memory), size);
+
+        UnmapBuffer(buffer);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

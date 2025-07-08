@@ -2,6 +2,7 @@
 #include "VulkanDevices.hpp"
 
 #include "NanoGraphics/Core/Logging.hpp"
+#include "NanoGraphics/Core/Information.hpp"
 #include "NanoGraphics/Utils/Profiler.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/VulkanDevice.hpp"
@@ -508,7 +509,7 @@ namespace Nano::Graphics::Internal
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		if constexpr (VulkanContext::Validation)
+		if constexpr (Information::Validation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(VulkanContext::ValidationLayers.size());
 			createInfo.ppEnabledLayerNames = VulkanContext::ValidationLayers.data();

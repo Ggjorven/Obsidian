@@ -21,7 +21,7 @@ namespace Nano::Graphics::Information
         enum class RenderingAPI : uint8_t
         {
             Vulkan = 0,
-            D3D12,
+            Dx12,
             Metal,
             Dummy
         };
@@ -54,9 +54,8 @@ namespace Nano::Graphics::Information
 
     #if defined(NG_API_VULKAN)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Vulkan;
-    #elif defined(NG_API_D3D12)
-        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::D3D12;
-        #error Nano Graphics Settings: D3D12 not implemented yet.
+    #elif defined(NG_API_DX12)
+        inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Dx12;
     #elif defined(NG_API_METAL)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Metal;
         #error Nano Graphics Settings: Metal not implemented yet.
@@ -65,6 +64,8 @@ namespace Nano::Graphics::Information
     #else
         #error Nano Graphics Settings: Unsupported API/Failed to query...
     #endif
+
+    inline constexpr const bool Validation = (Information::Configuration != Information::Structs::Configuration::Dist);
     
     // Frames In Flight
     inline constexpr const uint8_t FramesInFlight = 3;

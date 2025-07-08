@@ -34,7 +34,7 @@ namespace Nano::Graphics
                         }                       \
                     } while (false)
 
-        #define NG_UNREACHABLE() NG_ASSERT(false, "Unreachable");
+        #define NG_UNREACHABLE() NG_ASSERT(false, "Unreachable")
 
     #else
         #define NG_LOG_TRACE(fmt, ...) 

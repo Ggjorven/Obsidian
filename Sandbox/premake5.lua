@@ -37,8 +37,9 @@ project "Sandbox"
 	if gfxapi == "vulkan" then
         defines { "NG_API_VULKAN" }
 		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
-    elseif gfxapi == "d3d12" then
-        defines { "NG_API_D3D12" }
+    elseif gfxapi == "dx12" then
+        defines { "NG_API_DX12" }
+		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}", "%{Dependencies.DXC.IncludeDir}" }
     elseif gfxapi == "metal" then
         defines { "NG_API_METAL" }
     elseif gfxapi == "dummy" then
@@ -48,14 +49,16 @@ project "Sandbox"
 	includedirs
 	{
 		"src",
+		"vendor",
 
 		"%{wks.location}/Graphics/src",
 
 		"%{Dependencies.GLFW.IncludeDir}",
 		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.stb.IncludeDir}",
 		"%{Dependencies.Tracy.IncludeDir}",
 		"%{Dependencies.Nano.IncludeDir}",
+		"%{Dependencies.shaderc.IncludeDir}",
+		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
 	links
@@ -86,13 +89,14 @@ project "Sandbox"
 		{
 			"%{Dependencies.GLFW.LibName}",
 			"%{Dependencies.Tracy.LibName}",
+			"%{Dependencies.shaderc.LibName}",
+			"%{Dependencies.SPIRVCross.LibName}",
 		}
 
 		if gfxapi == "vulkan" then
 			links
 			{
 				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.ShaderC.LibName}",
 			}
 		end
 
@@ -122,7 +126,6 @@ project "Sandbox"
 			links
 			{
 				"%{Dependencies.Vulkan.LibName}",
-				"%{Dependencies.ShaderC.LibName}",
 			}
 
 			postbuildcommands
@@ -148,6 +151,8 @@ project "Sandbox"
 			"%{Dependencies.glm.IncludeDir}",
 			"%{Dependencies.Tracy.IncludeDir}",
 			"%{Dependencies.Nano.IncludeDir}",
+			"%{Dependencies.shaderc.IncludeDir}",
+			"%{Dependencies.SPIRVCross.IncludeDir}",
 		}
 
 		if gfxapi == "vulkan" then

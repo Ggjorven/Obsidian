@@ -10,8 +10,6 @@
 #include "NanoGraphics/Platform/Vulkan/VulkanResources.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanBuffer.hpp"
 
-#include <type_traits>
-
 namespace Nano::Graphics
 {
 	class Device;
@@ -21,7 +19,6 @@ namespace Nano::Graphics
 namespace Nano::Graphics::Internal
 {
 
-	class VulkanImage;
 	class VulkanDevice;
 	class VulkanImageSubresourceView;
 	class VulkanImage;
@@ -135,7 +132,7 @@ namespace Nano::Graphics::Internal
 		inline VulkanBuffer& GetVulkanBuffer() { return m_Buffer; }
 		inline const VulkanBuffer& GetVulkanBuffer() const { return m_Buffer; }
 
-		VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z);
+		VulkanStagingImage::Region GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z) const;
 
 	private:
 		// Private methods

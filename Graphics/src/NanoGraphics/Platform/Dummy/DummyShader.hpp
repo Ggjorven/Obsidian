@@ -49,7 +49,7 @@ namespace Nano::Graphics::Internal
         constexpr ~DummyShaderCompiler() = default;
 
         // Methods
-        inline std::vector<char> CompileToSPIRV(ShaderStage stage, const std::string& code, ShadingLanguage language) { (void)stage; (void)code; (void)language; return {}; }
+        inline std::vector<uint32_t> CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language) { (void)stage; (void)code; (void)entryPoint; (void)language; return {}; }
     };
 #endif
 

@@ -10,3 +10,18 @@
 [submodule "vendor/Nano/Nano"]
 	path = vendor/Nano/Nano
 	url = https://github.com/Ggjorven/Nano.git
+[submodule "vendor/DirectX/DirectX-Headers"]
+	path = vendor/DirectX/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git
+[submodule "vendor/DirectX/D3D12MA"]
+	path = vendor/DirectX/D3D12MA
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
+[submodule "vendor/SPIRV/SPIRV-Cross"]
+	path = vendor/SPIRV/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "vendor/shaderc/ShaderCompiler"]
+	path = vendor/shaderc/ShaderCompiler
+	url = https://github.com/Ggjorven/ShaderCompiler.git
+[submodule "vendor/SPIRV-Cross/SPIRV-Cross"]
+	path = vendor/SPIRV-Cross/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

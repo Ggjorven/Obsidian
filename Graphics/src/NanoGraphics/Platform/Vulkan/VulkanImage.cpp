@@ -35,15 +35,15 @@ namespace Nano::Graphics::Internal
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
         : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
-        NG_ASSERT(((specs.Width != 0) && (specs.Height != 0)), "[VkImage] Invalid width/height passed in.");
-        NG_ASSERT((specs.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
+        NG_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[VkImage] Invalid width/height passed in.");
+        NG_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
 
         // Validation checks
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
-            if (!((specs.SampleCount >= 1) && (specs.SampleCount <= 64) && (specs.SampleCount & (specs.SampleCount - 1)) == 0))
+            if (!((m_Specification.SampleCount >= 1) && (m_Specification.SampleCount <= 64) && (m_Specification.SampleCount & (m_Specification.SampleCount - 1)) == 0))
             {
-                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", specs.SampleCount));
+                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", m_Specification.SampleCount));
             }
         }
 
@@ -57,7 +57,7 @@ namespace Nano::Graphics::Internal
             SampleCountToVkSampleCountFlags(m_Specification.SampleCount)
         );
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
             {
@@ -134,7 +134,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateImageView(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &createInfo, VulkanAllocator::GetCallbacks(), &imageView.m_ImageView));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(imageView.m_ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, std::format("ImageView for: {0}", m_Specification.DebugName));
@@ -214,7 +214,7 @@ namespace Nano::Graphics::Internal
         return size;
     }
 
-    VulkanStagingImage::Region VulkanStagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z)
+    VulkanStagingImage::Region VulkanStagingImage::GetSliceRegion(MipLevel mipLevel, ArraySlice arraySlice, uint32_t z) const
     {
         if (m_Specification.Depth != 1)
         {
@@ -283,7 +283,7 @@ namespace Nano::Graphics::Internal
 
         VK_VERIFY(vkCreateSampler(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &samplerInfo, VulkanAllocator::GetCallbacks(), &m_Sampler));
 
-        if constexpr (VulkanContext::Validation)
+        if constexpr (Information::Validation)
         {
             if (!m_Specification.DebugName.empty())
                 m_Device.GetContext().SetDebugName(m_Sampler, VK_OBJECT_TYPE_SAMPLER, std::string(m_Specification.DebugName));

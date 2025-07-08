@@ -14,9 +14,9 @@
 #include <span>
 #include <cmath>
 #include <array>
+#include <string>
 #include <vector>
 #include <variant>
-#include <string_view>
 #include <initializer_list>
 
 namespace Nano::Graphics
@@ -49,11 +49,11 @@ namespace Nano::Graphics
     struct CommandListSpecification
     {
     public:
-        std::string_view DebugName = {};
+        std::string DebugName = {};
 
     public:
         // Setters
-        inline constexpr CommandListSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline CommandListSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -62,11 +62,13 @@ namespace Nano::Graphics
     struct CommandListPoolSpecification
     {
     public:
-        std::string_view DebugName = {};
+        CommandQueue Queue = CommandQueue::Graphics;
+        std::string DebugName = {};
 
     public:
         // Setters
-        inline constexpr CommandListPoolSpecification& SetDebugName(std::string_view name) { DebugName = name; return *this; }
+        inline constexpr CommandListPoolSpecification& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
+        inline CommandListPoolSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -75,8 +77,6 @@ namespace Nano::Graphics
     struct CommandListSubmitArgs
     {
     public:
-        CommandQueue Queue = CommandQueue::Graphics;
-        
         std::variant<std::vector<const CommandList*>, std::span<const CommandList*>> WaitOnLists = {};
         
         bool WaitForSwapchainImage = false;
@@ -84,7 +84,6 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr CommandListSubmitArgs& SetQueue(CommandQueue queue) { Queue = queue; return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(std::vector<const CommandList*>&& ownedLists) { WaitOnLists = std::move(ownedLists); return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(const std::vector<const CommandList*>& ownedLists) { WaitOnLists = ownedLists; return *this; }
         inline CommandListSubmitArgs& SetWaitOnLists(std::initializer_list<const CommandList*> ownedLists) { WaitOnLists = ownedLists; return *this; }
@@ -114,23 +113,13 @@ namespace Nano::Graphics
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // GraphicsState
+    // RenderpassStartArgs
     ////////////////////////////////////////////////////////////////////////////////////
-    struct GraphicsState
+    struct RenderpassStartArgs
     {
     public:
-        inline constexpr static uint32_t MaxBindingSets = 8;
-    public:
-        struct BindPair
-        {
-        public:
-            BindingSet* Set = nullptr;
-            std::span<const uint32_t> DynamicOffsets = {}; // Note: For Dynamic UniformBuffer for example (use the buffer's m_Specification.Size per element)
-        };
-    public:
-        GraphicsPipeline* Pipeline = nullptr;
         Renderpass* Pass = nullptr;
-        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[CurrentFrame] from pass.
+        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[AcquiredImage] from pass.
 
         Viewport ViewportState = {};
         ScissorRect Scissor = {};
@@ -138,42 +127,31 @@ namespace Nano::Graphics
         Maths::Vec4<float> ColourClear = { 0.0f, 0.0f, 0.0f, 1.0f };
         float DepthClear = 1.0f;
 
-        std::array<BindPair, MaxBindingSets> BindingSets = { };
-
-
     public:
         // Setters
-        inline constexpr GraphicsState& SetPipeline(GraphicsPipeline& pipeline) { Pipeline = &pipeline; return *this; }
-        inline constexpr GraphicsState& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
-        inline constexpr GraphicsState& SetFramebuffer(Framebuffer& framebuffer) { Frame = &framebuffer; return *this; }
+        inline constexpr RenderpassStartArgs& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
+        inline constexpr RenderpassStartArgs& SetFramebuffer(Framebuffer& framebuffer) { Frame = &framebuffer; return *this; }
     
-        inline constexpr GraphicsState& SetViewport(const Viewport& viewport) { ViewportState = viewport; return *this; }
-        inline constexpr GraphicsState& SetScissor(const ScissorRect& scissor) { Scissor = scissor; return *this; }
+        inline constexpr RenderpassStartArgs& SetViewport(const Viewport& viewport) { ViewportState = viewport; return *this; }
+        inline constexpr RenderpassStartArgs& SetScissor(const ScissorRect& scissor) { Scissor = scissor; return *this; }
 
-        inline constexpr GraphicsState& SetColourClear(const Maths::Vec4<float>& colour) { ColourClear = colour; return *this; }
-        inline constexpr GraphicsState& SetDepthClear(float depth) { DepthClear = depth; return *this; }
-
-        inline GraphicsState& AddBindingSet(uint32_t setID, BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { NG_ASSERT((setID < MaxBindingSets), "[GraphicsState] SetID exceeds max binding sets."); BindingSets[setID] = { &set, dynamicOffsets }; return *this; }
+        inline constexpr RenderpassStartArgs& SetColourClear(const Maths::Vec4<float>& colour) { ColourClear = colour; return *this; }
+        inline constexpr RenderpassStartArgs& SetDepthClear(float depth) { DepthClear = depth; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
-    // ComputeState
+    // RenderpassEndArgs
     ////////////////////////////////////////////////////////////////////////////////////
-    struct ComputeState
+    struct RenderpassEndArgs
     {
     public:
-        inline constexpr static uint32_t MaxBindingSets = GraphicsState::MaxBindingSets;
-        using BindPair = GraphicsState::BindPair;
-    public:
-        ComputePipeline* Pipeline = nullptr;
-
-        std::array<BindPair, MaxBindingSets> BindingSets = { };
+        Renderpass* Pass = nullptr;
+        Framebuffer* Frame = nullptr; // Note: Can be nullptr, will get Framebuffer[AcquiredImage] from pass.
 
     public:
         // Setters
-        inline constexpr ComputeState& SetPipeline(ComputePipeline& pipeline) { Pipeline = &pipeline; return *this; }
-
-        inline ComputeState& AddBindingSet(uint32_t setID, BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { NG_ASSERT((setID < MaxBindingSets), "[ComputeState] SetID exceeds max binding sets."); BindingSets[setID] = { &set, dynamicOffsets }; return *this; }
+        inline constexpr RenderpassEndArgs& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
+        inline constexpr RenderpassEndArgs& SetFramebuffer(Framebuffer& framebuffer) { Frame = &framebuffer; return *this; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

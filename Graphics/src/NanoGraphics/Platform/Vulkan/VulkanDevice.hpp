@@ -4,10 +4,10 @@
 
 #include "NanoGraphics/Renderer/API.hpp"
 #include "NanoGraphics/Renderer/DeviceSpec.hpp"
+#include "NanoGraphics/Renderer/StateTracker.hpp"
 
 #include "NanoGraphics/Platform/Vulkan/Vulkan.hpp"
 #include "NanoGraphics/Platform/Vulkan/VulkanContext.hpp"
-#include "NanoGraphics/Platform/Vulkan/VulkanStateTracker.hpp"
 
 #include <Nano/Nano.hpp>
 
@@ -56,8 +56,9 @@ namespace Nano::Graphics::Internal
 
         void MapBuffer(const Buffer& buffer, void*& memory) const;
         void UnmapBuffer(const Buffer& buffer) const;
-        void MapStagingImage(const StagingImage& image, void*& memory) const;
-        void UnmapStagingImage(const StagingImage& image) const;
+
+        void WriteBuffer(const Buffer& buffer, const void* memory, size_t size, size_t srcOffset, size_t dstOffset) const;
+        void WriteImage(const StagingImage& image, const ImageSliceSpecification& slice, const void* memory, size_t size) const;
 
         // Destruction methods
         void DestroySwapchain(Swapchain& swapchain) const;
@@ -85,12 +86,12 @@ namespace Nano::Graphics::Internal
         // Internal Getters
         inline const VulkanContext& GetContext() const { return m_Context; }
         inline const VulkanAllocator& GetAllocator() const { return m_Allocator; }
-        inline const VulkanStateTracker& GetTracker() const { return m_StateTracker; }
+        inline const StateTracker& GetTracker() const { return m_StateTracker; }
 
     private:
         VulkanContext m_Context;
         VulkanAllocator m_Allocator;
-        mutable VulkanStateTracker m_StateTracker;
+        mutable StateTracker m_StateTracker;
     };
 #endif
 
