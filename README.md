@@ -37,13 +37,33 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 - **Linux**: Make
 - **MacOS**: XCode
 
-### Programming Guide
+## Programming Guide
 
 // TODO: ...
 
-### Samples
+## Samples
 
 // TODO: ...
+
+## TODO List
+- [ ] Pushconstants
+- [ ] Tesselation control
+- [ ] **Dx12**
+  - [ ] Bindless support
+  - [ ] Pushconstants
+- [ ] **Metal**
+  - [ ] Window
+  - [ ] Device
+  - [ ] Other...
+
+## Additional information
+
+Apart from the main development happening in the `main` (or `dev`) branch, there's an [`imgui`](https://github.com/your-repo/NanoGraphics/tree/imgui) branch that includes **Dear ImGui** integration for NanoGraphics. This branch is designed to make it easy to plug in GUI support without adding clutter to the core abstraction layers in the main branch.
+
+
+Inside the `Sandbox` project, you’ll also find several example applications demonstrating usage of NanoGraphics.
+- **TexturedQuad Example**: Loads and renders an image using [`stb_image`](https://github.com/nothings/stb/blob/master/stb_image.h), working for all supported backends.
+- **TinyObjLoader Example**: Loads and renders 3D models using [`tinyobjloader`](https://github.com/tinyobjloader/tinyobjloader), again working across all supported backends.
 
 ## License
 
