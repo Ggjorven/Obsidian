@@ -125,6 +125,7 @@ namespace Nano::Graphics::Internal
 		VkPipelineStageFlags2 m_WaitStage = VK_PIPELINE_STAGE_2_NONE;
 
 		const GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
+		const ComputePipeline* m_CurrentComputePipeline = nullptr;
 	};
 #endif
 

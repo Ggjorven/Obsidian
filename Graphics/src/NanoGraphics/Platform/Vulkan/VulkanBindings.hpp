@@ -54,7 +54,9 @@ namespace Nano::Graphics::Internal
 
         // Internal getters
         BindingLayoutSpecification GetBindingLayoutSpecification() const { NG_ASSERT(!IsBindless(), "[VkBindingLayout] Can't retrieve BindingLayoutSpecification for bindless layout."); return std::get<BindingLayoutSpecification>(m_Specification); }
+        BindlessLayoutSpecification GetBindlessLayoutSpecification() const { NG_ASSERT(IsBindless(), "[VkBindingLayout] Can't retrieve BindlessLayoutSpecification for a non bindless layout."); return std::get<BindlessLayoutSpecification>(m_Specification); }
 
+        uint8_t GetRegisterSpace() const;
         std::span<const BindingLayoutItem> GetBindingItems() const;
 
         inline VkDescriptorSetLayout GetVkDescriptorSetLayout() const { return m_Layout; }

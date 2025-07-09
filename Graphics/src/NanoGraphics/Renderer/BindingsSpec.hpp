@@ -97,8 +97,9 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr BindingLayoutSpecification& SetBindingSet(uint8_t index) { RegisterSpace = index; return *this; }
+        inline constexpr BindingLayoutSpecification& SetSetIndex(uint8_t index) { RegisterSpace = index; return *this; }
         inline constexpr BindingLayoutSpecification& SetRegisterSpace(uint8_t space) { RegisterSpace = space; return *this; }
+
         inline BindingLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
         inline BindingLayoutSpecification& SetDebugName(const std::string_view& name) { DebugName = name; return *this; }
     };
@@ -111,8 +112,7 @@ namespace Nano::Graphics
     public:
         inline constexpr static size_t MaxBindings = BindingLayoutSpecification::MaxBindings;
     public:
-        uint32_t FirstSlot = 0;
-        uint32_t MaxCapacity = 0;
+        uint8_t RegisterSpace = 0; // In Vulkan maps to descriptor set index, in dx12 to space0/space1
 
         Nano::Memory::StaticVector<BindingLayoutItem, MaxBindings> Bindings;
 
@@ -120,8 +120,9 @@ namespace Nano::Graphics
 
     public:
         // Setters
-        inline constexpr BindlessLayoutSpecification& SetFirstSlot(uint32_t slot) { FirstSlot = slot; return *this; }
-        inline constexpr BindlessLayoutSpecification& SetMaxCapacity(uint32_t capacity) { MaxCapacity = capacity; return *this; }
+        inline constexpr BindlessLayoutSpecification& SetSetIndex(uint8_t index) { RegisterSpace = index; return *this; }
+        inline constexpr BindlessLayoutSpecification& SetRegisterSpace(uint8_t space) { RegisterSpace = space; return *this; }
+
         inline BindlessLayoutSpecification& AddItem(const BindingLayoutItem& item) { Bindings.push_back(item); return *this; }
         inline BindlessLayoutSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };

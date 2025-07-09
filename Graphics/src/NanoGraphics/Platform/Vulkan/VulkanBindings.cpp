@@ -49,7 +49,7 @@ namespace Nano::Graphics::Internal
         for (const BindingLayoutItem& item : specs.Bindings)
         {
             VkDescriptorType descriptorType = ResourceTypeToVkDescriptorType(item.Type);
-            uint32_t descriptorCount = item.Size;
+            uint32_t descriptorCount = item.GetArraySize();
 
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
             descriptorSetLayoutBinding.binding = item.Slot;
@@ -69,16 +69,14 @@ namespace Nano::Graphics::Internal
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
         layoutBindings.reserve(specs.Bindings.size());
         
-        uint32_t bindingPoint = 0;
-        uint32_t arraySize = specs.MaxCapacity;
-
         for (const BindingLayoutItem& item : specs.Bindings)
         {
             VkDescriptorType descriptorType = ResourceTypeToVkDescriptorType(item.Type);
+            uint32_t descriptorCount = item.GetArraySize();
 
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
-            descriptorSetLayoutBinding.binding = bindingPoint++; // Note: We increase the bindingPoint
-            descriptorSetLayoutBinding.descriptorCount = arraySize;
+            descriptorSetLayoutBinding.binding = item.Slot;
+            descriptorSetLayoutBinding.descriptorCount = descriptorCount;
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
 
@@ -118,6 +116,17 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
+    uint8_t VulkanBindingLayout::GetRegisterSpace() const
+    {
+        return std::visit([](auto&& obj) -> uint8_t
+        {
+            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, BindingLayoutSpecification>)
+                return obj.RegisterSpace;
+            else if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, BindlessLayoutSpecification>)
+                return obj.RegisterSpace;
+        }, m_Specification);
+    }
+
     std::span<const BindingLayoutItem> VulkanBindingLayout::GetBindingItems() const
     {
         return std::visit([](auto&& obj) -> std::span<const BindingLayoutItem>
@@ -136,12 +145,13 @@ namespace Nano::Graphics::Internal
     {
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        //descriptorSetLayoutCreateInfo.flags = (IsBindless() ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0);
+        descriptorSetLayoutCreateInfo.flags = (IsBindless() ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0);
         descriptorSetLayoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
         descriptorSetLayoutCreateInfo.pBindings = layoutBindings.data();
 
-        std::vector<VkDescriptorBindingFlags> bindlessFlags(layoutBindings.size(), VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
-        VkDescriptorSetLayoutBindingFlagsCreateInfo extendedCreateInfo = {}; // Note: For bindless
+        // Note: For bindless
+        std::vector<VkDescriptorBindingFlags> bindlessFlags(layoutBindings.size(), VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+        VkDescriptorSetLayoutBindingFlagsCreateInfo extendedCreateInfo = {};
         extendedCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
         extendedCreateInfo.bindingCount = static_cast<uint32_t>(bindlessFlags.size());
         extendedCreateInfo.pBindingFlags = bindlessFlags.data();

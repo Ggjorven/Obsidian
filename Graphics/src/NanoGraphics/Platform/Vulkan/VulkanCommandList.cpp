@@ -124,6 +124,7 @@ namespace Nano::Graphics::Internal
         VK_VERIFY(vkEndCommandBuffer(m_CommandBuffer));
 
         m_CurrentGraphicsPipeline = nullptr;
+        m_CurrentComputePipeline = nullptr;
     }
 
     void VulkanCommandList::Submit(const CommandListSubmitArgs& args) 
@@ -399,6 +400,7 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("VulkanCommandList::BindPipeline()");
 
         m_CurrentGraphicsPipeline = &pipeline;
+        m_CurrentComputePipeline = nullptr;
         
         const VulkanGraphicsPipeline& vulkanPipeline = *api_cast<const VulkanGraphicsPipeline*>(&pipeline);
         vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline.GetVkPipeline());
@@ -409,6 +411,7 @@ namespace Nano::Graphics::Internal
         NG_PROFILE("VulkanCommandList::BindPipeline()");
 
         m_CurrentGraphicsPipeline = nullptr;
+        m_CurrentComputePipeline = &pipeline;
 
         const VulkanComputePipeline& vulkanPipeline = *api_cast<const VulkanComputePipeline*>(&pipeline);
         vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
@@ -418,21 +421,78 @@ namespace Nano::Graphics::Internal
     {
         NG_PROFILE("VulkanCommandList::BindBindingSet()");
 
-        const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline);
+        NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[VkCommandList] A pipeline must be bound to bind a binding set.");
+
+        VkPipelineLayout layout;
+        VkPipelineBindPoint bindPoint;
+        if (m_CurrentGraphicsPipeline)
+        {
+            layout = api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline)->GetVkPipelineLayout();
+            bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        }
+        else
+        {
+            layout = api_cast<const VulkanGraphicsPipeline*>(m_CurrentComputePipeline)->GetVkPipelineLayout();
+            bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+        }
+
         const VulkanBindingSet& vkSet = *api_cast<const VulkanBindingSet*>(&set);
         VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(vkSet.GetVulkanBindingSetPool().GetSpecification().Layout);
         VkDescriptorSet descriptorSet = vkSet.GetVkDescriptorSet();
 
-        vkCmdBindDescriptorSets(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline.GetVkPipelineLayout(), vkLayout.GetBindingLayoutSpecification().RegisterSpace, 1, &descriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, vkLayout.GetRegisterSpace(), 1, &descriptorSet, 0, nullptr);
     }
 
     void VulkanCommandList::BindBindingSets(const std::span<const BindingSet*> sets)
     {
         NG_PROFILE("VulkanCommandList::BindBindingSets()");
 
-        // TODO: Batch bindings
-        for (auto set : sets)
-            BindBindingSet(*set);
+        NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[VkCommandList] A pipeline must be bound to bind a binding set.");
+
+        VkPipelineLayout layout;
+        VkPipelineBindPoint bindPoint;
+        if (m_CurrentGraphicsPipeline)
+        {
+            layout = api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline)->GetVkPipelineLayout();
+            bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        }
+        else
+        {
+            layout = api_cast<const VulkanGraphicsPipeline*>(m_CurrentComputePipeline)->GetVkPipelineLayout();
+            bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+        }
+
+        // Note: This corresponds to SetID               Sets
+        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>>> descriptorSetsSet;
+        std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.emplace_back()).reserve(sets.size());
+
+        // Runtime validation
+        {
+            for (size_t i = 0; i < sets.size(); i++)
+            {
+                if (sets[i] == nullptr)
+                    continue;
+
+                // If SetID doesn't match create a new starting point with current SetID
+                if (std::get<uint32_t>(descriptorSetsSet.back()) != i)
+                {
+                    auto& tuple = descriptorSetsSet.emplace_back(
+                        static_cast<uint32_t>(i),
+                        std::vector<VkDescriptorSet>()
+                    );
+
+                    std::get<std::vector<VkDescriptorSet>>(tuple).reserve(sets.size());
+                }
+
+                // Add descriptor
+                const VulkanBindingSet& vulkanSet = *api_cast<const VulkanBindingSet*>(sets[i]);
+                std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.back()).push_back(vulkanSet.GetVkDescriptorSet());
+            }
+        }
+
+        // Binding
+        for (const auto& [setID, descriptorSets] : descriptorSetsSet)
+            vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
     }
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const

@@ -52,7 +52,7 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 - [ ] Dynamic buffers
 - [ ] **Vulkan**
   - [ ] Pushconstants
-  - [ ] Bindless support
+  - [x] Bindless support
   - [ ] Tesselation control
 - [ ] **Dx12**
   - [ ] Bindless support
