@@ -18,7 +18,7 @@ namespace Nano::Graphics::Internal
 		////////////////////////////////////////////////////////////////////////////////////
 		// Helper function
 		////////////////////////////////////////////////////////////////////////////////////
-		void CreatePipelineLayout(VkPipelineLayout& layout, const Nano::Memory::StaticVector<BindingLayout*, GraphicsPipelineSpecification::MaxBindings>& layouts, const PushConstantSpecification& pushConstants, VkDevice device)
+		void CreatePipelineLayout(VkPipelineLayout& layout, const Nano::Memory::StaticVector<BindingLayout*, GraphicsPipelineSpecification::MaxBindings>& layouts, VkDevice device)
 		{
 			// Descriptor layouts
 			std::vector<VkDescriptorSetLayout> descriptorLayouts;
@@ -29,14 +29,23 @@ namespace Nano::Graphics::Internal
 			{
 				VulkanBindingLayout& vulkanLayout = *api_cast<VulkanBindingLayout*>(descriptorLayout);
 				descriptorLayouts.push_back(vulkanLayout.GetVkDescriptorSetLayout());
-			}
 
-			if (pushConstants.Size != 0)
-			{
-				VkPushConstantRange& vkRange = range.emplace();
-				vkRange.stageFlags = ShaderStageToVkShaderStageFlags(pushConstants.Visibility);
-				vkRange.offset = 0;
-				vkRange.size = pushConstants.Size;
+				// Only iterate over all the items when we don't already have a range
+				if (!range.has_value())
+				{
+					for (const auto& item : vulkanLayout.GetBindingItems())
+					{
+						if (item.Type != ResourceType::PushConstants)
+							continue;
+
+						// Note: We currently only support 1 push constant range, so
+						// the offset is 0
+						VkPushConstantRange& vkRange = range.emplace();
+						vkRange.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
+						vkRange.offset = 0;
+						vkRange.size = item.Size;
+					}
+				}
 			}
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -176,7 +185,7 @@ namespace Nano::Graphics::Internal
 		dynamicState.pDynamicStates = dynamicStates.data();
 
 		// Pipeline layout
-		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, m_Specification.PushConstants, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
+		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
 
 		// Create the actual graphics pipeline (where we actually use the shaders and other info)
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -230,7 +239,7 @@ namespace Nano::Graphics::Internal
 		computeShaderInfo.module = api_cast<const VulkanShader*>(specs.ComputeShader)->GetVkShaderModule();
 		computeShaderInfo.pName = specs.ComputeShader->GetSpecification().MainName.data();
 
-		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, m_Specification.PushConstants, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
+		CreatePipelineLayout(m_PipelineLayout, m_Specification.BindingLayouts, vulkanDevice.GetContext().GetVulkanLogicalDevice().GetVkDevice());
 
 		// Create the actual compute pipeline (where we actually use the shaders and other info)
 		VkComputePipelineCreateInfo pipelineInfo = {};

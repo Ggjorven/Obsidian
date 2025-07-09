@@ -116,6 +116,9 @@ namespace Nano::Graphics::Internal
         shaderc::CompileOptions options = {};
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
         
+        // Note: Forces the shaders to manually set all registers/sets/bindings
+        options.SetAutoBindUniforms(false);
+
         if (language == ShadingLanguage::GLSL)      
             options.SetSourceLanguage(shaderc_source_language_glsl);
         else if (language == ShadingLanguage::HLSL)
@@ -124,7 +127,6 @@ namespace Nano::Graphics::Internal
             options.SetTargetSpirv(shaderc_spirv_version_1_6);
 
             options.AddMacroDefinition("HLSL");
-            options.SetAutoBindUniforms(false);
             options.SetHlslIoMapping(true); // Note: Needed for `register(b0, space0)` layout
         }
 

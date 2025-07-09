@@ -54,6 +54,7 @@ namespace Nano::Graphics::Internal
         const BindingLayoutSpecification& GetBindingSpecification() const { NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Getting BindingLayout but the layout is bindless."); return std::get<BindingLayoutSpecification>(m_Specification); }
         const BindlessLayoutSpecification& GetBindlessSpecification() const { NG_ASSERT(IsBindless(), "[Dx12BindingLayout] Getting BindlessLayout but the layout isn't bindless."); return std::get<BindlessLayoutSpecification>(m_Specification); }
 
+        uint8_t GetRegisterSpace() const;
         std::span<const BindingLayoutItem> GetBindingItems() const;
 
         inline const std::vector<std::pair<ResourceType, uint32_t>>& GetResourceCounts() const { return m_ResourceCounts; }

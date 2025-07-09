@@ -47,16 +47,17 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 
 ## TODO List
 - [ ] Pushconstants
-- [ ] Bindless support
+- [x] Bindless support
 - [ ] Tesselation control
 - [ ] Dynamic buffers
 - [ ] **Vulkan**
-  - [ ] Pushconstants
+  - [x] Pushconstants
   - [x] Bindless support
   - [ ] Tesselation control
+  - [ ] Dynamic buffers
 - [ ] **Dx12**
-  - [ ] Bindless support
-  - [ ] Pushconstants
+  - [x] Bindless support
+  - [ ] Pushconstants // Note: SPIRV-Cross GLSL -> HLSL, needs extra shader compilation args for pushconstant register/space, since GLSL doesn't have a set/binding for pushconstants
   - [ ] Tesselation control
   - [ ] Dynamic buffers
 - [ ] **Metal**

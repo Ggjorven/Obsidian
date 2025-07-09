@@ -276,7 +276,6 @@ namespace Nano::Graphics
         Renderpass* Pass = nullptr;
 
         Nano::Memory::StaticVector<BindingLayout*, MaxBindings> BindingLayouts = {};
-        PushConstantSpecification PushConstants = {};
 
         std::string DebugName = {};
 
@@ -298,7 +297,6 @@ namespace Nano::Graphics
         inline constexpr GraphicsPipelineSpecification& SetRenderpass(Renderpass& renderpass) { Pass = &renderpass; return *this; }
 
         inline GraphicsPipelineSpecification& AddBindingLayout(BindingLayout& layout) { BindingLayouts.push_back(&layout); return *this; }
-        inline constexpr GraphicsPipelineSpecification& SetPushConstants(const PushConstantSpecification& pushConstants) { PushConstants = pushConstants; return *this; }
 
         inline GraphicsPipelineSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };

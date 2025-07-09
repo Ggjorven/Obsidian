@@ -71,6 +71,17 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
+    uint8_t Dx12BindingLayout::GetRegisterSpace() const
+    {
+        return std::visit([](auto&& obj) -> uint8_t
+        {
+            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, BindingLayoutSpecification>)
+                return obj.RegisterSpace;
+            else if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, BindlessLayoutSpecification>)
+                return obj.RegisterSpace;
+        }, m_Specification);
+    }
+
     std::span<const BindingLayoutItem> Dx12BindingLayout::GetBindingItems() const
     {
         return std::visit([](auto&& obj) -> std::span<const BindingLayoutItem>
@@ -154,6 +165,7 @@ namespace Nano::Graphics::Internal
                 }
 
                 case ResourceType::ConstantBuffer:
+                case ResourceType::PushConstants:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
@@ -292,6 +304,7 @@ namespace Nano::Graphics::Internal
                 case ResourceType::TypedBufferUAV:
                 // Note: These are all in the descriptor heap
                 case ResourceType::ConstantBuffer:
+                case ResourceType::PushConstants:
                     m_SRVAndUAVAndCBVCountPerSet += count;
                     break;
 

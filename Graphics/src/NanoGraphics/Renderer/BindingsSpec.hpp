@@ -41,6 +41,7 @@ namespace Nano::Graphics
         UniformBuffer,
         ConstantBuffer = UniformBuffer,
         Sampler,
+        PushConstants,
         //RayTracingAccelStruct,
         
         // Note: CombinedImageSampler is not supported, since only Vulkan supports it
@@ -78,7 +79,7 @@ namespace Nano::Graphics
         inline constexpr bool operator != (const BindingLayoutItem& other) const { return !(*this == other); }
 
         // Getters
-        inline constexpr uint32_t GetArraySize() const { return /*(Type == ResourceType::PushConstants) ? 1 :*/ Size; }
+        inline constexpr uint32_t GetArraySize() const { return (Type == ResourceType::PushConstants) ? 1 : Size; }
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

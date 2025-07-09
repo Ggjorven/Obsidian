@@ -81,7 +81,7 @@ namespace Nano::Graphics
         // Note: This API should not be use unless you explicitly know what you are doing.
         // This can slightly improve performance for a runtime application which is no longer in development.
         // Note 2: Dummy doesn't have a special Native function so it return the SPIRV.
-        inline std::vector<uint8_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToSPIRV(stage, code, entryPoint, language); }
+        inline std::vector<uint32_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToSPIRV(stage, code, entryPoint, language); }
 #endif
     
     private:

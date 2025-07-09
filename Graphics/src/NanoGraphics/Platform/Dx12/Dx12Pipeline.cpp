@@ -29,34 +29,25 @@ namespace Nano::Graphics::Internal
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
                 
-                // TODO: ...
-                NG_ASSERT(!dxLayout.IsBindless(), "[Dx12GraphicsPipeline] A bindless layout is currently not supported.");
-                
-                BindingLayoutSpecification bindingSpecs = dxLayout.GetBindingSpecification();
-
                 const auto& srvAndUAVAndCBVRanges = dxLayout.GetD3D12SRVAndUAVAndCBVRanges();
                 const auto& samplerRanges = dxLayout.GetD3D12SamplerRanges();
 
                 // Reserve space
-                m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
-                m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.reserve(samplerRanges.size());
+                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
+                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
+                // Note: Pushconstants are also put in these ranges since pushconstants on dx12
+                // are just cbuffers
                 for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
-            }
-
-            // Push constants
-            {
-                // TODO: ...
-                NG_ASSERT((m_Specification.PushConstants.Size == 0), "[Dx12GraphicsPipeline] PushConstants are currently not supported on dx12.");
             }
 
             // Create root signature with these parameters
@@ -213,34 +204,25 @@ namespace Nano::Graphics::Internal
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
 
-                // TODO: ...
-                NG_ASSERT(!dxLayout.IsBindless(), "[Dx12GraphicsPipeline] A bindless layout is currently not supported.");
-
-                BindingLayoutSpecification bindingSpecs = dxLayout.GetBindingSpecification();
-
                 const auto& srvAndUAVAndCBVRanges = dxLayout.GetD3D12SRVAndUAVAndCBVRanges();
                 const auto& samplerRanges = dxLayout.GetD3D12SamplerRanges();
 
                 // Reserve space
-                m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
-                m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.reserve(samplerRanges.size());
+                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
+                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
+                // Note: Pushconstants are also put in these ranges since pushconstants on dx12
+                // are just cbuffers
                 for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[bindingSpecs.RegisterSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
-            }
-
-            // Push constants
-            {
-                // TODO: ...
-                NG_ASSERT((m_Specification.PushConstants.Size == 0), "[Dx12ComputePipeline] PushConstants are currently not supported on dx12.");
             }
 
             // Create root signature with these parameters
