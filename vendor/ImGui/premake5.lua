@@ -45,12 +45,12 @@ project "ImGui"
 		{ 
 			"%{Dependencies.Vulkan.IncludeDir}" 
 		}
-    elseif gfxapi == "d3d12" then -- TODO: Implement
-		-- files
-		-- {
-		-- 	"ImGui/backends/imgui_impl_dx12.h",
-		-- 	"ImGui/backends/imgui_impl_dx12.cpp",
-		-- }
+    elseif gfxapi == "dx12" then
+		files
+		{
+			"ImGui/backends/imgui_impl_dx12.h",
+			"ImGui/backends/imgui_impl_dx12.cpp",
+		}
 	elseif gfxapi == "metal" then -- TODO: Implement
 		-- files
 		-- {

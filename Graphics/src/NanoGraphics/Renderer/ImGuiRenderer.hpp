@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NanoGraphics/Platform/Vulkan/VulkanImGuiRenderer.hpp"
+#include "NanoGraphics/Platform/Dx12/Dx12ImGuiRenderer.hpp"
 #include "NanoGraphics/Platform/Dummy/DummyImGuiRenderer.hpp"
 
 #include <Nano/Nano.hpp>
@@ -23,7 +24,7 @@ namespace Nano::Graphics
 	public:
 		using Type = Types::SelectorType<Information::RenderingAPI,
 			Types::EnumToType<Information::Structs::RenderingAPI::Vulkan, Internal::VulkanImGuiRenderer>,
-			Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::DummyImGuiRenderer>,
+			Types::EnumToType<Information::Structs::RenderingAPI::Dx12, Internal::Dx12ImGuiRenderer>,
 			Types::EnumToType<Information::Structs::RenderingAPI::Metal, Internal::DummyImGuiRenderer>,
 			Types::EnumToType<Information::Structs::RenderingAPI::Dummy, Internal::DummyImGuiRenderer>
 		>;

@@ -183,8 +183,9 @@ public:
 			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourStartState(ResourceState::Unknown)
-			.SetColourEndState(ResourceState::Present)
+			.SetColourStartState(ResourceState::Present)
+			.SetColourRenderingState(ResourceState::RenderTarget)
+			.SetColourEndState(ResourceState::RenderTarget)
 
 			.SetDebugName("Renderpass")
 		);
@@ -207,7 +208,8 @@ public:
 			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Load)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourStartState(ResourceState::Present)
+			.SetColourStartState(ResourceState::RenderTarget)
+			.SetColourRenderingState(ResourceState::RenderTarget)
 			.SetColourEndState(ResourceState::Present)
 
 			.SetDebugName("ImguiPass")
@@ -404,7 +406,7 @@ public:
 			);
 			m_Device->StartTracking(stagingImage, ResourceState::Unknown);
 
-			uint32_t imageColour = 0xFF00FF00;
+			uint32_t imageColour = 0xFFFFFF00;
 			m_Device->WriteImage(stagingImage, ImageSliceSpecification(), &imageColour, sizeof(uint32_t));
 
 			// Image
@@ -493,17 +495,17 @@ public:
 
 			FreeQueue();
 
-			m_CommandPools[m_Swapchain->GetCurrentFrame()]->Reset();
-			CommandList& renderpassList = m_RenderpassLists[m_Swapchain->GetCurrentFrame()].Get();
-			CommandList& imguiList = m_ImGuiLists[m_Swapchain->GetCurrentFrame()].Get();
-			BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
-
 			double time = m_Window->GetWindowTime(); // Note: We use m_Window->GetWindowTime() instead of Nano's dedicated timer class because steadyclock on MacOS is very weird and unstable.
 			Update(static_cast<float>(time - lastTime));
 			lastTime = time;
 
 			m_Swapchain->AcquireNextImage();
 			{
+				m_CommandPools[m_Swapchain->GetCurrentFrame()]->Reset();
+				CommandList& renderpassList = m_RenderpassLists[m_Swapchain->GetCurrentFrame()].Get();
+				CommandList& imguiList = m_ImGuiLists[m_Swapchain->GetCurrentFrame()].Get();
+				BindingSet& set0 = m_Set0s[m_Swapchain->GetCurrentFrame()].Get();
+
 				// Main pass
 				{
 					renderpassList.Open();
@@ -515,7 +517,14 @@ public:
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
 
-						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
+						//.SetColourClear({ 
+						//	(m_Swapchain->GetCurrentFrame() == 0) ? 1.0f : 0.0f,
+						//	(m_Swapchain->GetCurrentFrame() == 1) ? 1.0f : 0.0f,
+						//	(m_Swapchain->GetCurrentFrame() == 2) ? 1.0f : 0.0f,
+						//	1.0f 
+						//})
+
+						.SetColourClear({ 0.0f, 0.0f, 0.0f, 1.0f })
 					);
 
 					// Rendering
@@ -551,17 +560,13 @@ public:
 
 						.SetViewport(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y)))
 						.SetScissor(ScissorRect(Viewport(static_cast<float>(m_Window->GetSize().x), static_cast<float>(m_Window->GetSize().y))))
-
-						.SetColourClear({ 1.0f, 0.0f, 0.0f, 1.0f })
 					);
 
 					// Rendering
-					imguiList.BindPipeline(m_Pipeline.Get());
-
 					ImGuiRenderer::Begin();
-
+					
 					ImGui::ShowMetricsWindow();
-
+					
 					ImGuiRenderer::End(imguiList);
 
 					imguiList.EndRenderpass(RenderpassEndArgs().SetRenderpass(m_ImguiPass.Get()));
