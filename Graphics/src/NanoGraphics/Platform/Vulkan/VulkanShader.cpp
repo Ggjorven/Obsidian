@@ -72,7 +72,9 @@ namespace Nano::Graphics::Internal
                 code = const_cast<std::vector<uint32_t>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
             else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const uint32_t>>)
                 code = arg;
-        }, specs.SPIRV);
+            else
+                NG_UNREACHABLE();
+        }, std::get<std::variant<std::vector<uint32_t>, std::span<const uint32_t>>>(specs.Code));
 
         VkShaderModuleCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -131,6 +133,11 @@ namespace Nano::Graphics::Internal
         NG_ASSERT((module.GetCompilationStatus() == shaderc_compilation_status_success), "[VkShaderCompiler] Error compiling shader: {0}", module.GetErrorMessage());
 
         return std::vector<uint32_t>(module.cbegin(), module.cend());
+    }
+
+    std::vector<uint32_t> VulkanShaderCompiler::CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language)
+    {
+        return CompileToSPIRV(stage, code, entryPoint, language);
     }
 
 }

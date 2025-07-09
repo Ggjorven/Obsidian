@@ -1,12 +1,14 @@
 #pragma once
 
-#include <cstdint>
-#include <type_traits>
+#include "NanoGraphics/Maths/Structs.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "NanoGraphics/Maths/Structs.hpp"
+#include <glm/gtc/type_ptr.hpp>
+
+#include <cstdint>
+#include <type_traits>
 
 namespace Nano::Graphics::Maths
 {
@@ -47,6 +49,21 @@ namespace Nano::Graphics::Maths
 
 	float Clamp(float value, float min, float max);
 
+	template<typename TMathObject>
+	auto ValuePointer(TMathObject& obj) -> decltype(glm::value_ptr(obj))
+	{
+		return glm::value_ptr(obj);
+	}
+
+	template<typename TMathObject>
+	auto ValuePointer(const TMathObject& obj) -> decltype(glm::value_ptr(obj))
+	{
+		return glm::value_ptr(obj);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Custom utils
+	////////////////////////////////////////////////////////////////////////////////////
 	float AspectRatio(uint32_t width, uint32_t height);
 
 	// Note: The underlying maths library is glm, glm works in the opengl coordinate space

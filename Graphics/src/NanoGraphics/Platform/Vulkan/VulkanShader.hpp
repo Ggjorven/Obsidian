@@ -64,6 +64,8 @@ namespace Nano::Graphics::Internal
         // Methods
         std::vector<uint32_t> CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language);
 
+        std::vector<uint32_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language);
+
     private:
         shaderc::Compiler m_Compiler = {};
     };

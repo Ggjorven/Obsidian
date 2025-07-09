@@ -20,6 +20,8 @@ namespace Nano::Graphics::Internal
     namespace
     {
 
+        inline constexpr static uint32_t g_ShaderModel = 67;
+
         ////////////////////////////////////////////////////////////////////////////////////
         // ShaderStageToShaderCMapping
         ////////////////////////////////////////////////////////////////////////////////////
@@ -207,38 +209,61 @@ namespace Nano::Graphics::Internal
     Dx12Shader::Dx12Shader(const Device& device, const ShaderSpecification& specs)
         : m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
     {
-        std::span<const uint32_t> code;
-        std::visit([&](auto&& arg)
+        // If native was passed in, we don't need to remap SPIRV to HLSL and recompile
+        if (std::holds_alternative<std::variant<std::vector<uint8_t>, std::span<const uint8_t>>>(specs.Code))
         {
-            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<uint32_t>>)
-                code = const_cast<std::vector<uint32_t>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
-            else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const uint32_t>>)
-                code = arg;
-        }, m_Specification.SPIRV);
+            std::span<const uint8_t> code;
+            std::visit([&](auto&& arg)
+            {
+                if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<uint8_t>>)
+                    code = const_cast<std::vector<uint8_t>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
+                else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const uint8_t>>)
+                    code = arg;
+                else
+                    NG_UNREACHABLE();
+            }, std::get<std::variant<std::vector<uint8_t>, std::span<const uint8_t>>>(m_Specification.Code));
 
-        // Convert to HLSL
-        std::string hlslString; 
-        {
-            spirv_cross::CompilerHLSL compiler(code.data(), code.size()); 
-            spirv_cross::CompilerHLSL::Options options;
-            options.shader_model = 67;
-            
-            compiler.set_hlsl_options(options);
-            compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
-            
-            hlslString = compiler.compile();
+            m_ByteCodeStorage.clear();
+            m_ByteCodeStorage.insert(m_ByteCodeStorage.begin(), code.begin(), code.end());
         }
-
-        // Compile HLSL
+        // Remap SPIRV to HLSL and recompile
+        else
         {
-            int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), nullptr, 0);
+            std::span<const uint32_t> code;
+            std::visit([&](auto&& arg)
+            {
+                if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::vector<uint32_t>>)
+                    code = const_cast<std::vector<uint32_t>&>(arg); // Note: This is worst thing I have done in my life. I can never recover.
+                else if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::span<const uint32_t>>)
+                    code = arg;
+                else
+                    NG_UNREACHABLE();
+            }, std::get<std::variant<std::vector<uint32_t>, std::span<const uint32_t>>>(m_Specification.Code));
 
-            NG_ASSERT((length != 0), "[Dx12Context] Failed to convert std::string to std::wstring. Error: {0}", GetLastError());
+            // Convert to HLSL
+            std::string hlslString; 
+            {
+                spirv_cross::CompilerHLSL compiler(code.data(), code.size()); 
+                spirv_cross::CompilerHLSL::Options options;
+                options.shader_model = g_ShaderModel;
+            
+                compiler.set_hlsl_options(options);
+                compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
+            
+                hlslString = compiler.compile();
+            }
 
-            std::wstring entryName(length, L'\0');
-            (void)MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), entryName.data(), length);
+            // Compile HLSL
+            {
+                int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), nullptr, 0);
 
-            m_ByteCodeStorage = CompileHLSLToDXIL(hlslString, entryName, std::wstring(ShaderStageToDX12Stage(m_Specification.Stage)));
+                NG_ASSERT((length != 0), "[Dx12Context] Failed to convert std::string to std::wstring. Error: {0}", GetLastError());
+
+                std::wstring entryName(length, L'\0');
+                (void)MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), entryName.data(), length);
+
+                m_ByteCodeStorage = CompileHLSLToDXIL(hlslString, entryName, std::wstring(ShaderStageToDX12Stage(m_Specification.Stage)));
+            }
         }
     }
 
@@ -286,6 +311,40 @@ namespace Nano::Graphics::Internal
         NG_ASSERT((module.GetCompilationStatus() == shaderc_compilation_status_success), "[Dx12ShaderCompiler] Error compiling shader: {0}", module.GetErrorMessage());
 
         return std::vector<uint32_t>(module.cbegin(), module.cend());
+    }
+
+    std::vector<uint8_t> Dx12ShaderCompiler::CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint, ShadingLanguage language)
+    {
+        NG_ASSERT((!code.empty()), "[Dx12ShaderCompiler] Empty string passed in as shader code.");
+
+        // Get the entrypoint as a wstring
+        int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, entryPoint.data(), static_cast<int>(entryPoint.size()), nullptr, 0);
+
+        NG_ASSERT((length != 0), "[Dx12Context] Failed to convert std::string to std::wstring. Error: {0}", GetLastError());
+
+        std::wstring entryName(length, L'\0');
+        (void)MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, entryPoint.data(), static_cast<int>(entryPoint.size()), entryName.data(), length);
+
+        // Note: We can directy compile HLSL to DXIL
+        if (language == ShadingLanguage::HLSL)
+            return CompileHLSLToDXIL(code, entryName, std::wstring(ShaderStageToDX12Stage(stage)));
+
+        std::vector<uint32_t> spirv = CompileToSPIRV(stage, code, entryPoint, language);
+
+        // Convert the GLSL to HLSL
+        std::string hlslString;
+        {
+            spirv_cross::CompilerHLSL compiler(spirv.data(), spirv.size());
+            spirv_cross::CompilerHLSL::Options options;
+            options.shader_model = g_ShaderModel;
+
+            compiler.set_hlsl_options(options);
+            compiler.set_entry_point(entryPoint, ShaderStageToExecutionModel(stage));
+
+            hlslString = compiler.compile();
+        }
+
+        return CompileHLSLToDXIL(code, entryName, std::wstring(ShaderStageToDX12Stage(stage)));
     }
 
 }

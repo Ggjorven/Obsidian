@@ -221,7 +221,7 @@ public:
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-			});
+		});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)
@@ -336,7 +336,7 @@ public:
 
 			// Uniformbuffer
 			m_UniformBufferForPass0.Construct(m_Device.Get(), BufferSpecification()
-				.SetSize(sizeof(Camera2DData))
+				.SetSize(sizeof(Camera2DData) + sizeof(Maths::Mat4<float>))
 				.SetIsUniformBuffer(true)
 				.SetCPUAccess(CpuAccessMode::Write)
 				.SetDebugName("Camera2D Uniform")
@@ -344,7 +344,7 @@ public:
 			m_Device->StartTracking(m_UniformBufferForPass0.Get(), ResourceState::Unknown);
 
 			m_UniformBufferForPass1.Construct(m_Device.Get(), BufferSpecification()
-				.SetSize(sizeof(Camera2DData))
+				.SetSize(sizeof(Camera2DData) + sizeof(Maths::Mat4<float>))
 				.SetIsUniformBuffer(true)
 				.SetCPUAccess(CpuAccessMode::Write)
 				.SetDebugName("Camera2D Uniform")

@@ -66,8 +66,24 @@ namespace Nano::Graphics
         ~ShaderCompiler() = default;
 
         // Methods
+        // Note: SPIRV is the format that the underlying API can use for all backends.
         inline std::vector<uint32_t> CompileToSPIRV(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToSPIRV(stage, code, entryPoint, language); }
 
+#if defined(NG_API_VULKAN)
+        // Note: This API should not be use unless you explicitly know what you are doing.
+        // This can slightly improve performance for a runtime application which is no longer in development.
+        inline std::vector<uint32_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToNative(stage, code, entryPoint, language); }
+#elif defined(NG_API_DX12)
+        // Note: This API should not be use unless you explicitly know what you are doing.
+        // This can slightly improve performance for a runtime application which is no longer in development.
+        inline std::vector<uint8_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToNative(stage, code, entryPoint, language); }
+#elif defined(NG_API_DUMMY)
+        // Note: This API should not be use unless you explicitly know what you are doing.
+        // This can slightly improve performance for a runtime application which is no longer in development.
+        // Note 2: Dummy doesn't have a special Native function so it return the SPIRV.
+        inline std::vector<uint8_t> CompileToNative(ShaderStage stage, const std::string& code, const std::string& entryPoint = "main", ShadingLanguage language = ShadingLanguage::GLSL) { return m_Impl->CompileToSPIRV(stage, code, entryPoint, language); }
+#endif
+    
     private:
         Internal::APIObject<Type> m_Impl = {};
 
