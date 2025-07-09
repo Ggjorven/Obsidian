@@ -59,9 +59,9 @@ namespace Nano::Graphics::Internal
         std::vector<VkCommandBuffer> commandBuffers;
         commandBuffers.reserve(lists.size());
 
-        for (auto& list : lists)
+        for (auto list : lists)
         {
-            VkCommandBuffer commandBuffer = (*api_cast<VulkanCommandList*>(&list)).GetVkCommandBuffer();
+            VkCommandBuffer commandBuffer = (*api_cast<VulkanCommandList*>(list)).GetVkCommandBuffer();
             commandBuffers.push_back(commandBuffer);
         }
 

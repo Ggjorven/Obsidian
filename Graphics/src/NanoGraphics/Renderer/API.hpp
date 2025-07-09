@@ -15,22 +15,37 @@ namespace Nano::Graphics::Internal
     {
     private:
         template<typename T, typename TInput>
-        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>);
+        friend constexpr T api_cast(TInput input) requires(
+            (std::is_pointer_v<T>&& std::is_pointer_v<TInput>) &&
+            (std::is_same_v<typename TInput::Type, T>) &&
+            (!(std::is_pointer_v<std::remove_pointer_t<T>>) && !(std::is_pointer_v<std::remove_pointer_t<TInput>>))
+        );
+
         template<typename T, typename TInput>
-        friend constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && !requires{ TInput::Type; });
+        friend constexpr T api_cast(TInput input) requires(
+            (std::is_pointer_v<T>&& std::is_pointer_v<TInput>) &&
+            (!(std::is_pointer_v<std::remove_pointer_t<T>>) && !(std::is_pointer_v<std::remove_pointer_t<TInput>>))
+        );
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Casting methods
     ////////////////////////////////////////////////////////////////////////////////////
     template<typename T, typename TInput>
-    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && std::is_same_v<typename TInput::Type, T>)
+    inline constexpr T api_cast(TInput input) requires(
+        (std::is_pointer_v<T> && std::is_pointer_v<TInput>) && 
+        (std::is_same_v<typename TInput::Type, T>) &&
+        (!(std::is_pointer_v<std::remove_pointer_t<T>>) && !(std::is_pointer_v<std::remove_pointer_t<TInput>>))
+    )
     {
         return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(&input->m_Impl)));
     }
 
     template<typename T, typename TInput>
-    inline constexpr T api_cast(TInput input) requires((std::is_pointer_v<T>&& std::is_pointer_v<TInput>) && !requires{ TInput::Type; })
+    inline constexpr T api_cast(TInput input) requires(
+        (std::is_pointer_v<T> && std::is_pointer_v<TInput>) && 
+        (!(std::is_pointer_v<std::remove_pointer_t<T>>) && !(std::is_pointer_v<std::remove_pointer_t<TInput>>))
+    )
     {
         return std::assume_aligned<alignof(T)>(std::launder(reinterpret_cast<T>(input)));
     }
@@ -44,6 +59,11 @@ namespace Nano::Graphics::Internal
     public:
         // Constructor & Destructor
         APIObject() = default;
+        template<typename ...TArgs>
+        inline APIObject(TArgs&& ...args)
+        {
+            Construct(std::forward<TArgs>(args)...);
+        }
         inline ~APIObject()
         {
             if constexpr (!std::is_trivially_destructible_v<T>)

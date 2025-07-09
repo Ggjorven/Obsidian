@@ -74,16 +74,16 @@ namespace Nano::Graphics::Maths
     ////////////////////////////////////////////////////////////////////////////////////
     // Structs
     ////////////////////////////////////////////////////////////////////////////////////
-    template<typename T>
+    template<typename T = float>
     using Vec2 = typename Internal::Maths::Vec2<T>::Type;
-    template<typename T>
+    template<typename T = float>
     using Vec3 = typename Internal::Maths::Vec3<T>::Type;
-    template<typename T>
+    template<typename T = float>
     using Vec4 = typename Internal::Maths::Vec4<T>::Type;
 
-    template<typename T>
+    template<typename T = float>
     using Mat3 = typename Internal::Maths::Mat3<T>::Type;
-    template<typename T>
+    template<typename T = float>
     using Mat4 = typename Internal::Maths::Mat4<T>::Type;
 
 }

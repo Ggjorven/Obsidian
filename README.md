@@ -47,10 +47,18 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 
 ## TODO List
 - [ ] Pushconstants
+- [ ] Bindless support
 - [ ] Tesselation control
+- [ ] Dynamic buffers
+- [ ] **Vulkan**
+  - [ ] Pushconstants
+  - [ ] Bindless support
+  - [ ] Tesselation control
 - [ ] **Dx12**
   - [ ] Bindless support
   - [ ] Pushconstants
+  - [ ] Tesselation control
+  - [ ] Dynamic buffers
 - [ ] **Metal**
   - [ ] Window
   - [ ] Device
