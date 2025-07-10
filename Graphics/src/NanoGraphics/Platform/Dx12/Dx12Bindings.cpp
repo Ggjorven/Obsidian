@@ -44,7 +44,7 @@ namespace Nano::Graphics::Internal
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
-        NG_ASSERT(false, "[Dx12BindingLayout] Bindless on dx12 is not properly supported yet.");
+        CreateRootParameters(items);
     }
 
     Dx12BindingLayout::~Dx12BindingLayout()
@@ -127,14 +127,12 @@ namespace Nano::Graphics::Internal
 
     void Dx12BindingLayout::CreateRootParameters(std::span<const BindingLayoutItem> items)
     {
-        NG_ASSERT(!IsBindless(), "[Dx12BindingLayout] Root parameters can currently only be made for bindingsets instead of bindless.");
-
         m_SRVAndUAVAndCBVRanges.reserve(items.size());
         m_SamplerRanges.reserve(items.size());
 
         // Create ranges
         {
-            const BindingLayoutSpecification& specs = std::get<BindingLayoutSpecification>(m_Specification);
+            uint8_t registerSpace = GetRegisterSpace();
 
             for (const auto& item : items)
             {
@@ -145,7 +143,7 @@ namespace Nano::Graphics::Internal
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
                     
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, item.Slot, specs.RegisterSpace);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
 
@@ -157,7 +155,7 @@ namespace Nano::Graphics::Internal
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, item.Slot, specs.RegisterSpace);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
 
@@ -165,11 +163,10 @@ namespace Nano::Graphics::Internal
                 }
 
                 case ResourceType::ConstantBuffer:
-                case ResourceType::PushConstants:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, item.Slot, specs.RegisterSpace);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
 
@@ -180,12 +177,17 @@ namespace Nano::Graphics::Internal
                 {
                     auto& [slot, stage, range] = m_SamplerRanges.emplace_back();
 
-                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, item.Slot, specs.RegisterSpace);
+                    range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
 
                     break;
                 }
+
+                // Note: PushConstants are not needed in the descriptor heap
+                // they are stored in fast-accessible gpu memory.
+                case ResourceType::PushConstants:
+                    break;
 
                 default:
                     NG_UNREACHABLE();

@@ -594,8 +594,16 @@ namespace Nano::Graphics::Internal
 
     inline constexpr DXGI_COLOR_SPACE_TYPE ColourSpaceToD3D12ColourSpace(ColourSpace space) { NG_ASSERT((static_cast<size_t>(space) < g_ColourSpaceMapping.size()), "Space value exceeds mappings."); return g_ColourSpaceMapping[static_cast<size_t>(space)].SpaceType; }
 
-    inline constexpr D3D12_SHADER_VISIBILITY ShaderStageToD3D12ShaderVisibility(ShaderStage stage) // Note: We take the first stage, since D3D12 visibility are not bit flags
+    inline constexpr D3D12_SHADER_VISIBILITY ShaderStageToD3D12ShaderVisibility(ShaderStage stage)
     {
+        std::underlying_type_t<ShaderStage> value = std::to_underlying(stage);
+
+        int index = std::countr_zero(value);
+        value &= ~(1u << index); // clear bit
+
+        if (value) // Note: If after the cleared bit there is still a stage, set it to all stages, since dx12 shader stages aren't bit flags
+            return D3D12_SHADER_VISIBILITY_ALL;
+
         return g_ShaderStageMapping[static_cast<size_t>((std::to_underlying(stage) ? (std::countr_zero(std::to_underlying(stage)) + 1) : 0))].Visibility;
     }
 

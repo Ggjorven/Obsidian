@@ -48,6 +48,22 @@ namespace Nano::Graphics::Internal
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
                     m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
+
+                // Push constants
+                if (m_PushConstantsIndex.second == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found.
+                {
+                    for (const auto& item : dxLayout.GetBindingItems())
+                    {
+                        if (item.Type != ResourceType::PushConstants)
+                            continue;
+
+                        NG_ASSERT((item.Size % 4 == 0), "[Dx12GraphicsPipeline] Push constants size must be aligned to 4 bytes.");
+
+                        parameters.emplace_back().InitAsConstants(item.Size / 4, item.Slot, dxLayout.GetRegisterSpace(), ShaderStageToD3D12ShaderVisibility(item.Visibility));
+                        m_PushConstantsIndex = { item.Slot, static_cast<uint16_t>(parameters.size()) - 1 };
+                        break;
+                    }
+                }
             }
 
             // Create root signature with these parameters
@@ -222,6 +238,22 @@ namespace Nano::Graphics::Internal
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
                     m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                }
+
+                // Push constants
+                if (m_PushConstantsIndex.second == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found.
+                {
+                    for (const auto& item : dxLayout.GetBindingItems())
+                    {
+                        if (item.Type != ResourceType::PushConstants)
+                            continue;
+
+                        NG_ASSERT((item.Size % 4 == 0), "[Dx12GraphicsPipeline] Push constants size must be aligned to 4 bytes.");
+
+                        parameters.emplace_back().InitAsConstants(item.Size / 4, item.Slot, dxLayout.GetRegisterSpace(), ShaderStageToD3D12ShaderVisibility(item.Visibility));
+                        m_PushConstantsIndex = { item.Slot, static_cast<uint16_t>(parameters.size()) - 1 };
+                        break;
+                    }
                 }
             }
 

@@ -10,6 +10,8 @@
 #include "NanoGraphics/Platform/Dx12/Dx12.hpp"
 
 #include <array>
+#include <limits>
+#include <numeric>
 
 namespace Nano::Graphics
 {
@@ -32,6 +34,8 @@ namespace Nano::Graphics::Internal
     public:
         struct RootParameterIndices
         {
+        public:
+            inline constexpr static uint16_t Invalid = std::numeric_limits<uint16_t>::max();
         public:
             //                    Slot      Index
             std::vector<std::pair<uint32_t, uint16_t>> SRVAndUAVAndCBVIndices = { };
@@ -59,6 +63,7 @@ namespace Nano::Graphics::Internal
         DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
 
         // Note: The index is the Set ID / Register space
+        std::pair<uint32_t, uint16_t> m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
         std::array<RootParameterIndices, GraphicsPipelineSpecification::MaxBindings> m_RootParameterIndices = {};
 
         friend class Dx12Device;
@@ -93,6 +98,7 @@ namespace Nano::Graphics::Internal
         DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
 
         // Note: The index is the Set ID / Register space
+        std::pair<uint32_t, uint16_t> m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
         std::array<RootParameterIndices, GraphicsPipelineSpecification::MaxBindings> m_RootParameterIndices = {};
 
         friend class Dx12Device;

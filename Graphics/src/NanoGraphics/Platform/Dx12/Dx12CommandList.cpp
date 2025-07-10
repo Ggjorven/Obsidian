@@ -422,8 +422,6 @@ namespace Nano::Graphics::Internal
             const Dx12GraphicsPipeline& graphicsPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
             const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
 
-            NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
-
             const auto& srvAndUAVandCBVRootIndices = graphicsPipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
             const auto& samplerRootIndices = graphicsPipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
 
@@ -459,8 +457,6 @@ namespace Nano::Graphics::Internal
         {
             const Dx12ComputePipeline& computePipeline = *api_cast<const Dx12ComputePipeline*>(m_CurrentComputePipeline);
             const Dx12BindingLayout& layout = *api_cast<const Dx12BindingLayout*>(dxSet.GetDx12BindingSetPool().GetSpecification().Layout);
-
-            NG_ASSERT(!layout.IsBindless(), "[Dx12CommandList] Can't bind a bindingset with a bindless layout.");
 
             const auto& srvAndUAVandCBVRootIndices = computePipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
             const auto& samplerRootIndices = computePipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
