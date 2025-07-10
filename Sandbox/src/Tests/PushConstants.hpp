@@ -148,7 +148,7 @@ public:
 				.SetSize(VertexAttributeSpecification::AutoSize)
 				.SetOffset(VertexAttributeSpecification::AutoOffset)
 				.SetDebugName("a_TexCoord")
-			});
+		});
 
 		m_BindingLayoutSet0.Construct(m_Device.Get(), BindingLayoutSpecification()
 			.SetRegisterSpace(0)

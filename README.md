@@ -48,12 +48,12 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 ## TODO List
 - [x] Pushconstants
 - [x] Bindless support
-- [ ] Tesselation control
+- [x] Tesselation control
 - [ ] Dynamic buffers
 - [ ] **Vulkan**
   - [x] Pushconstants
   - [x] Bindless support
-  - [ ] Tesselation control
+  - [x] Tesselation control
   - [ ] Dynamic buffers
 - [ ] **Dx12**
   - [x] Bindless support

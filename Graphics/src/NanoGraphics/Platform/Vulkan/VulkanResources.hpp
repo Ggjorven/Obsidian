@@ -370,8 +370,8 @@ namespace Nano::Graphics::Internal
         { PrimitiveType::TriangleStrip,                 VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
         { PrimitiveType::TriangleFan,                   VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
         { PrimitiveType::TriangleListWithAdjacency,     VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY },
-        { PrimitiveType::TriangleStripWithAdjacency,    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY }
-        //{ PrimitiveType::PatchList,                     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST }
+        { PrimitiveType::TriangleStripWithAdjacency,    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY },
+        { PrimitiveType::PatchList,                     VK_PRIMITIVE_TOPOLOGY_PATCH_LIST }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////

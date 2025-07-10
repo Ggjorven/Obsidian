@@ -117,6 +117,11 @@ namespace Nano::Graphics::Internal
 		inputAssembly.topology = PrimitiveTypeToVkPrimitiveTopology(m_Specification.Primitive);
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+		VkPipelineTessellationStateCreateInfo tesselationState = {};
+		tesselationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+		tesselationState.flags = 0;
+		tesselationState.patchControlPoints = m_Specification.PatchPointCount;
+
 		VkPipelineViewportStateCreateInfo viewportState = {}; // Note: We currently only support 1 viewport/scissor
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount = 1;
@@ -200,6 +205,7 @@ namespace Nano::Graphics::Internal
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pTessellationState = &tesselationState;
 		pipelineInfo.pViewportState = &viewportState;
 		pipelineInfo.pRasterizationState = &rasterizer;
 		pipelineInfo.pMultisampleState = &multisampling;
