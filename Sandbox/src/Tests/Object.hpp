@@ -192,8 +192,18 @@ public:
 		std::vector<uint32_t> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), "main", g_ShadingLanguage);
 		std::vector<uint32_t> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), "main", g_ShadingLanguage);
 
-		Shader vertexShader = m_Device->CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" });
-		Shader fragmentShader = m_Device->CreateShader({ ShaderStage::Fragment, "main", fragmentSPIRV, "Fragment Shader" });
+		Shader vertexShader = m_Device->CreateShader(ShaderSpecification()
+			.SetShaderStage(ShaderStage::Vertex)
+			.SetMainName("main")
+			.SetSPIRV(vertexSPIRV)
+			.SetDebugName("Vertex Shader")
+		);
+		Shader fragmentShader = m_Device->CreateShader(ShaderSpecification()
+			.SetShaderStage(ShaderStage::Fragment)
+			.SetMainName("main")
+			.SetSPIRV(fragmentSPIRV)
+			.SetDebugName("Fragment Shader")
+		);
 
 		// Input & Binding layout
 		m_InputLayout.Construct(m_Device.Get(), std::initializer_list{

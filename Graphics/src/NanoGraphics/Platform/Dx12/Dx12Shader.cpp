@@ -249,7 +249,20 @@ namespace Nano::Graphics::Internal
             
                 compiler.set_hlsl_options(options);
                 compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
-            
+                
+                if (m_Specification.PushConstantSize != 0)
+                {
+                    NG_ASSERT((m_Specification.PushConstantSize % 4 == 0), "[Dx12Shader] Pushconstants size must be a multiple of 4/aligned to 4 bytes.");
+
+                    spirv_cross::RootConstants constants = {};
+                    constants.start = 0;
+                    constants.end = m_Specification.PushConstantSize;
+                    constants.binding = m_Specification.PushConstantBinding;
+                    constants.space = m_Specification.PushConstantSpace;
+
+                    compiler.set_root_constant_layouts({ constants });
+                }
+
                 hlslString = compiler.compile();
                 NG_LOG_TRACE("{}", hlslString);
             }
@@ -258,7 +271,7 @@ namespace Nano::Graphics::Internal
             {
                 int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), nullptr, 0);
 
-                NG_ASSERT((length != 0), "[Dx12Context] Failed to convert std::string to std::wstring. Error: {0}", GetLastError());
+                NG_ASSERT((length != 0), "[Dx12Shader] Failed to convert std::string to std::wstring. Error: {0}", GetLastError());
 
                 std::wstring entryName(length, L'\0');
                 (void)MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, m_Specification.MainName.data(), static_cast<int>(m_Specification.MainName.size()), entryName.data(), length);

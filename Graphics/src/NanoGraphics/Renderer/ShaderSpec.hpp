@@ -71,6 +71,10 @@ namespace Nano::Graphics
             std::variant<std::vector<uint32_t>, std::span<const uint32_t>>
         > Code = {};
 
+        uint8_t PushConstantSpace = 0;
+        uint16_t PushConstantBinding = 0;
+        size_t PushConstantSize = 0;
+
         std::string DebugName = {};
 
     public:
@@ -95,6 +99,10 @@ namespace Nano::Graphics
         inline ShaderSpecification& SetNative(std::vector<uint32_t>&& ownedSPIRV) { Code = std::move(ownedSPIRV); return *this; }
         inline constexpr ShaderSpecification& SetNative(std::span<const uint32_t> viewedSPIRV) { Code = viewedSPIRV; return *this; }
 #endif
+
+        // Note: Default/Recommended push constant space is 0/0 / b0/space0, this is almost guaranteed to avoid
+        // implementation issues, but other space/register should also for all backends, if not contact the developer.
+        inline constexpr ShaderSpecification& SetPushConstantsInfo(uint8_t space = 0, uint16_t binding = 0, size_t size = 128) { PushConstantSpace = space; PushConstantBinding = binding; PushConstantSize = size; return *this; }
 
         inline ShaderSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
