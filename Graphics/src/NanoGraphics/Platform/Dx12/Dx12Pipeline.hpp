@@ -53,6 +53,8 @@ namespace Nano::Graphics::Internal
         inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
         inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
 
+        inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
+        
         const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
         const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
 
@@ -87,6 +89,8 @@ namespace Nano::Graphics::Internal
         // Internal getters
         inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
         inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
+
+        inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
 
         const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
         const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;

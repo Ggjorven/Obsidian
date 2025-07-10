@@ -39,11 +39,15 @@ namespace Nano::Graphics::Internal
         inline VkPipeline GetVkPipeline() const { return m_Pipeline; }
         inline VkPipelineLayout GetVkPipelineLayout() const { return m_PipelineLayout; }
 
+        inline VkShaderStageFlags GetPushConstantsStage() const { return m_PushConstantsStage; }
+
     private:
         GraphicsPipelineSpecification m_Specification;
 
         VkPipeline m_Pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
+
+        VkShaderStageFlags m_PushConstantsStage = VK_SHADER_STAGE_ALL;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -63,11 +67,15 @@ namespace Nano::Graphics::Internal
         inline VkPipeline GetVkPipeline() const { return m_Pipeline; }
         inline VkPipelineLayout GetVkPipelineLayout() const { return m_PipelineLayout; }
 
+        inline VkShaderStageFlags GetPushConstantsStage() const { return m_PushConstantsStage; }
+
     private:
         ComputePipelineSpecification m_Specification;
 
         VkPipeline m_Pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
+
+        VkShaderStageFlags m_PushConstantsStage = VK_SHADER_STAGE_ALL;
     };
 #endif
 

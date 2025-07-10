@@ -72,6 +72,9 @@ namespace Nano::Graphics
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_Impl->DrawIndexed(args); }
 
+        // Other methods
+        inline void PushConstants(const void* memory, size_t size, size_t srcOffset = 0, size_t dstOffset = 0) { m_Impl->PushConstants(memory, size, srcOffset, dstOffset); }
+
         // Getters
         inline const CommandListSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 

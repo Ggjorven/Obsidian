@@ -36,8 +36,7 @@ namespace Nano::Graphics::Internal
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
-                // Note: Pushconstants are also put in these ranges since pushconstants on dx12
-                // are just cbuffers
+                // Ranges
                 for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
@@ -227,8 +226,7 @@ namespace Nano::Graphics::Internal
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
-                // Note: Pushconstants are also put in these ranges since pushconstants on dx12
-                // are just cbuffers
+                // Ranges
                 for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
@@ -248,7 +246,8 @@ namespace Nano::Graphics::Internal
                         if (item.Type != ResourceType::PushConstants)
                             continue;
 
-                        NG_ASSERT((item.Size % 4 == 0), "[Dx12GraphicsPipeline] Push constants size must be aligned to 4 bytes.");
+                        NG_ASSERT((item.Size <= 128), "[Dx12ComputePipeline] Push constants size has to be less than 128 bytes.");
+                        NG_ASSERT((item.Size % 4 == 0), "[Dx12ComputePipeline] Push constants size must be aligned to 4 bytes.");
 
                         parameters.emplace_back().InitAsConstants(item.Size / 4, item.Slot, dxLayout.GetRegisterSpace(), ShaderStageToD3D12ShaderVisibility(item.Visibility));
                         m_PushConstantsIndex = { item.Slot, static_cast<uint16_t>(parameters.size()) - 1 };

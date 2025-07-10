@@ -251,6 +251,7 @@ namespace Nano::Graphics::Internal
                 compiler.set_entry_point(std::string(m_Specification.MainName), ShaderStageToExecutionModel(m_Specification.Stage));
             
                 hlslString = compiler.compile();
+                NG_LOG_TRACE("{}", hlslString);
             }
 
             // Compile HLSL

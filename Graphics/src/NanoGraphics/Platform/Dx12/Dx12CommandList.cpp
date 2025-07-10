@@ -692,4 +692,30 @@ namespace Nano::Graphics::Internal
         m_CommandList->DrawIndexedInstanced(args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Other methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void Dx12CommandList::PushConstants(const void* memory, size_t size, size_t srcOffset, size_t dstOffset)
+    {
+        NG_PROFILE("Dx12CommandList::PushConstants()");
+
+        NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[Dx12CommandList] Can't push constants if no pipeline is bound.");
+        NG_ASSERT((size + dstOffset <= 128), "[Dx12CommandList] Size + dstOffset exceeds max push constants size (128 bytes)");
+        NG_ASSERT((dstOffset % 4 == 0), "[Dx12CommandList] DstOffset must be aligned to 4 bytes.");
+        NG_ASSERT((size % 4 == 0), "[Dx12CommandList] Size must be aligned to 4 bytes.");
+
+        if (m_CurrentGraphicsPipeline)
+        {
+            const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12GraphicsPipeline::RootParameterIndices::Invalid), " ");
+            m_CommandList->SetGraphicsRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, size / 4, static_cast<const uint8_t*>(memory) + srcOffset, dstOffset / 4);
+        }
+        else
+        {
+            const Dx12ComputePipeline& dxPipeline = *api_cast<const Dx12ComputePipeline*>(m_CurrentComputePipeline);
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12ComputePipeline::RootParameterIndices::Invalid), " ");
+            m_CommandList->SetComputeRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, size / 4, static_cast<const uint8_t*>(memory) + srcOffset, dstOffset / 4);
+        }
+    }
+
 }

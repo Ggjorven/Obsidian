@@ -98,6 +98,9 @@ namespace Nano::Graphics::Internal
 		// Draw methods
 		inline constexpr void DrawIndexed(const DrawArguments& args) const { (void)args; }
 
+		// Other methods
+		inline constexpr void PushConstants(const void* memory, size_t size, size_t srcOffset, size_t dstOffset) { (void)memory; (void)size; (void)srcOffset; (void)dstOffset; }
+
 		// Getters
 		inline constexpr const CommandListSpecification& GetSpecification() const { return m_Specification; }
 

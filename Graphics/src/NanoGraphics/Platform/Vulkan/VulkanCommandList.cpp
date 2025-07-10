@@ -717,6 +717,30 @@ namespace Nano::Graphics::Internal
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // Other methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::PushConstants(const void* memory, size_t size, size_t srcOffset, size_t dstOffset)
+    {
+        NG_PROFILE("VulkanCommandList::PushConstants()");
+
+        NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[VkCommandList] Can't push constants if no pipeline is bound.");
+        NG_ASSERT((size + dstOffset <= 128), "[VkCommandList] Size + dstOffset exceeds max push constants size (128 bytes)");
+        NG_ASSERT((dstOffset % 4 == 0), "[VkCommandList] DstOffset must be aligned to 4 bytes.");
+        NG_ASSERT((size % 4 == 0), "[VkCommandList] Size must be aligned to 4 bytes.");
+
+        if (m_CurrentGraphicsPipeline)
+        {
+            const VulkanGraphicsPipeline& vkPipeline = *api_cast<const VulkanGraphicsPipeline*>(m_CurrentGraphicsPipeline);
+            vkCmdPushConstants(m_CommandBuffer, vkPipeline.GetVkPipelineLayout(), vkPipeline.GetPushConstantsStage(), static_cast<uint32_t>(dstOffset), static_cast<uint32_t>(size), static_cast<const uint8_t*>(memory) + srcOffset);
+        }
+        else
+        {
+            const VulkanComputePipeline& vkPipeline = *api_cast<const VulkanComputePipeline*>(m_CurrentComputePipeline);
+            vkCmdPushConstants(m_CommandBuffer, vkPipeline.GetVkPipelineLayout(), vkPipeline.GetPushConstantsStage(), static_cast<uint32_t>(dstOffset), static_cast<uint32_t>(size), static_cast<const uint8_t*>(memory) + srcOffset);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::SetWaitStage(VkPipelineStageFlags2 waitStage)
