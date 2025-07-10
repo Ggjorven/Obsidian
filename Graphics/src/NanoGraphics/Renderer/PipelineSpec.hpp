@@ -27,7 +27,7 @@ namespace Nano::Graphics
         TriangleFan,
         TriangleListWithAdjacency,
         TriangleStripWithAdjacency,
-        //PatchList
+        PatchList
     };
 
     enum class BlendFactor : uint8_t
@@ -247,6 +247,8 @@ namespace Nano::Graphics
         inline constexpr static uint32_t MaxBindings = 8;
     public:
         PrimitiveType Primitive = PrimitiveType::TriangleList;
+        uint8_t PatchPointCount = 1;
+
         InputLayout* Input = nullptr;
 
         Shader* VertexShader = nullptr;
@@ -265,6 +267,8 @@ namespace Nano::Graphics
     public:
         // Setters
         inline constexpr GraphicsPipelineSpecification& SetPrimitiveType(PrimitiveType type) { Primitive = type; return *this; }
+        inline constexpr GraphicsPipelineSpecification& SetPatchPointCount(uint8_t count) { PatchPointCount = count; return *this; }
+
         inline constexpr GraphicsPipelineSpecification& SetInputLayout(InputLayout& layout) { Input = &layout; return *this; }
 
         inline constexpr GraphicsPipelineSpecification& SetVertexShader(Shader& shader) { VertexShader = &shader; return *this; }

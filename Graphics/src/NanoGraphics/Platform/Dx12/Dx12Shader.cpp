@@ -256,7 +256,7 @@ namespace Nano::Graphics::Internal
 
                     spirv_cross::RootConstants constants = {};
                     constants.start = 0;
-                    constants.end = m_Specification.PushConstantSize;
+                    constants.end = static_cast<uint32_t>(m_Specification.PushConstantSize);
                     constants.binding = m_Specification.PushConstantBinding;
                     constants.space = m_Specification.PushConstantSpace;
 

@@ -380,7 +380,7 @@ namespace Nano::Graphics::Internal
         // Bind pipeline
         m_CommandList->SetPipelineState(dxPipeline.GetD3D12PipelineState().Get());
         m_CommandList->SetGraphicsRootSignature(dxPipeline.GetD3D12RootSignature().Get());
-        m_CommandList->IASetPrimitiveTopology(PrimitiveTypeToD3DPrimitiveTopology(dxPipeline.GetSpecification().Primitive));
+        m_CommandList->IASetPrimitiveTopology(PrimitiveTypeToD3DPrimitiveTopology(dxPipeline.GetSpecification().Primitive, dxPipeline.GetSpecification().PatchPointCount));
 
         // Bind heaps for BindingSet(s)
         const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
@@ -707,14 +707,14 @@ namespace Nano::Graphics::Internal
         if (m_CurrentGraphicsPipeline)
         {
             const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
-            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12GraphicsPipeline::RootParameterIndices::Invalid), " ");
-            m_CommandList->SetGraphicsRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, size / 4, static_cast<const uint8_t*>(memory) + srcOffset, dstOffset / 4);
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12GraphicsPipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
+            m_CommandList->SetGraphicsRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
         }
         else
         {
             const Dx12ComputePipeline& dxPipeline = *api_cast<const Dx12ComputePipeline*>(m_CurrentComputePipeline);
-            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12ComputePipeline::RootParameterIndices::Invalid), " ");
-            m_CommandList->SetComputeRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, size / 4, static_cast<const uint8_t*>(memory) + srcOffset, dstOffset / 4);
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12ComputePipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
+            m_CommandList->SetComputeRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
         }
     }
 

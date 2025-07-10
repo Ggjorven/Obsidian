@@ -319,8 +319,8 @@ namespace Nano::Graphics::Internal
         { PrimitiveType::TriangleStrip,                 D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
         { PrimitiveType::TriangleFan,                   D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
         { PrimitiveType::TriangleListWithAdjacency,     D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
-        { PrimitiveType::TriangleStripWithAdjacency,    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE }
-        //{ PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
+        { PrimitiveType::TriangleStripWithAdjacency,    D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+        { PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -346,8 +346,39 @@ namespace Nano::Graphics::Internal
         { PrimitiveType::TriangleStrip,                 D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP },
         { PrimitiveType::TriangleFan,                   D3D_PRIMITIVE_TOPOLOGY_TRIANGLEFAN },
         { PrimitiveType::TriangleListWithAdjacency,     D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ },
-        { PrimitiveType::TriangleStripWithAdjacency,    D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ }
-        //{ PrimitiveType::PatchList,                     D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH }
+        { PrimitiveType::TriangleStripWithAdjacency,    D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_5_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_6_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_7_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_8_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_10_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_11_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_13_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_14_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_15_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_17_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_18_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_19_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_20_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_21_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_22_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_23_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_24_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_25_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_26_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_27_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_28_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_29_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_30_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_31_CONTROL_POINT_PATCHLIST },
+        { PrimitiveType::PatchList,                     D3D_PRIMITIVE_TOPOLOGY_32_CONTROL_POINT_PATCHLIST }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -608,7 +639,7 @@ namespace Nano::Graphics::Internal
     }
 
     inline constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTypeToD3D12PrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeToD3D12TypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeToD3D12TypeMapping[static_cast<size_t>(type)].D3D12Type; }
-    inline constexpr D3D_PRIMITIVE_TOPOLOGY PrimitiveTypeToD3DPrimitiveTopology(PrimitiveType type) { NG_ASSERT((static_cast<size_t>(type) < g_PrimitiveTypeToD3DTypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeToD3DTypeMapping[static_cast<size_t>(type)].D3DType; }
+    inline constexpr D3D_PRIMITIVE_TOPOLOGY PrimitiveTypeToD3DPrimitiveTopology(PrimitiveType type, uint8_t patchCount) { NG_ASSERT(((static_cast<size_t>(type) + (patchCount - 1)) < g_PrimitiveTypeToD3DTypeMapping.size()), "Type value exceeds mappings."); return g_PrimitiveTypeToD3DTypeMapping[(static_cast<size_t>(type) + (patchCount - 1))].D3DType; }
     
     inline constexpr D3D12_BLEND BlendFactorToD3D12Blend(BlendFactor factor) { NG_ASSERT((static_cast<size_t>(factor) < g_BlendFactorMapping.size()), "Factor value exceeds mappings."); return g_BlendFactorMapping[static_cast<size_t>(factor)].Blend; }
     inline constexpr D3D12_BLEND_OP BlendOperationToD3D12BlendOp(BlendOperation operation) { NG_ASSERT((static_cast<size_t>(operation) < g_BlendOperationMapping.size()), "Operation value exceeds mappings."); return g_BlendOperationMapping[static_cast<size_t>(operation)].BlendOp; }
