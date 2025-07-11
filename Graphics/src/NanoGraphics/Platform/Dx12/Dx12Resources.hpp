@@ -42,7 +42,6 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const auto g_ResourceStateMapping = std::to_array<ResourceStateMapping>({
         // State                            D3D12States
-        { ResourceState::Unknown,           D3D12_RESOURCE_STATE_COMMON },
         { ResourceState::Common,            D3D12_RESOURCE_STATE_COMMON },
         { ResourceState::StorageBuffer,     D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER },
         { ResourceState::VertexBuffer,      D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER },
@@ -53,7 +52,6 @@ namespace Nano::Graphics::Internal
         { ResourceState::RenderTarget,      D3D12_RESOURCE_STATE_RENDER_TARGET },
         { ResourceState::DepthWrite,        D3D12_RESOURCE_STATE_DEPTH_WRITE },
         { ResourceState::DepthRead,         D3D12_RESOURCE_STATE_DEPTH_READ },
-        { ResourceState::StreamOut,         D3D12_RESOURCE_STATE_STREAM_OUT },
         { ResourceState::CopyDst,           D3D12_RESOURCE_STATE_COPY_DEST },
         { ResourceState::CopySrc,           D3D12_RESOURCE_STATE_COPY_SOURCE },
         { ResourceState::Present,           D3D12_RESOURCE_STATE_PRESENT }

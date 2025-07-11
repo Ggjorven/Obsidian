@@ -42,7 +42,6 @@ namespace Nano::Graphics::Internal
     inline constexpr const auto g_ResourceStateMapping = std::to_array<ResourceStateMapping>({
         // State                            StageFlags                                          AccessMask                                      ImageLayout
         { ResourceState::Unknown,           VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,                VK_ACCESS_2_NONE,                               VK_IMAGE_LAYOUT_UNDEFINED },
-        { ResourceState::Common,            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,                VK_ACCESS_2_NONE,                               VK_IMAGE_LAYOUT_UNDEFINED },
         { ResourceState::StorageBuffer,     VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_UNIFORM_READ_BIT,                   VK_IMAGE_LAYOUT_UNDEFINED },
         { ResourceState::VertexBuffer,      VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,               VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,          VK_IMAGE_LAYOUT_UNDEFINED },
         { ResourceState::IndexBuffer,       VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,               VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT_KHR,      VK_IMAGE_LAYOUT_UNDEFINED },
@@ -50,17 +49,16 @@ namespace Nano::Graphics::Internal
         { ResourceState::ShaderResource,    VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_SHADER_READ_BIT,                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
         { ResourceState::UnorderedAccess,   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_SHADER_READ_BIT | 
                                                                                                 VK_ACCESS_2_SHADER_WRITE_BIT,                   VK_IMAGE_LAYOUT_GENERAL },
-        { ResourceState::RenderTarget,      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | 
+        { ResourceState::ColourAttachment,  VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | 
                                                                                                 VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
         { ResourceState::DepthWrite,        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | 
                                             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | 
                                                                                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
         { ResourceState::DepthRead,         VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | 
                                             VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,  VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL },
-        { ResourceState::StreamOut,         VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,     VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,   VK_IMAGE_LAYOUT_UNDEFINED },
         { ResourceState::CopyDst,           VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_WRITE_BIT,                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL },
         { ResourceState::CopySrc,           VK_PIPELINE_STAGE_2_TRANSFER_BIT,                   VK_ACCESS_2_TRANSFER_READ_BIT,                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
-        { ResourceState::Present,           VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_MEMORY_READ_BIT,                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR },
+        { ResourceState::Present,           VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,               VK_ACCESS_2_MEMORY_READ_BIT,                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR }
         //{ ResourceState::AccelStructRead,   VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR | 
         //                                    VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,             VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,VK_IMAGE_LAYOUT_UNDEFINED },
         //{ ResourceState::AccelStructWrite,  VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,VK_IMAGE_LAYOUT_UNDEFINED },
@@ -94,7 +92,7 @@ namespace Nano::Graphics::Internal
         { ImageDimension::ImageCubeArray,   VK_IMAGE_TYPE_2D,   VK_IMAGE_VIEW_TYPE_CUBE_ARRAY },
         { ImageDimension::Image2DMS,        VK_IMAGE_TYPE_2D,   VK_IMAGE_VIEW_TYPE_2D },
         { ImageDimension::Image2DMSArray,   VK_IMAGE_TYPE_2D,   VK_IMAGE_VIEW_TYPE_2D_ARRAY },
-        { ImageDimension::Image3D,          VK_IMAGE_TYPE_3D,   VK_IMAGE_VIEW_TYPE_3D },
+        { ImageDimension::Image3D,          VK_IMAGE_TYPE_3D,   VK_IMAGE_VIEW_TYPE_3D }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -182,7 +180,7 @@ namespace Nano::Graphics::Internal
         { Format::BC6HUFloat,       VK_FORMAT_BC6H_UFLOAT_BLOCK       },
         { Format::BC6HSFloat,       VK_FORMAT_BC6H_SFLOAT_BLOCK       },
         { Format::BC7Unorm,         VK_FORMAT_BC7_UNORM_BLOCK         },
-        { Format::BC7UnormSRGB,     VK_FORMAT_BC7_SRGB_BLOCK          },
+        { Format::BC7UnormSRGB,     VK_FORMAT_BC7_SRGB_BLOCK          }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -203,7 +201,7 @@ namespace Nano::Graphics::Internal
         // FilterMode               VulkanFilter
         { FilterMode::None,         VK_FILTER_NEAREST },
         { FilterMode::Nearest,      VK_FILTER_NEAREST },
-        { FilterMode::Linear,       VK_FILTER_LINEAR },
+        { FilterMode::Linear,       VK_FILTER_LINEAR }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +224,7 @@ namespace Nano::Graphics::Internal
         { SamplerAddressMode::Repeat,               VK_SAMPLER_ADDRESS_MODE_REPEAT },
         { SamplerAddressMode::ClampToBorder,        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER },
         { SamplerAddressMode::MirroredRepeat,       VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT },
-        { SamplerAddressMode::MirrorClampToEdge,    VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE },
+        { SamplerAddressMode::MirrorClampToEdge,    VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +246,7 @@ namespace Nano::Graphics::Internal
         { ColourSpace::SRGB,            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
         { ColourSpace::HDR,             VK_COLOR_SPACE_HDR10_ST2084_EXT },
         { ColourSpace::LinearSRGB,      VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT },
-        { ColourSpace::DisplayNative,   VK_COLOR_SPACE_DISPLAY_NATIVE_AMD },
+        { ColourSpace::DisplayNative,   VK_COLOR_SPACE_DISPLAY_NATIVE_AMD }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -269,7 +267,7 @@ namespace Nano::Graphics::Internal
         // LoadOperation            VulkanOperation
         { LoadOperation::None,      VK_ATTACHMENT_LOAD_OP_DONT_CARE },
         { LoadOperation::Clear,     VK_ATTACHMENT_LOAD_OP_CLEAR },
-        { LoadOperation::Load,      VK_ATTACHMENT_LOAD_OP_LOAD },
+        { LoadOperation::Load,      VK_ATTACHMENT_LOAD_OP_LOAD }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +287,7 @@ namespace Nano::Graphics::Internal
     inline constexpr const auto g_StoreOperationMapping = std::to_array<StoreOperationMapping>({
         // LoadOperation            VulkanOperation
         { StoreOperation::None,     VK_ATTACHMENT_STORE_OP_DONT_CARE },
-        { StoreOperation::Store,    VK_ATTACHMENT_STORE_OP_STORE },
+        { StoreOperation::Store,    VK_ATTACHMENT_STORE_OP_STORE }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -323,7 +321,7 @@ namespace Nano::Graphics::Internal
         { ShaderStage::ClosestHit,              VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR },
         { ShaderStage::Miss,                    VK_SHADER_STAGE_MISS_BIT_KHR },
         { ShaderStage::Intersection,            VK_SHADER_STAGE_INTERSECTION_BIT_KHR },
-        { ShaderStage::Callable,                VK_SHADER_STAGE_CALLABLE_BIT_KHR },
+        { ShaderStage::Callable,                VK_SHADER_STAGE_CALLABLE_BIT_KHR }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +342,7 @@ namespace Nano::Graphics::Internal
         // PipelineBindpoint                VulkanBindpoint
         { PipelineBindpoint::Graphics,      VK_PIPELINE_BIND_POINT_GRAPHICS },
         { PipelineBindpoint::Compute,       VK_PIPELINE_BIND_POINT_COMPUTE },
-        { PipelineBindpoint::RayTracing,    VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR },
+        { PipelineBindpoint::RayTracing,    VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -406,7 +404,7 @@ namespace Nano::Graphics::Internal
         { BlendFactor::Src1Colour,              VK_BLEND_FACTOR_SRC1_COLOR },
         { BlendFactor::OneMinusSrc1Colour,      VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR },
         { BlendFactor::Src1Alpha,               VK_BLEND_FACTOR_SRC1_ALPHA },
-        { BlendFactor::OneMinusSrc1Alpha,       VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA },
+        { BlendFactor::OneMinusSrc1Alpha,       VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -429,7 +427,7 @@ namespace Nano::Graphics::Internal
         { BlendOperation::Subtract,         VK_BLEND_OP_SUBTRACT },
         { BlendOperation::ReverseSubtract,  VK_BLEND_OP_REVERSE_SUBTRACT },
         { BlendOperation::Min,              VK_BLEND_OP_MIN },
-        { BlendOperation::Max,              VK_BLEND_OP_MAX },
+        { BlendOperation::Max,              VK_BLEND_OP_MAX }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -452,7 +450,7 @@ namespace Nano::Graphics::Internal
         { ColourMask::Red,          VK_COLOR_COMPONENT_R_BIT },
         { ColourMask::Green,        VK_COLOR_COMPONENT_G_BIT },
         { ColourMask::Blue,         VK_COLOR_COMPONENT_B_BIT },
-        { ColourMask::Alpha,        VK_COLOR_COMPONENT_A_BIT },
+        { ColourMask::Alpha,        VK_COLOR_COMPONENT_A_BIT }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -472,7 +470,7 @@ namespace Nano::Graphics::Internal
     inline constexpr const auto g_RasterFillModeMapping = std::to_array<RasterFillModeMapping>({
         // RasterFillMode               VulkanPolygonMode
         { RasterFillMode::Fill,         VK_POLYGON_MODE_FILL },
-        { RasterFillMode::Line,         VK_POLYGON_MODE_LINE },
+        { RasterFillMode::Line,         VK_POLYGON_MODE_LINE }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -493,7 +491,7 @@ namespace Nano::Graphics::Internal
         // RasterCullingMode            VulkanCullModeFlags
         { RasterCullingMode::None,      VK_CULL_MODE_NONE },
         { RasterCullingMode::Back,      VK_CULL_MODE_BACK_BIT },
-        { RasterCullingMode::Front,     VK_CULL_MODE_FRONT_BIT },
+        { RasterCullingMode::Front,     VK_CULL_MODE_FRONT_BIT }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -519,7 +517,7 @@ namespace Nano::Graphics::Internal
         { StencilOperation::DecrementAndClamp,      VK_STENCIL_OP_DECREMENT_AND_CLAMP },
         { StencilOperation::Invert,                 VK_STENCIL_OP_INVERT },
         { StencilOperation::IncrementAndWrap,       VK_STENCIL_OP_INCREMENT_AND_WRAP },
-        { StencilOperation::DecrementAndWrap,       VK_STENCIL_OP_DECREMENT_AND_WRAP },
+        { StencilOperation::DecrementAndWrap,       VK_STENCIL_OP_DECREMENT_AND_WRAP }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -545,7 +543,7 @@ namespace Nano::Graphics::Internal
         { ComparisonFunc::Greater,          VK_COMPARE_OP_GREATER },
         { ComparisonFunc::NotEqual,         VK_COMPARE_OP_NOT_EQUAL },
         { ComparisonFunc::GreaterOrEqual,   VK_COMPARE_OP_GREATER_OR_EQUAL },
-        { ComparisonFunc::Always,           VK_COMPARE_OP_ALWAYS },
+        { ComparisonFunc::Always,           VK_COMPARE_OP_ALWAYS }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -573,7 +571,7 @@ namespace Nano::Graphics::Internal
         { ResourceType::UniformBuffer,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
         //{ ResourceType::DynamicUniformBuffer,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
         { ResourceType::Sampler,                VK_DESCRIPTOR_TYPE_SAMPLER },
-        { ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER }, // Note: Not really, but there is no PushConstants descriptor
+        { ResourceType::PushConstants,          VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER } // Note: Not really, but there is no PushConstants descriptor
     });
 
     ////////////////////////////////////////////////////////////////////////////////////

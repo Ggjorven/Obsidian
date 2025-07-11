@@ -10,28 +10,30 @@ namespace Nano::Graphics
     ////////////////////////////////////////////////////////////////////////////////////
     // Flags
     ////////////////////////////////////////////////////////////////////////////////////
-    enum class ResourceState : uint16_t //uint32_t
+    enum class ResourceState : uint16_t
     {
         Unknown = 0,
+        Common = Unknown,
 
-        Common = 1 << 0,
-        StorageBuffer = 1 << 1,
-        VertexBuffer = 1 << 2,
-        IndexBuffer = 1 << 3,
-        IndirectArgument = 1 << 4,
-        ShaderResource = 1 << 5,
-        UnorderedAccess = 1 << 6,
-        RenderTarget = 1 << 7,
-        DepthWrite = 1 << 8,
-        DepthRead = 1 << 9,
-        StreamOut = 1 << 10,
-        CopyDst = 1 << 11,
-        CopySrc = 1 << 12,
-        Present = 1 << 13,
-        //AccelStructRead = 1 << 14,
-        //AccelStructWrite = 1 << 15,
-        //AccelStructBuildInput = 1 << 16,
-        //AccelStructBuildBlas = 1 << 17,
+        StorageBuffer = 1 << 0,
+        VertexBuffer = 1 << 1,
+        IndexBuffer = 1 << 2,
+        IndirectArgument = 1 << 3,
+        ShaderResource = 1 << 4,
+        SRV = ShaderResource,
+        UnorderedAccess = 1 << 5,
+        UAV = UnorderedAccess,
+        ColourAttachment = 1 << 6,
+        RenderTarget = ColourAttachment,
+        DepthWrite = 1 << 7,
+        DepthRead = 1 << 8,
+        CopyDst = 1 << 9,
+        CopySrc = 1 << 10,
+        Present = 1 << 11,
+        //AccelStructRead = 1 << 12,
+        //AccelStructWrite = 1 << 13,
+        //AccelStructBuildInput = 1 << 14,
+        //AccelStructBuildBlas = 1 << 15,
     };
 
     NANO_DEFINE_BITWISE(ResourceState)
@@ -52,8 +54,6 @@ namespace Nano::Graphics
     {
         std::string str = {};
 
-        if (static_cast<bool>(state & ResourceState::Common))
-            str += "Common";
         if (static_cast<bool>(state & ResourceState::StorageBuffer))
             str += (str.empty() ? "" : " | ") + std::string("StorageBuffer");
         if (static_cast<bool>(state & ResourceState::VertexBuffer))
@@ -72,8 +72,6 @@ namespace Nano::Graphics
             str += (str.empty() ? "" : " | ") + std::string("DepthWrite");
         if (static_cast<bool>(state & ResourceState::DepthRead))
             str += (str.empty() ? "" : " | ") + std::string("DepthRead");
-        if (static_cast<bool>(state & ResourceState::StreamOut))
-            str += (str.empty() ? "" : " | ") + std::string("StreamOut");
         if (static_cast<bool>(state & ResourceState::CopyDst))
             str += (str.empty() ? "" : " | ") + std::string("CopyDst");
         if (static_cast<bool>(state & ResourceState::CopySrc))
