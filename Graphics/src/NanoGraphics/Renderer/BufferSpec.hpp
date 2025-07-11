@@ -71,6 +71,7 @@ namespace Nano::Graphics
     {
     public:
         size_t Size = 0;
+        size_t Stride = 0; // Note: Size of a struct, needed for StorageBuffer/StructuredBuffer and TODO: Dynamic buffers
         Format BufferFormat = Format::Unknown; // Note: Only necessary for Indexbuffer like R32UInt or R16UInt
 
         bool IsVertexBuffer : 1 = false;
@@ -79,7 +80,7 @@ namespace Nano::Graphics
         //bool IsAccelStructBuildInput = false;
         //bool IsAccelStructStorage = false;
 
-        bool IsTexel : 1 = false;
+        bool IsTexel : 1 = false; // For Dx12 IsTyped
         bool IsUnorderedAccessed : 4 = false;
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
@@ -91,6 +92,7 @@ namespace Nano::Graphics
     public:
         // Setters
         inline constexpr BufferSpecification& SetSize(size_t size) { Size = size; return *this; }
+        inline constexpr BufferSpecification& SetStride(size_t stride) { Stride = stride; return *this; }
         inline constexpr BufferSpecification& SetFormat(Format format) { BufferFormat = format; return *this; }
 
         inline constexpr BufferSpecification& SetIsVertexBuffer(bool enabled) { IsVertexBuffer = enabled; return *this; }
@@ -99,6 +101,7 @@ namespace Nano::Graphics
         inline constexpr BufferSpecification& SetIsContantBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
 
         inline constexpr BufferSpecification& SetIsTexel(bool enabled) { IsTexel = enabled; return *this; }
+        inline constexpr BufferSpecification& SetIsTyped(bool enabled) { IsTexel = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUAV(bool enabled) { IsUnorderedAccessed = enabled; return *this; }
 

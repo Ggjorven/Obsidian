@@ -34,13 +34,17 @@ namespace Nano::Graphics
         TextureSRV = Image,
         ImageUnordered,
         TextureUAV = ImageUnordered,
+
         StorageBuffer,
-        TypedBufferSRV = StorageBuffer,
+        StructuredBufferSRV = StorageBuffer,
         StorageBufferUnordered,
-        TypedBufferUAV = StorageBufferUnordered,
+        StructuredBufferUAV = StorageBufferUnordered,
+
         UniformBuffer,
         ConstantBuffer = UniformBuffer,
+
         Sampler,
+
         PushConstants,
         //RayTracingAccelStruct,
         
@@ -61,7 +65,7 @@ namespace Nano::Graphics
         uint32_t Slot = 0;
         ResourceType Type = ResourceType::None;
         
-        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count.
+        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count. // TODO: Or max amount of dynamic buffer elements
 
         std::string DebugName = {};
 

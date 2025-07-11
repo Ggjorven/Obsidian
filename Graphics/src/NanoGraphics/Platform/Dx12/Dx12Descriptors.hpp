@@ -5,6 +5,7 @@
 #include "NanoGraphics/Maths/Structs.hpp"
 
 #include "NanoGraphics/Renderer/ResourceSpec.hpp"
+#include "NanoGraphics/Renderer/BindingsSpec.hpp"
 #include "NanoGraphics/Renderer/ImageSpec.hpp"
 #include "NanoGraphics/Renderer/BufferSpec.hpp"
 
@@ -40,15 +41,15 @@ namespace Nano::Graphics::Internal
         ~Dx12DescriptorHeap();
 
         // Creation methods
-        void CreateSRV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format = Format::Unknown);
+        void CreateSRV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ResourceType type, ID3D12Resource* resource, Format format = Format::Unknown);
         void CreateSRV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         void CreateSRV(DescriptorHeapIndex index, const D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* resource);
         
-        void CreateUAV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format = Format::Unknown);
+        void CreateUAV(DescriptorHeapIndex index, const BufferSpecification& specs, const BufferRange& range, ResourceType type, ID3D12Resource* resource, Format format = Format::Unknown);
         void CreateUAV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         void CreateUAV(DescriptorHeapIndex index, const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource);
         
-        void CreateCBV(DescriptorHeapIndex index, const BufferSpecification& specs, ID3D12Resource* resource);
+        void CreateCBV(DescriptorHeapIndex index, const BufferSpecification& specs, ResourceType type, ID3D12Resource* resource);
         void CreateCBV(DescriptorHeapIndex index, const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource);
 
         void CreateRTV(DescriptorHeapIndex index, const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown);
@@ -104,15 +105,15 @@ namespace Nano::Graphics::Internal
         ~Dx12DynamicDescriptorHeap();
 
         // Creation methods // Note: Most are just passthrough functions
-        DescriptorHeapIndex CreateSRV(const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format = Format::Unknown);
+        DescriptorHeapIndex CreateSRV(const BufferSpecification& specs, const BufferRange& range, ResourceType type, ID3D12Resource* resource, Format format = Format::Unknown);
         DescriptorHeapIndex CreateSRV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         DescriptorHeapIndex CreateSRV(const D3D12_SHADER_RESOURCE_VIEW_DESC& desc, ID3D12Resource* resource);
 
-        DescriptorHeapIndex CreateUAV(const BufferSpecification& specs, const BufferRange& range, ID3D12Resource* resource, Format format = Format::Unknown);
+        DescriptorHeapIndex CreateUAV(const BufferSpecification& specs, const BufferRange& range, ResourceType type, ID3D12Resource* resource, Format format = Format::Unknown);
         DescriptorHeapIndex CreateUAV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown, ImageDimension dimension = ImageDimension::Unknown);
         DescriptorHeapIndex CreateUAV(const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc, ID3D12Resource* resource);
 
-        DescriptorHeapIndex CreateCBV(const BufferSpecification& specs, ID3D12Resource* resource);
+        DescriptorHeapIndex CreateCBV(const BufferSpecification& specs, ResourceType type, ID3D12Resource* resource);
         DescriptorHeapIndex CreateCBV(const D3D12_CONSTANT_BUFFER_VIEW_DESC& desc, ID3D12Resource* resource);
 
         DescriptorHeapIndex CreateRTV(const ImageSpecification& specs, const ImageSubresourceSpecification& subresources, ID3D12Resource* resource, Format format = Format::Unknown);

@@ -139,7 +139,7 @@ namespace Nano::Graphics::Internal
                 switch (item.Type)
                 {
                 case ResourceType::TextureSRV:
-                case ResourceType::TypedBufferSRV:
+                case ResourceType::StructuredBufferSRV:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
                     
@@ -151,7 +151,7 @@ namespace Nano::Graphics::Internal
                 }
 
                 case ResourceType::TextureUAV:
-                case ResourceType::TypedBufferUAV:
+                case ResourceType::StructuredBufferUAV:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
@@ -261,23 +261,23 @@ namespace Nano::Graphics::Internal
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::TypedBufferSRV) || (item.Type == ResourceType::TypedBufferUAV) || (item.Type == ResourceType::ConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be TypedBufferSRV, TypedBufferUAV or ConstantBuffer.");
+        NG_ASSERT(((item.Type == ResourceType::StructuredBufferSRV) || (item.Type == ResourceType::StructuredBufferUAV) || (item.Type == ResourceType::ConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StructuredBufferSRV, StructuredBufferUAV or ConstantBuffer.");
 
         Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
         DescriptorHeapIndex index = m_SRVAndUAVAndCBVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
 
         switch (item.Type)
         {
-        case ResourceType::TypedBufferSRV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+        case ResourceType::StructuredBufferSRV:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferSRV, dxBuffer.GetD3D12Resource().Get());
             break;
 
-        case ResourceType::TypedBufferUAV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, buffer.GetSpecification(), range, dxBuffer.GetD3D12Resource().Get());
+        case ResourceType::StructuredBufferUAV:
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferUAV, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::ConstantBuffer:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateCBV(index, buffer.GetSpecification(), dxBuffer.GetD3D12Resource().Get());
+            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateCBV(index, buffer.GetSpecification(), ResourceType::ConstantBuffer, dxBuffer.GetD3D12Resource().Get());
             break;
 
         default:
@@ -300,10 +300,10 @@ namespace Nano::Graphics::Internal
                 switch (type)
                 {
                 case ResourceType::TextureSRV:
-                case ResourceType::TypedBufferSRV:
+                case ResourceType::StructuredBufferSRV:
                 // Note: These are all in the descriptor heap
                 case ResourceType::TextureUAV:
-                case ResourceType::TypedBufferUAV:
+                case ResourceType::StructuredBufferUAV:
                 // Note: These are all in the descriptor heap
                 case ResourceType::ConstantBuffer:
                 case ResourceType::PushConstants:

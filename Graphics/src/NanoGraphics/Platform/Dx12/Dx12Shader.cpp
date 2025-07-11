@@ -264,7 +264,6 @@ namespace Nano::Graphics::Internal
                 }
 
                 hlslString = compiler.compile();
-                NG_LOG_TRACE("{}", hlslString);
             }
 
             // Compile HLSL

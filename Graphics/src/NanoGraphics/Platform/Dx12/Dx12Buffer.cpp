@@ -85,8 +85,15 @@ namespace Nano::Graphics::Internal
 
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
-        if (m_Specification.IsUnorderedAccessed || m_Specification.IsUniformBuffer) // Storage buffer or Uniform buffer
-            m_Specification.Size = Nano::Memory::AlignOffset(m_Specification.Size, 256ull);
+        // Storage buffer or Uniform buffer
+        if constexpr (Information::Validation)
+        {
+            if (m_Specification.IsUnorderedAccessed || m_Specification.IsUniformBuffer && (m_Specification.Size % 256ull != 0))
+            {
+                dxDevice.GetContext().Error("[Dx12Buffer] A Storage/Typed/Structured/Constant buffer needs to aligned to 256 bytes.");
+                m_Specification.Size = Nano::Memory::AlignOffset(m_Specification.Size, 256ull);
+            }
+        }
 
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
         if (m_Specification.IsUnorderedAccessed)
