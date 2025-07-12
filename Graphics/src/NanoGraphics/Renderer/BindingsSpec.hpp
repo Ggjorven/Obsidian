@@ -39,9 +39,15 @@ namespace Nano::Graphics
         StructuredBufferSRV = StorageBuffer,
         StorageBufferUnordered,
         StructuredBufferUAV = StorageBufferUnordered,
+        DynamicStorageBuffer,
+        DynamicStructuredBufferSRV = DynamicStorageBuffer,
+        DynamicStorageBufferUnordered,
+        DynamicStructuredBufferUAV = DynamicStorageBufferUnordered,
 
         UniformBuffer,
         ConstantBuffer = UniformBuffer,
+        DynamicUniformBuffer,
+        DynamicConstantBuffer = DynamicUniformBuffer,
 
         Sampler,
 
