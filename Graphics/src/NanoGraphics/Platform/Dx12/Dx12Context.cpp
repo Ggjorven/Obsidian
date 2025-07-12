@@ -157,9 +157,9 @@ namespace Nano::Graphics::Internal
             if constexpr (Information::Validation)
             {
                 DX_VERIFY(m_Device->QueryInterface(IID_PPV_ARGS(&m_MessageQueue)));
-                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, FALSE); // Note: We want errors to pass through the message queue into the terminal for ease of debugging
                 m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+                m_MessageQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
             
                 NG_ASSERT(m_MessageQueue, "[Dx12Context] Failed to initialize message queue.");
             

@@ -65,12 +65,15 @@ namespace Nano::Graphics::Internal
         // Getters
         inline const BufferSpecification& GetSpecification() const { return m_Specification; }
 
+        inline size_t GetAlignment() const { return m_Alignment; }
+
         // Internal getters
         inline DxPtr<ID3D12Resource> GetD3D12Resource() const { return m_Resource; }
         inline DxPtr<D3D12MA::Allocation> GetD3D12MAAllocation() const { return m_Allocation; }
 
     private:
         BufferSpecification m_Specification;
+        size_t m_Alignment = 0;
 
         DxPtr<ID3D12Resource> m_Resource = nullptr;
         DxPtr<D3D12MA::Allocation> m_Allocation = nullptr;

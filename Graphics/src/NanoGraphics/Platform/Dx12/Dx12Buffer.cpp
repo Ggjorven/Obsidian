@@ -81,18 +81,78 @@ namespace Nano::Graphics::Internal
 	Dx12Buffer::Dx12Buffer(const Device& device, const BufferSpecification& specs)
 		: m_Specification(specs)
 	{
-        NG_ASSERT((specs.Size > 0), "[Dx12Buffer] Buffer size must be equal to 0.");
+        NG_ASSERT((specs.Size != 0), "[Dx12Buffer] Buffer size must not be equal to 0.");
 
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
-        // Storage buffer or Uniform buffer
+        // Validation checks
         if constexpr (Information::Validation)
         {
-            if (m_Specification.IsUnorderedAccessed || m_Specification.IsUniformBuffer && (m_Specification.Size % 256ull != 0))
+            if (m_Specification.IsIndexBuffer || m_Specification.IsTexel)
+                NG_ASSERT((m_Specification.BufferFormat != Format::Unknown), "[Dx12Buffer] A Texel or Index buffer must not have BufferFormat unknown.");
+        }
+
+        // Calculate alignment
+        {
+            // Regular buffers
+            if (m_Specification.IsVertexBuffer)
             {
-                dxDevice.GetContext().Error("[Dx12Buffer] A Storage/Typed/Structured/Constant buffer needs to aligned to 256 bytes.");
-                m_Specification.Size = Nano::Memory::AlignOffset(m_Specification.Size, 256ull);
+                m_Alignment = std::max(m_Alignment, BufferSpecification::DefaultVertexBufferAlignment);
             }
+            if (m_Specification.IsIndexBuffer)
+            {
+                NG_ASSERT(((m_Specification.BufferFormat == Format::R16UInt) || (m_Specification.BufferFormat == Format::R32UInt)), "[Dx12Buffer] An index buffer must have format R16 or R32 float, a uint16 or uint32.");
+
+                m_Alignment = std::max(m_Alignment, static_cast<size_t>(FormatToFormatInfo(m_Specification.BufferFormat).BytesPerBlock));
+            }
+            if (m_Specification.IsUniformBuffer)
+            {
+                m_Alignment = std::max(m_Alignment, BufferSpecification::DefaultUniformBufferAlignment);
+            }
+            if (m_Specification.IsTexel)
+            {
+                m_Alignment = std::max(m_Alignment, static_cast<size_t>(FormatToFormatInfo(m_Specification.BufferFormat).BytesPerBlock));
+            }
+            if (m_Specification.IsUnorderedAccessed)
+            {
+                m_Alignment = std::max(m_Alignment, BufferSpecification::DefaultStorageBufferAlignment);
+            }
+
+            // If no flags were set, we set it to the smallest alignment (index buffer)
+            if (m_Alignment == 0)
+            {
+                m_Alignment = BufferSpecification::DefaultIndexBufferAlignment;
+            }
+
+            NG_ASSERT(((m_Alignment & (m_Alignment - 1)) == 0), "[Dx12Buffer] Internal error: Alignment must be a power of 2.");
+        }
+
+        // Size helper
+        {
+            if (m_Specification.IsDynamic)
+            {
+                NG_ASSERT((m_Specification.ElementCount != 0), "[Dx12Buffer] Element count must not equal zero when dynamic is enabled.");
+
+                if constexpr (Information::Validation)
+                {
+                    if (m_Specification.Size != 0)
+                        dxDevice.GetContext().Error("[Dx12Buffer] Dynamic buffer had custom size specified, on dynamic buffers the size must be specified via Stride and ElementCount.");
+                }
+
+                m_Specification.Size = (m_Specification.Stride + m_Alignment - 1) & ~(m_Alignment - 1);
+                m_Specification.Size *= m_Specification.ElementCount;
+
+                if constexpr (Information::Validation)
+                {
+                    if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
+                    {
+                        dxDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
+                        m_Specification.CpuAccess |= CpuAccessMode::Write;
+                    }
+                }
+            }
+            else
+                m_Specification.Size = (m_Specification.Size + m_Alignment - 1) & ~(m_Alignment - 1);
         }
 
         D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;

@@ -176,6 +176,12 @@ namespace Nano::Graphics::Internal
                 m_Alignment = std::max(m_Alignment, std::max(properties.properties.limits.minUniformBufferOffsetAlignment, properties.properties.limits.nonCoherentAtomSize));
             }
 
+            // If no flags were set, we set it to the smallest alignment (index buffer)
+            if (m_Alignment == 0)
+            {
+                m_Alignment = BufferSpecification::DefaultIndexBufferAlignment;
+            }
+
             NG_ASSERT(((m_Alignment & (m_Alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
         }
 
@@ -204,7 +210,7 @@ namespace Nano::Graphics::Internal
                 }
             }
             else
-                m_Specification.Size = m_Specification.Size;
+                m_Specification.Size = (m_Specification.Size + m_Alignment - 1) & ~(m_Alignment - 1);
         }
 
         m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, m_Specification.Size, bufferUsage, 0);

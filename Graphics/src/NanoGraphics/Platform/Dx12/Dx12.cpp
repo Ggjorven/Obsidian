@@ -59,7 +59,7 @@ namespace Nano::Graphics::Internal
     {
         D3D12_RESOURCE_DESC resourceDesc = {};
         resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        resourceDesc.Alignment = 0ull;
+        resourceDesc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
         resourceDesc.Width = size;
         resourceDesc.Height = 1;
         resourceDesc.DepthOrArraySize = 1;
