@@ -70,9 +70,18 @@ namespace Nano::Graphics
     class BufferSpecification
     {
     public:
-        size_t Size = 0;
-        size_t Stride = 0; // Note: Size of a struct, needed for StorageBuffer/StructuredBuffer and TODO: Dynamic buffers
-        Format BufferFormat = Format::Unknown; // Note: Only necessary for Indexbuffer like R32UInt or R16UInt
+        inline constexpr static size_t DefaultVertexBufferAlignment = 16ull;
+        inline constexpr static size_t DefaultIndexBufferAlignment = 4ull;
+        inline constexpr static size_t DefaultUniformBufferAlignment = 256ull;
+        inline constexpr static size_t DefaultStorageBufferAlignment = DefaultUniformBufferAlignment;
+        inline constexpr static size_t DefaultTexelBufferAlignment = 16ull;
+    public:
+        size_t Size = 0; // Note: Size in bytes, must not be specified for Dynamic/Volatile buffers. Will be ignored.
+        
+        size_t Stride = 0; // Note: Size of a struct, needed for StorageBuffer/StructuredBuffer and Dynamic/Volatile buffers
+        uint32_t ElementCount = 0; // Note: Max amount of elements for Dynamic/Volatile buffers, not needed for other buffers.
+
+        Format BufferFormat = Format::Unknown; // Note: Only necessary for Indexbuffer & Texelbuffer, like R16UInt or R32UInt
 
         bool IsVertexBuffer : 1 = false;
         bool IsIndexBuffer : 1 = false;
@@ -80,8 +89,9 @@ namespace Nano::Graphics
         //bool IsAccelStructBuildInput = false;
         //bool IsAccelStructStorage = false;
 
+        bool IsDynamic : 1 = false; // For Dx12 IsVolatile
         bool IsTexel : 1 = false; // For Dx12 IsTyped
-        bool IsUnorderedAccessed : 4 = false;
+        bool IsUnorderedAccessed : 3 = false;
 
         ResourceState PermanentState = ResourceState::Unknown; // Note: Anything other than Unknown sets it to be permanent
 
@@ -92,7 +102,10 @@ namespace Nano::Graphics
     public:
         // Setters
         inline constexpr BufferSpecification& SetSize(size_t size) { Size = size; return *this; }
+
         inline constexpr BufferSpecification& SetStride(size_t stride) { Stride = stride; return *this; }
+        inline constexpr BufferSpecification& SetElementCount(uint32_t count) { ElementCount = count; return *this; }
+
         inline constexpr BufferSpecification& SetFormat(Format format) { BufferFormat = format; return *this; }
 
         inline constexpr BufferSpecification& SetIsVertexBuffer(bool enabled) { IsVertexBuffer = enabled; return *this; }
@@ -100,6 +113,8 @@ namespace Nano::Graphics
         inline constexpr BufferSpecification& SetIsUniformBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsContantBuffer(bool enabled) { IsUniformBuffer = enabled; return *this; }
 
+        inline constexpr BufferSpecification& SetIsDynamic(bool enabled) { IsDynamic = enabled; return *this; }
+        inline constexpr BufferSpecification& SetIsVolatile(bool enabled) { IsDynamic = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsTexel(bool enabled) { IsTexel = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsTyped(bool enabled) { IsTexel = enabled; return *this; }
         inline constexpr BufferSpecification& SetIsUnorderedAccessed(bool enabled) { IsUnorderedAccessed = enabled; return *this; }

@@ -114,10 +114,8 @@ namespace Nano::Graphics::Internal
         // Validation checks
         if constexpr (Information::Validation)
         {
-            if (m_Specification.IsIndexBuffer)
-            {
-                NG_ASSERT(((m_Specification.BufferFormat == Format::R16UInt) || (m_Specification.BufferFormat == Format::R32UInt)), "[VkBuffer] An indexbuffer must have format R16UInt or R32UInt.");
-            }
+            if (m_Specification.IsIndexBuffer || m_Specification.IsTexel)
+                NG_ASSERT((m_Specification.BufferFormat != Format::Unknown), "[VkBuffer] A Texel or Index buffer must not have BufferFormat unknown.");
         }
 
         VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -133,63 +131,83 @@ namespace Nano::Graphics::Internal
 
         VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         
-        // BufferUsage
+        // BufferUsage & Alignment
+        // Note: I know the usage and alignment in the same branch is ugly, but it 
+        // is to prevent unnecessary brances during runtime when they can be done during the same branch.
         {
-            if (m_Specification.IsVertexBuffer)
-                bufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            if (m_Specification.IsIndexBuffer)
-                bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            if (m_Specification.IsUniformBuffer && m_Specification.IsTexel)
-                bufferUsage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-            else if (m_Specification.IsUniformBuffer)
-                bufferUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            VkPhysicalDeviceProperties2 properties = {};
+            properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
+            vkGetPhysicalDeviceProperties2(vulkanDevice.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
+
+            // Regular buffers
+            if (m_Specification.IsVertexBuffer)
+            {
+                bufferUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, BufferSpecification::DefaultVertexBufferAlignment);
+            }
+            if (m_Specification.IsIndexBuffer)
+            {
+                NG_ASSERT(((m_Specification.BufferFormat == Format::R16UInt) || (m_Specification.BufferFormat == Format::R32UInt)), "[VkBuffer] An index buffer must have format R16 or R32 float, a uint16 or uint32.");
+
+                bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, static_cast<size_t>(FormatToFormatInfo(m_Specification.BufferFormat).BytesPerBlock));
+            }
+            if (m_Specification.IsUniformBuffer && m_Specification.IsTexel)
+            {
+                bufferUsage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, static_cast<size_t>(FormatToFormatInfo(m_Specification.BufferFormat).BytesPerBlock));
+            }
+            else if (m_Specification.IsUniformBuffer)
+            {
+                bufferUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, properties.properties.limits.minUniformBufferOffsetAlignment);
+            }
+
+            // Unordered buffers
             if (m_Specification.IsUnorderedAccessed && m_Specification.IsTexel)
+            {
                 bufferUsage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, static_cast<size_t>(FormatToFormatInfo(m_Specification.BufferFormat).BytesPerBlock));
+            }
             else if (m_Specification.IsUnorderedAccessed)
+            {
                 bufferUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+                m_Alignment = std::max(m_Alignment, std::max(properties.properties.limits.minUniformBufferOffsetAlignment, properties.properties.limits.nonCoherentAtomSize));
+            }
+
+            NG_ASSERT(((m_Alignment & (m_Alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
         }
 
-        size_t size = 0;
         // Size helper
         {
-            //if (m_Specification.IsDynamic)
-            //{
-            //    NG_ASSERT((m_Specification.DynamicElements != 0), "[VkBuffer] Dynamic element count must not equal zero when dynamic is enabled.");
-            //
-            //    VkPhysicalDeviceProperties2 properties = {};
-            //    properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-            //
-            //    vkGetPhysicalDeviceProperties2(vulkanDevice.GetContext().GetVulkanPhysicalDevice().GetVkPhysicalDevice(), &properties);
-            //
-            //    uint64_t alignment = properties.properties.limits.minUniformBufferOffsetAlignment;
-            //    uint64_t atomSize = properties.properties.limits.nonCoherentAtomSize;
-            //
-            //    alignment = std::max(alignment, atomSize);
-            //
-            //    NG_ASSERT(((alignment & (alignment - 1)) == 0), "[VkBuffer] Internal error: Alignment must be a power of 2.");
-            //
-            //    size = (size + alignment - 1) & ~(alignment - 1);
-            //    m_Specification.Size = size;
-            //
-            //    size *= m_Specification.DynamicElements;
-            //
-            //    if constexpr (Information::Validation)
-            //    {
-            //        if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
-            //        {
-            //            vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
-            //            m_Specification.CpuAccess |= CpuAccessMode::Write;
-            //        }
-            //    }
-            //}
-            /*else*/ if (m_Specification.Size < 65536) // Vulkan allows for <= 64kb buffer updates to be done inline via vkCmdUpdateBuffer, but must be a multiple of 4
-                size = (m_Specification.Size + 3) & ~3ull;
+            if (m_Specification.IsDynamic)
+            {
+                NG_ASSERT((m_Specification.ElementCount != 0), "[VkBuffer] Element count must not equal zero when dynamic is enabled.");
+
+                if constexpr (Information::Validation)
+                {
+                    if (m_Specification.Size != 0)
+                        vulkanDevice.GetContext().Error("[VkBuffer] Dynamic buffer had custom size specified, on dynamic buffers the size must be specified via Stride and ElementCount.");
+                }
+            
+                m_Specification.Size = (m_Specification.Stride + m_Alignment - 1) & ~(m_Alignment - 1);
+                m_Specification.Size *= m_Specification.ElementCount;
+            
+                if constexpr (Information::Validation)
+                {
+                    if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
+                    {
+                        vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
+                        m_Specification.CpuAccess |= CpuAccessMode::Write;
+                    }
+                }
+            }
             else
-                size = m_Specification.Size;
+                m_Specification.Size = m_Specification.Size;
         }
 
-        m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, size, bufferUsage, 0);
+        m_Allocation = vulkanDevice.GetAllocator().AllocateBuffer(memoryUsage, m_Buffer, m_Specification.Size, bufferUsage, 0);
 
         if constexpr (Information::Validation)
         {

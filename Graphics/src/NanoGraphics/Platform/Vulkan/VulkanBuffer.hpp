@@ -64,6 +64,8 @@ namespace Nano::Graphics::Internal
 
         // Getters
         inline const BufferSpecification& GetSpecification() const { return m_Specification; }
+        
+        inline size_t GetAlignment() const { return m_Alignment; }
 
         // Internal getters
         inline VkBuffer GetVkBuffer() const { return m_Buffer; }
@@ -71,6 +73,7 @@ namespace Nano::Graphics::Internal
 
     private:
         BufferSpecification m_Specification;
+        size_t m_Alignment = 0;
 
         VkBuffer m_Buffer = VK_NULL_HANDLE;
         VmaAllocation m_Allocation = VK_NULL_HANDLE;

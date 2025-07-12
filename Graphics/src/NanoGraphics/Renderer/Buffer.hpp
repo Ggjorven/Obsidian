@@ -62,6 +62,8 @@ namespace Nano::Graphics
         // Getters
         inline const BufferSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
+        inline size_t GetAlignment() const { return m_Impl->GetAlignment(); }
+
     public: //private:
         // Constructor
         inline Buffer(const Device& device, const BufferSpecification& specs) { m_Impl.Construct(device, specs); }

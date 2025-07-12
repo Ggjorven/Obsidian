@@ -45,6 +45,8 @@ namespace Nano::Graphics::Internal
         // Getters
         inline constexpr const BufferSpecification& GetSpecification() const { return m_Specification; }
 
+        inline constexpr size_t GetAlignment() const { return 2ull; }
+
     private:
         BufferSpecification m_Specification;
     };
