@@ -286,6 +286,15 @@ namespace Nano::Graphics::Internal
 
         NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::DynamicStorageBufferUnordered) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, DynamicStorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
+        if constexpr (Information::Validation)
+        {
+            if ((item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::DynamicStorageBufferUnordered) || (item.Type == ResourceType::DynamicUniformBuffer))
+            {
+                NG_ASSERT((range.Size == BufferRange::FullSize), "[VkBindingSet] Dynamic buffers require either a buffer range of FullSize.");
+                NG_ASSERT((range.Offset == 0), "[VkBindingSet] Dynamic buffers require no buffer range offset.");
+            }
+        }
+
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
 
@@ -358,6 +367,15 @@ namespace Nano::Graphics::Internal
         // it exists, it might not translate to vulkan/glsl. Careful with this.
 
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::DynamicStorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, DynamicStorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
+
+        if constexpr (Information::Validation)
+        {
+            if ((resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::DynamicStorageBufferUnordered) || (resourceType == ResourceType::DynamicUniformBuffer))
+            {
+                NG_ASSERT((range.Size == BufferRange::FullSize), "[VkBindingSet] Dynamic buffers require either a buffer range of FullSize.");
+                NG_ASSERT((range.Offset == 0), "[VkBindingSet] Dynamic buffers require no buffer range offset.");
+            }
+        }
 
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
         BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());

@@ -292,8 +292,8 @@ namespace Nano::Graphics::Internal
 
         case ResourceType::DynamicStructuredBufferSRV:
         {
-            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
-            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+            NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
 
             BufferRange dynamicRange = {};
             dynamicRange.Offset = 0;
@@ -308,8 +308,8 @@ namespace Nano::Graphics::Internal
         }
         case ResourceType::DynamicStructuredBufferUAV:
         {
-            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
-            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+            NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
 
             BufferRange dynamicRange = {};
             dynamicRange.Offset = 0;
@@ -324,8 +324,8 @@ namespace Nano::Graphics::Internal
         }
         case ResourceType::DynamicConstantBuffer:
         {
-            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
-            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+            NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
 
             ID3D12Resource* resource = dxBuffer.GetD3D12Resource().Get();
             size_t alignedSize = Nano::Memory::AlignOffset(buffer.GetSpecification().Stride, buffer.GetAlignment());
