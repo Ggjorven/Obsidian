@@ -673,8 +673,8 @@ namespace Nano::Graphics::Internal
     class Dx12Resources
     {
     public:
-        inline constexpr static uint32_t s_SRVAndUAVAndCBVStartSize = 1024;               // Shader visible
-        inline constexpr static uint32_t s_SamplerStartSize = s_SRVAndUAVAndCBVStartSize; // Shader visible
+        inline constexpr static uint32_t s_SRVAndUAVAndCBVStartSize = 1024 * 5; // Shader visible
+        inline constexpr static uint32_t s_SamplerStartSize = 1024;             // Shader visible
         inline constexpr static uint32_t s_DSVStartSize = 16;
         inline constexpr static uint32_t s_RTVStartSize = 16;
 

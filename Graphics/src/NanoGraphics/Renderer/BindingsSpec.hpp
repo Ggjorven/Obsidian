@@ -71,7 +71,7 @@ namespace Nano::Graphics
         uint32_t Slot = 0;
         ResourceType Type = ResourceType::None;
         
-        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count. // TODO: Or max amount of dynamic buffer elements
+        uint16_t Size = 1; // Note: Either push constant size, descriptor array size/count or max amount of dynamic buffer elements
 
         std::string DebugName = {};
 

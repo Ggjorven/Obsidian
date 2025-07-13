@@ -278,6 +278,9 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex)
     {
+        // Note: I don't know if arrayIndex is actually usable for buffers, but for now
+        // it exists, it might not translate to vulkan/glsl. Careful with this.
+
         VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = vkLayout.GetItem(slot);
 
@@ -351,6 +354,9 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::UploadBuffer(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorBufferInfo>& bufferInfos, Buffer& buffer, const BufferRange& range, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
+        // Note: I don't know if arrayIndex is actually usable for buffers, but for now
+        // it exists, it might not translate to vulkan/glsl. Careful with this.
+
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::DynamicStorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, DynamicStorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
         VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);

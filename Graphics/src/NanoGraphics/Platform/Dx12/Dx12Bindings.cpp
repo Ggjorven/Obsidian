@@ -140,6 +140,7 @@ namespace Nano::Graphics::Internal
                 {
                 case ResourceType::TextureSRV:
                 case ResourceType::StructuredBufferSRV:
+                case ResourceType::DynamicStructuredBufferSRV:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
                     
@@ -152,6 +153,7 @@ namespace Nano::Graphics::Internal
 
                 case ResourceType::TextureUAV:
                 case ResourceType::StructuredBufferUAV:
+                case ResourceType::DynamicStructuredBufferUAV:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
@@ -163,6 +165,7 @@ namespace Nano::Graphics::Internal
                 }
 
                 case ResourceType::ConstantBuffer:
+                case ResourceType::DynamicConstantBuffer:
                 {
                     auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
@@ -258,6 +261,9 @@ namespace Nano::Graphics::Internal
 
     void Dx12BindingSet::SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex)
     {
+        // Note: I don't know if arrayIndex is actually usable for buffers, but for now
+        // it exists, it might not translate to dx12/hlsl. Careful with this.
+
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
@@ -265,20 +271,74 @@ namespace Nano::Graphics::Internal
 
         Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
         DescriptorHeapIndex index = m_SRVAndUAVAndCBVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
+        auto& heap = m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap();
 
         switch (item.Type)
         {
         case ResourceType::StructuredBufferSRV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateSRV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferSRV, dxBuffer.GetD3D12Resource().Get());
+            heap.CreateSRV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferSRV, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::StructuredBufferUAV:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateUAV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferUAV, dxBuffer.GetD3D12Resource().Get());
+            heap.CreateUAV(index, buffer.GetSpecification(), range, ResourceType::StructuredBufferUAV, dxBuffer.GetD3D12Resource().Get());
             break;
 
         case ResourceType::ConstantBuffer:
-            m_Pool.GetDx12Device().GetResources().GetSRVAndUAVAndCBVHeap().CreateCBV(index, buffer.GetSpecification(), ResourceType::ConstantBuffer, dxBuffer.GetD3D12Resource().Get());
+            heap.CreateCBV(index, buffer.GetSpecification(), ResourceType::ConstantBuffer, dxBuffer.GetD3D12Resource().Get());
             break;
+
+        case ResourceType::DynamicStructuredBufferSRV:
+        {
+            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+
+            BufferRange dynamicRange = {};
+            dynamicRange.Offset = 0;
+            dynamicRange.Size = buffer.GetSpecification().Stride;
+
+            for (uint32_t i = 0; i < item.Size; i++)
+            {
+                heap.CreateSRV(index, buffer.GetSpecification(), dynamicRange, ResourceType::DynamicStructuredBufferSRV, dxBuffer.GetD3D12Resource().Get());
+                dynamicRange.Offset = Nano::Memory::AlignOffset(dynamicRange.Offset + buffer.GetSpecification().Stride, buffer.GetAlignment());
+            }
+            break;
+        }
+        case ResourceType::DynamicStructuredBufferUAV:
+        {
+            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+
+            BufferRange dynamicRange = {};
+            dynamicRange.Offset = 0;
+            dynamicRange.Size = buffer.GetSpecification().Stride;
+
+            for (uint32_t i = 0; i < item.Size; i++)
+            {
+                heap.CreateUAV(index, buffer.GetSpecification(), dynamicRange, ResourceType::DynamicStructuredBufferUAV, dxBuffer.GetD3D12Resource().Get());
+                dynamicRange.Offset = Nano::Memory::AlignOffset(dynamicRange.Offset + buffer.GetSpecification().Stride, buffer.GetAlignment());
+            }
+            break;
+        }
+        case ResourceType::DynamicConstantBuffer:
+        {
+            NG_ASSERT((range.Size == 0 || range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require either no buffer range or FullSize.");
+            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
+
+            ID3D12Resource* resource = dxBuffer.GetD3D12Resource().Get();
+            size_t offset = 0;
+            size_t alignedSize = Nano::Memory::AlignOffset(buffer.GetSpecification().Stride, buffer.GetAlignment());
+
+            D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
+            desc.SizeInBytes = buffer.GetSpecification().Stride;
+            desc.BufferLocation = resource->GetGPUVirtualAddress();
+
+            for (uint32_t i = 0; i < item.Size; i++)
+            {
+                heap.CreateCBV(index, desc, resource);
+                desc.BufferLocation += alignedSize;
+            }
+            break;
+        }
 
         default:
             NG_UNREACHABLE();
@@ -301,13 +361,16 @@ namespace Nano::Graphics::Internal
                 {
                 case ResourceType::TextureSRV:
                 case ResourceType::StructuredBufferSRV:
+                case ResourceType::DynamicStructuredBufferSRV:
                 // Note: These are all in the descriptor heap
                 case ResourceType::TextureUAV:
                 case ResourceType::StructuredBufferUAV:
+                case ResourceType::DynamicStructuredBufferUAV:
                 // Note: These are all in the descriptor heap
                 case ResourceType::ConstantBuffer:
+                case ResourceType::DynamicConstantBuffer:
                 case ResourceType::PushConstants:
-                    m_SRVAndUAVAndCBVCountPerSet += count;
+                    m_SRVAndUAVAndCBVCountPerSet += count; // Note: Count == ArraySize or Dynamic Element Count
                     break;
 
                 case ResourceType::Sampler:

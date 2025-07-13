@@ -441,6 +441,11 @@ namespace Nano::Graphics::Internal
             // SRVs, UAVs & CBVs
             for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
             {
+                // TODO: Optimize
+                const auto& item = layout.GetItem(slot);
+
+                // TODO: Dynamic offsets
+
                 CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
                 m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
             }
