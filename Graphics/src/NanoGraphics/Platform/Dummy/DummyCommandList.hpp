@@ -80,8 +80,8 @@ namespace Nano::Graphics::Internal
 		inline constexpr void BindPipeline(const GraphicsPipeline& pipeline) { (void)pipeline; }
 		inline constexpr void BindPipeline(const ComputePipeline& pipeline) { (void)pipeline; }
 
-		inline constexpr void BindBindingSet(const BindingSet& set) { (void)set; }
-		inline constexpr void BindBindingSets(std::span<const BindingSet*> sets) { (void)sets; }
+		inline constexpr void BindBindingSet(const BindingSet& set, std::span<const uint32_t> dynamicOffsets) { (void)set; (void)dynamicOffsets; }
+		inline constexpr void BindBindingSets(std::span<const BindingSet*> sets, std::span<const std::span<const uint32_t>> dynamicOffsets) { (void)sets; (void)dynamicOffsets; }
 
 		inline constexpr void SetViewport(const Viewport& viewport) const { (void)viewport; }
 		inline constexpr void SetScissor(const ScissorRect& scissor) const { (void)scissor; }

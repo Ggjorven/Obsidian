@@ -37,9 +37,9 @@ namespace Nano::Graphics::Internal
         public:
             inline constexpr static uint16_t Invalid = std::numeric_limits<uint16_t>::max();
         public:
-            //                    Slot      Index
-            std::vector<std::pair<uint32_t, uint16_t>> SRVAndUAVAndCBVIndices = { };
-            std::vector<std::pair<uint32_t, uint16_t>> SamplerIndices = { };
+            //                     Slot      Index     IsDynamic
+            std::vector<std::tuple<uint32_t, uint16_t, bool>> SRVAndUAVAndCBVIndices = { };
+            std::vector<std::tuple<uint32_t, uint16_t>> SamplerIndices = { };
         };
     public:
         // Constructor & Destructor
@@ -55,8 +55,8 @@ namespace Nano::Graphics::Internal
 
         inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
         
-        const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
-        const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::tuple<uint32_t, uint16_t, bool>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::tuple<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
 
     private:
         GraphicsPipelineSpecification m_Specification;
@@ -92,8 +92,8 @@ namespace Nano::Graphics::Internal
 
         inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
 
-        const std::vector<std::pair<uint32_t, uint16_t>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
-        const std::vector<std::pair<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::tuple<uint32_t, uint16_t, bool>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<std::tuple<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
 
     private:
         ComputePipelineSpecification m_Specification;

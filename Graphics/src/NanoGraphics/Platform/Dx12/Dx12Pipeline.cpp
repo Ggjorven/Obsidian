@@ -37,10 +37,10 @@ namespace Nano::Graphics::Internal
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
                 // Ranges
-                for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
+                for (const auto& [slot, visibility, isDynamic, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1, isDynamic);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
@@ -185,14 +185,14 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
-    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12GraphicsPipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
+    const std::vector<std::tuple<uint32_t, uint16_t, bool>>& Dx12GraphicsPipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < GraphicsPipelineSpecification::MaxBindings), "[Dx12GraphicsPipeline] Invalid registerspace passed in.");
         //NG_ASSERT((m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndex != RootParameterIndices::Invalid), "[Dx12GraphicsPipeline] Retrieving index for SRVAndUAVAndCBV root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices;
     }
 
-    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12GraphicsPipeline::GetSamplerRootIndices(uint8_t registerSpace) const
+    const std::vector<std::tuple<uint32_t, uint16_t>>& Dx12GraphicsPipeline::GetSamplerRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < GraphicsPipelineSpecification::MaxBindings), "[Dx12GraphicsPipeline] Invalid registerspace passed in.");
         //NG_ASSERT((m_RootParameterIndices[registerSpace].SamplerIndex != RootParameterIndices::Invalid), "[Dx12GraphicsPipeline] Retrieving index for Sampler root parameter, but this index was never initialized.");
@@ -227,10 +227,10 @@ namespace Nano::Graphics::Internal
                 m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
 
                 // Ranges
-                for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
+                for (const auto& [slot, visibility, isDynamic, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1, isDynamic);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
@@ -298,14 +298,14 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
-    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
+    const std::vector<std::tuple<uint32_t, uint16_t, bool>>& Dx12ComputePipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
         //NG_ASSERT((m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for SRVAndUAVAndCBV root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices;
     }
 
-    const std::vector<std::pair<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSamplerRootIndices(uint8_t registerSpace) const
+    const std::vector<std::tuple<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSamplerRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
         //NG_ASSERT((m_RootParameterIndices[registerSpace].SamplerIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for Sampler root parameter, but this index was never initialized.");

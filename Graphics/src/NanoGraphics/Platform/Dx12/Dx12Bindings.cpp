@@ -142,11 +142,12 @@ namespace Nano::Graphics::Internal
                 case ResourceType::StructuredBufferSRV:
                 case ResourceType::DynamicStructuredBufferSRV:
                 {
-                    auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
                     
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
+                    isDynamic = (item.Type == ResourceType::DynamicStructuredBufferSRV);
 
                     break;
                 }
@@ -155,11 +156,12 @@ namespace Nano::Graphics::Internal
                 case ResourceType::StructuredBufferUAV:
                 case ResourceType::DynamicStructuredBufferUAV:
                 {
-                    auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
+                    isDynamic = (item.Type == ResourceType::DynamicStructuredBufferUAV);
 
                     break;
                 }
@@ -167,11 +169,12 @@ namespace Nano::Graphics::Internal
                 case ResourceType::ConstantBuffer:
                 case ResourceType::DynamicConstantBuffer:
                 {
-                    auto& [slot, stage, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, item.GetArraySize(), item.Slot, registerSpace);
                     stage = item.Visibility;
                     slot = item.Slot;
+                    isDynamic = (item.Type == ResourceType::DynamicConstantBuffer);
 
                     break;
                 }
@@ -325,11 +328,10 @@ namespace Nano::Graphics::Internal
             NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require either no buffer range offset.");
 
             ID3D12Resource* resource = dxBuffer.GetD3D12Resource().Get();
-            size_t offset = 0;
             size_t alignedSize = Nano::Memory::AlignOffset(buffer.GetSpecification().Stride, buffer.GetAlignment());
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-            desc.SizeInBytes = buffer.GetSpecification().Stride;
+            desc.SizeInBytes = static_cast<uint32_t>(buffer.GetSpecification().Stride);
             desc.BufferLocation = resource->GetGPUVirtualAddress();
 
             for (uint32_t i = 0; i < item.Size; i++)

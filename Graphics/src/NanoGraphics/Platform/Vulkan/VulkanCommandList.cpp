@@ -417,7 +417,7 @@ namespace Nano::Graphics::Internal
         vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, vulkanPipeline.GetVkPipeline());
     }
 
-    void VulkanCommandList::BindBindingSet(const BindingSet& set)
+    void VulkanCommandList::BindBindingSet(const BindingSet& set, std::span<const uint32_t> dynamicOffsets)
     {
         NG_PROFILE("VulkanCommandList::BindBindingSet()");
 
@@ -440,14 +440,15 @@ namespace Nano::Graphics::Internal
         VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(vkSet.GetVulkanBindingSetPool().GetSpecification().Layout);
         VkDescriptorSet descriptorSet = vkSet.GetVkDescriptorSet();
 
-        vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, vkLayout.GetRegisterSpace(), 1, &descriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, vkLayout.GetRegisterSpace(), 1, &descriptorSet, static_cast<uint32_t>(dynamicOffsets.size()), dynamicOffsets.data());
     }
 
-    void VulkanCommandList::BindBindingSets(const std::span<const BindingSet*> sets)
+    void VulkanCommandList::BindBindingSets(const std::span<const BindingSet*> sets, std::span<const std::span<const uint32_t>> dynamicOffsets)
     {
         NG_PROFILE("VulkanCommandList::BindBindingSets()");
 
         NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[VkCommandList] A pipeline must be bound to bind a binding set.");
+        NG_ASSERT((dynamicOffsets.empty()) || (sets.size() == dynamicOffsets.size()), "[VkCommandList] The amount of dynamic offsets spans must be the same as the amount of sets or be empty.");
 
         VkPipelineLayout layout;
         VkPipelineBindPoint bindPoint;
@@ -462,8 +463,8 @@ namespace Nano::Graphics::Internal
             bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
         }
 
-        // Note: This corresponds to SetID               Sets
-        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>>> descriptorSetsSet;
+        // Note: This corresponds to SetID               Sets               DynamicOffsets
+        std::vector<std::tuple<uint32_t, std::vector<VkDescriptorSet>, std::span<const uint32_t>>> descriptorSetsSet;
         std::get<std::vector<VkDescriptorSet>>(descriptorSetsSet.emplace_back()).reserve(sets.size());
 
         // Runtime validation
@@ -478,7 +479,8 @@ namespace Nano::Graphics::Internal
                 {
                     auto& tuple = descriptorSetsSet.emplace_back(
                         static_cast<uint32_t>(i),
-                        std::vector<VkDescriptorSet>()
+                        std::vector<VkDescriptorSet>(),
+                        ((!dynamicOffsets.empty()) ? dynamicOffsets[i] : std::span<const uint32_t>())
                     );
 
                     std::get<std::vector<VkDescriptorSet>>(tuple).reserve(sets.size());
@@ -491,8 +493,8 @@ namespace Nano::Graphics::Internal
         }
 
         // Binding
-        for (const auto& [setID, descriptorSets] : descriptorSetsSet)
-            vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+        for (const auto& [setID, descriptorSets, dOffsets] : descriptorSetsSet)
+            vkCmdBindDescriptorSets(m_CommandBuffer, bindPoint, layout, setID, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), static_cast<uint32_t>(dOffsets.size()), dOffsets.data());
     }
 
     void VulkanCommandList::BindVertexBuffer(const Buffer& buffer) const

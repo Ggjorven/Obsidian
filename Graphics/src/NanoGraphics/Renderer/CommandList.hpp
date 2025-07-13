@@ -54,8 +54,8 @@ namespace Nano::Graphics
         inline void BindPipeline(const GraphicsPipeline& pipeline) { m_Impl->BindPipeline(pipeline); }
         inline void BindPipeline(const ComputePipeline& pipeline) { m_Impl->BindPipeline(pipeline); }
 
-        inline void BindBindingSet(const BindingSet& set) { m_Impl->BindBindingSet(set); }
-        inline void BindBindingSets(std::span<const BindingSet*> sets) { m_Impl->BindBindingSets(sets); }
+        inline void BindBindingSet(const BindingSet& set, std::span<const uint32_t> dynamicOffsets = {}) { m_Impl->BindBindingSet(set, dynamicOffsets); }
+        inline void BindBindingSets(std::span<const BindingSet*> sets, std::span<const std::span<const uint32_t>> dynamicOffsets = {}) { m_Impl->BindBindingSets(sets, dynamicOffsets); }
 
         inline void SetViewport(const Viewport& viewport) const { m_Impl->SetViewport(viewport); }
         inline void SetScissor(const ScissorRect& scissor) const { m_Impl->SetScissor(scissor); }

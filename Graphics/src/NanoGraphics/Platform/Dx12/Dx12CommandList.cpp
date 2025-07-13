@@ -409,12 +409,25 @@ namespace Nano::Graphics::Internal
         m_CommandList->SetDescriptorHeaps(static_cast<UINT>(heaps.size()), heaps.data());
     }
 
-    void Dx12CommandList::BindBindingSet(const BindingSet& set)
+    void Dx12CommandList::BindBindingSet(const BindingSet& set, std::span<const uint32_t> dynamicOffsets)
     {
         NG_PROFILE("Dx12CommandList::BindBindingSet()");
 
         NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[Dx12CommandList] A pipeline must be bound to bind bindingsets.");
         const Dx12BindingSet& dxSet = *api_cast<const Dx12BindingSet*>(&set);
+
+        std::vector<uint32_t> resolvedOffsets;
+        size_t currentOffset = 0;
+        {
+            resolvedOffsets.reserve(dynamicOffsets.size());
+
+            for (const auto offset : dynamicOffsets)
+            {
+                static_assert(BufferSpecification::DefaultUniformBufferAlignment == BufferSpecification::DefaultStorageBufferAlignment, "[Dx12CommandList] Current dx12 implementation requires Uniform and Storage buffer alignment to be the same.");
+                NG_ASSERT((offset % BufferSpecification::DefaultUniformBufferAlignment == 0), "[Dx12CommandList] Offset must be aligned to the same alignment as the buffer.");
+                resolvedOffsets.emplace_back(offset / BufferSpecification::DefaultUniformBufferAlignment);
+            }
+        }
 
         // Graphics pipeline
         if (m_CurrentGraphicsPipeline)
@@ -439,14 +452,14 @@ namespace Nano::Graphics::Internal
             const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
 
             // SRVs, UAVs & CBVs
-            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
+            for (const auto& [slot, index, isDynamic] : srvAndUAVandCBVRootIndices)
             {
-                // TODO: Optimize
-                const auto& item = layout.GetItem(slot);
+                DescriptorHeapIndex heapIndex = dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot);
 
-                // TODO: Dynamic offsets
+                if (isDynamic && !resolvedOffsets.empty())
+                    heapIndex += resolvedOffsets[currentOffset];
 
-                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(heapIndex);
                 m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
             }
 
@@ -480,10 +493,15 @@ namespace Nano::Graphics::Internal
             const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
 
             // SRVs, UAVs & CBVs
-            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
+            for (const auto& [slot, index, isDynamic] : srvAndUAVandCBVRootIndices)
             {
-                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
-                m_CommandList->SetComputeRootDescriptorTable(index, handle);
+                DescriptorHeapIndex heapIndex = dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot);
+
+                if (isDynamic && !resolvedOffsets.empty())
+                    heapIndex += resolvedOffsets[currentOffset];
+
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(heapIndex);
+                m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
             }
 
             // Samplers
@@ -495,12 +513,14 @@ namespace Nano::Graphics::Internal
         }
     }
 
-    void Dx12CommandList::BindBindingSets(std::span<const BindingSet*> sets)
+    void Dx12CommandList::BindBindingSets(std::span<const BindingSet*> sets, std::span<const std::span<const uint32_t>> dynamicOffsets)
     {
         NG_PROFILE("Dx12CommandList::BindBindingSets()");
 
-        for (const auto set : sets)
-            BindBindingSet(*set);
+        NG_ASSERT((dynamicOffsets.empty()) || (sets.size() == dynamicOffsets.size()), "[Dx12CommandList] The amount of dynamic offsets spans must be the same as the amount of sets or be empty.");
+
+        for (size_t i = 0; i < sets.size(); i++)
+            BindBindingSet(*sets[i], (!dynamicOffsets.empty() ? dynamicOffsets[i] : std::span<const uint32_t>()));
     }
 
     void Dx12CommandList::SetViewport(const Viewport& viewport) const
