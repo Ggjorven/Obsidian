@@ -39,6 +39,21 @@ namespace Nano::Graphics::Internal
     class Dx12BindingLayout
     {
     public:
+        struct Range
+        {
+        public:
+            uint32_t Slot = 0;
+            ShaderStage Visibility = ShaderStage::AllGraphics;
+            CD3DX12_DESCRIPTOR_RANGE Range;
+        };
+        struct DynamicRange
+        {
+        public:
+            uint32_t Slot = 0;
+            ShaderStage Visibility = ShaderStage::AllGraphics;
+            ResourceType Type = ResourceType::None; // Note: This is used to check if an object is SRV, UAV or CBV
+        };
+    public:
         // Constructors & Destructor
         Dx12BindingLayout(const Device& device, const BindingLayoutSpecification& specs);
         Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs);
@@ -61,13 +76,14 @@ namespace Nano::Graphics::Internal
         inline uint32_t GetSlotToHeapOffset(uint32_t slot) const { return m_SlotToHeapOffset[slot]; }
         inline const std::vector<uint32_t>& GetSlotToHeapOffsets() const { return m_SlotToHeapOffset; }
 
-        inline const std::vector<std::tuple<uint32_t, ShaderStage, bool, CD3DX12_DESCRIPTOR_RANGE>>& GetD3D12SRVAndUAVAndCBVRanges() const { return m_SRVAndUAVAndCBVRanges; }
-        inline const std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>>& GetD3D12SamplerRanges() const { return m_SamplerRanges; }
+        inline const std::vector<Range>& GetSRVAndUAVAndCBVRanges() const { return m_SRVAndUAVAndCBVRanges; }
+        inline const std::vector<Range>& GetSamplerRanges() const { return m_SamplerRanges; }
+        inline const std::vector<DynamicRange>& GetDynamicRanges() const { return m_DynamicRanges; }
     
     private:
         // Private methods
         void InitResourceCounts(std::span<const BindingLayoutItem> items);
-        void CreateRootParameters(std::span<const BindingLayoutItem> items);
+        void CreateRanges(std::span<const BindingLayoutItem> items);
 
     private:
         std::variant<BindingLayoutSpecification, BindlessLayoutSpecification> m_Specification;
@@ -75,9 +91,10 @@ namespace Nano::Graphics::Internal
         std::vector<std::pair<ResourceType, uint32_t>> m_ResourceCounts = { };
         std::vector<uint32_t> m_SlotToHeapOffset = {};
 
-        //                     Slot      Visibility IsDynamic      Range
-        std::vector<std::tuple<uint32_t, ShaderStage, bool, CD3DX12_DESCRIPTOR_RANGE>> m_SRVAndUAVAndCBVRanges;
-        std::vector<std::tuple<uint32_t, ShaderStage, CD3DX12_DESCRIPTOR_RANGE>> m_SamplerRanges;
+        // Note: The ranges are sorted from slot lowest to highest
+        std::vector<Range> m_SRVAndUAVAndCBVRanges; // TODO: Make actual ranges instead of seperate elements a seperate range
+        std::vector<Range> m_SamplerRanges;
+        std::vector<DynamicRange> m_DynamicRanges; // Note: We don't need a seperate sampler one, since there is no such thing as a dynamic sampler.
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -104,12 +121,23 @@ namespace Nano::Graphics::Internal
         inline DescriptorHeapIndex GetSRVAndUAVAndCBVBeginIndex() const { return m_SRVAndUAVAndCBVBeginIndex; }
         inline DescriptorHeapIndex GetSamplerBeginIndex() const { return m_SamplerBeginIndex; }
 
+        //inline D3D12_GPU_VIRTUAL_ADDRESS GetD3D12GPUAddressForDynamicSlot(uint32_t slot) const { NG_ASSERT((m_DynamicBeginAddresses.contains(slot)), "[Dx12BindingSet] Internal error: Trying to access a slot which wasn't created to be dynamic."); return m_DynamicBeginAddresses.at(slot); }
+        
+        inline D3D12_GPU_VIRTUAL_ADDRESS GetD3D12GPUAddressForDynamicSlot(uint32_t slot) const 
+        { 
+            NG_ASSERT((m_DynamicBeginAddresses.contains(slot)), "[Dx12BindingSet] Internal error: Trying to access a slot which wasn't created to be dynamic."); 
+            return m_DynamicBeginAddresses.at(slot); 
+        }
+
     private:
         Dx12BindingSetPool& m_Pool;
         BindingSetSpecification m_Specification;
 
         DescriptorHeapIndex m_SRVAndUAVAndCBVBeginIndex = 0;
         DescriptorHeapIndex m_SamplerBeginIndex = 0;
+
+        // Note: Currently slot to address, ordered. // FUTURE TODO: ...
+        std::map<uint32_t, D3D12_GPU_VIRTUAL_ADDRESS> m_DynamicBeginAddresses;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -28,28 +28,56 @@ namespace Nano::Graphics::Internal
             for (auto& layout : m_Specification.BindingLayouts)
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
+                uint32_t registerSpace = dxLayout.GetRegisterSpace();
                 
-                const auto& srvAndUAVAndCBVRanges = dxLayout.GetD3D12SRVAndUAVAndCBVRanges();
-                const auto& samplerRanges = dxLayout.GetD3D12SamplerRanges();
+                const auto& srvAndUAVAndCBVRanges = dxLayout.GetSRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = dxLayout.GetSamplerRanges();
+                const auto& dynamicRanges = dxLayout.GetDynamicRanges();
 
                 // Reserve space
-                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
-                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
+                m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
+                m_RootParameterIndices[registerSpace].SamplerIndices.reserve(samplerRanges.size());
+                m_RootParameterIndices[registerSpace].DynamicIndices.reserve(dynamicRanges.size());
 
                 // Ranges
-                for (const auto& [slot, visibility, isDynamic, range] : srvAndUAVAndCBVRanges)
+                for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1, isDynamic);
+                    m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[registerSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                }
+
+                // Dynamic ranges
+                for (const auto& [slot, visibility, type] : dynamicRanges)
+                {
+                    NG_ASSERT((ResourceTypeIsDynamic(type)), "[Dx12GraphicsPipeline] Internal error: A non dynamic resource type ended up in dynamic ranges.");
+
+                    switch (type)
+                    {
+                    case ResourceType::DynamicStructuredBufferSRV:
+                        parameters.emplace_back().InitAsShaderResourceView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+                    case ResourceType::DynamicStructuredBufferUAV:
+                        parameters.emplace_back().InitAsUnorderedAccessView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+                    case ResourceType::DynamicConstantBuffer:
+                        parameters.emplace_back().InitAsConstantBufferView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+
+                    default:
+                        NG_UNREACHABLE();
+                        break;
+                    }
+
+                    m_RootParameterIndices[registerSpace].DynamicIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1, type);
                 }
 
                 // Push constants
-                if (m_PushConstantsIndex.second == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found.
+                if (m_PushConstantsIndex.Index == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found. // FUTURE TODO: Optimize
                 {
                     for (const auto& item : dxLayout.GetBindingItems())
                     {
@@ -59,7 +87,8 @@ namespace Nano::Graphics::Internal
                         NG_ASSERT((item.Size % 4 == 0), "[Dx12GraphicsPipeline] Push constants size must be aligned to 4 bytes.");
 
                         parameters.emplace_back().InitAsConstants(item.Size / 4, item.Slot, dxLayout.GetRegisterSpace(), ShaderStageToD3D12ShaderVisibility(item.Visibility));
-                        m_PushConstantsIndex = { item.Slot, static_cast<uint16_t>(parameters.size()) - 1 };
+                        m_PushConstantsIndex.Slot = item.Slot;
+                        m_PushConstantsIndex.Index = static_cast<uint16_t>(parameters.size()) - 1;
                         break;
                     }
                 }
@@ -185,18 +214,22 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
-    const std::vector<std::tuple<uint32_t, uint16_t, bool>>& Dx12GraphicsPipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
+    const std::vector<Dx12GraphicsPipeline::RootParameterIndices::IndexType>& Dx12GraphicsPipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < GraphicsPipelineSpecification::MaxBindings), "[Dx12GraphicsPipeline] Invalid registerspace passed in.");
-        //NG_ASSERT((m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndex != RootParameterIndices::Invalid), "[Dx12GraphicsPipeline] Retrieving index for SRVAndUAVAndCBV root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices;
     }
 
-    const std::vector<std::tuple<uint32_t, uint16_t>>& Dx12GraphicsPipeline::GetSamplerRootIndices(uint8_t registerSpace) const
+    const std::vector<Dx12GraphicsPipeline::RootParameterIndices::IndexType>& Dx12GraphicsPipeline::GetSamplerRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < GraphicsPipelineSpecification::MaxBindings), "[Dx12GraphicsPipeline] Invalid registerspace passed in.");
-        //NG_ASSERT((m_RootParameterIndices[registerSpace].SamplerIndex != RootParameterIndices::Invalid), "[Dx12GraphicsPipeline] Retrieving index for Sampler root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SamplerIndices;
+    }
+
+    const std::vector<Dx12GraphicsPipeline::RootParameterIndices::DynamicIndexType>& Dx12GraphicsPipeline::GetDynamicRootIndices(uint8_t registerSpace) const
+    {
+        NG_ASSERT((registerSpace < GraphicsPipelineSpecification::MaxBindings), "[Dx12GraphicsPipeline] Invalid registerspace passed in.");
+        return m_RootParameterIndices[registerSpace].DynamicIndices;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -218,39 +251,64 @@ namespace Nano::Graphics::Internal
             for (auto& layout : m_Specification.BindingLayouts)
             {
                 Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(layout);
+                uint32_t registerSpace = dxLayout.GetRegisterSpace();
 
-                const auto& srvAndUAVAndCBVRanges = dxLayout.GetD3D12SRVAndUAVAndCBVRanges();
-                const auto& samplerRanges = dxLayout.GetD3D12SamplerRanges();
+                const auto& srvAndUAVAndCBVRanges = dxLayout.GetSRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = dxLayout.GetSamplerRanges();
+                const auto& dynamicRanges = dxLayout.GetDynamicRanges();
 
                 // Reserve space
-                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
-                m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.reserve(samplerRanges.size());
+                m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices.reserve(srvAndUAVAndCBVRanges.size());
+                m_RootParameterIndices[registerSpace].SamplerIndices.reserve(samplerRanges.size());
 
                 // Ranges
-                for (const auto& [slot, visibility, isDynamic, range] : srvAndUAVAndCBVRanges)
+                for (const auto& [slot, visibility, range] : srvAndUAVAndCBVRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1, isDynamic);
+                    m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
                 }
                 for (const auto& [slot, visibility, range] : samplerRanges)
                 {
                     parameters.emplace_back().InitAsDescriptorTable(1, &range, ShaderStageToD3D12ShaderVisibility(visibility));
-                    m_RootParameterIndices[dxLayout.GetRegisterSpace()].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                    m_RootParameterIndices[registerSpace].SamplerIndices.emplace_back(slot, static_cast<uint16_t>(parameters.size()) - 1);
+                }
+
+                // Dynamic ranges
+                for (const auto& [slot, visibility, type] : dynamicRanges)
+                {
+                    NG_ASSERT((ResourceTypeIsDynamic(type)), "[Dx12GraphicsPipeline] Internal error: A non dynamic resource type ended up in dynamic ranges.");
+
+                    switch (type)
+                    {
+                    case ResourceType::DynamicStructuredBufferSRV:
+                        parameters.emplace_back().InitAsShaderResourceView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+                    case ResourceType::DynamicStructuredBufferUAV:
+                        parameters.emplace_back().InitAsUnorderedAccessView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+                    case ResourceType::DynamicConstantBuffer:
+                        parameters.emplace_back().InitAsConstantBufferView(slot, registerSpace, ShaderStageToD3D12ShaderVisibility(visibility));
+                        break;
+
+                    default:
+                        NG_UNREACHABLE();
+                        break;
+                    }
                 }
 
                 // Push constants
-                if (m_PushConstantsIndex.second == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found.
+                if (m_PushConstantsIndex.Index == RootParameterIndices::Invalid) // Note: Only keep looking for pushconstants if not already found. // FUTURE TODO: Optimize
                 {
                     for (const auto& item : dxLayout.GetBindingItems())
                     {
                         if (item.Type != ResourceType::PushConstants)
                             continue;
 
-                        NG_ASSERT((item.Size <= 128), "[Dx12ComputePipeline] Push constants size has to be less than 128 bytes.");
-                        NG_ASSERT((item.Size % 4 == 0), "[Dx12ComputePipeline] Push constants size must be aligned to 4 bytes.");
+                        NG_ASSERT((item.Size % 4 == 0), "[Dx12GraphicsPipeline] Push constants size must be aligned to 4 bytes.");
 
                         parameters.emplace_back().InitAsConstants(item.Size / 4, item.Slot, dxLayout.GetRegisterSpace(), ShaderStageToD3D12ShaderVisibility(item.Visibility));
-                        m_PushConstantsIndex = { item.Slot, static_cast<uint16_t>(parameters.size()) - 1 };
+                        m_PushConstantsIndex.Slot = item.Slot;
+                        m_PushConstantsIndex.Index = static_cast<uint16_t>(parameters.size()) - 1;
                         break;
                     }
                 }
@@ -298,18 +356,22 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
-    const std::vector<std::tuple<uint32_t, uint16_t, bool>>& Dx12ComputePipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
+    const std::vector<Dx12ComputePipeline::RootParameterIndices::IndexType>& Dx12ComputePipeline::GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
-        //NG_ASSERT((m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for SRVAndUAVAndCBV root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SRVAndUAVAndCBVIndices;
     }
 
-    const std::vector<std::tuple<uint32_t, uint16_t>>& Dx12ComputePipeline::GetSamplerRootIndices(uint8_t registerSpace) const
+    const std::vector<Dx12ComputePipeline::RootParameterIndices::IndexType>& Dx12ComputePipeline::GetSamplerRootIndices(uint8_t registerSpace) const
     {
         NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
-        //NG_ASSERT((m_RootParameterIndices[registerSpace].SamplerIndex != RootParameterIndices::Invalid), "[Dx12ComputePipeline] Retrieving index for Sampler root parameter, but this index was never initialized.");
         return m_RootParameterIndices[registerSpace].SamplerIndices;
+    }
+
+    const std::vector<Dx12ComputePipeline::RootParameterIndices::DynamicIndexType>& Dx12ComputePipeline::GetDynamicRootIndices(uint8_t registerSpace) const
+    {
+        NG_ASSERT((registerSpace < ComputePipelineSpecification::MaxBindings), "[Dx12ComputePipeline] Invalid registerspace passed in.");
+        return m_RootParameterIndices[registerSpace].DynamicIndices;
     }
 
 }

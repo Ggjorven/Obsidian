@@ -37,9 +37,23 @@ namespace Nano::Graphics::Internal
         public:
             inline constexpr static uint16_t Invalid = std::numeric_limits<uint16_t>::max();
         public:
-            //                     Slot      Index     IsDynamic
-            std::vector<std::tuple<uint32_t, uint16_t, bool>> SRVAndUAVAndCBVIndices = { };
-            std::vector<std::tuple<uint32_t, uint16_t>> SamplerIndices = { };
+            struct IndexType
+            {
+            public:
+                uint32_t Slot = 0;
+                uint16_t Index = Invalid;
+            };
+            struct DynamicIndexType
+            {
+            public:
+                uint32_t Slot = 0;
+                uint16_t Index = Invalid;
+                ResourceType Type = ResourceType::None;
+            };
+        public:
+            std::vector<IndexType> SRVAndUAVAndCBVIndices = { };
+            std::vector<IndexType> SamplerIndices = { };
+            std::vector<DynamicIndexType> DynamicIndices = { };
         };
     public:
         // Constructor & Destructor
@@ -53,10 +67,11 @@ namespace Nano::Graphics::Internal
         inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
         inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
 
-        inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
+        inline const RootParameterIndices::IndexType& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
         
-        const std::vector<std::tuple<uint32_t, uint16_t, bool>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
-        const std::vector<std::tuple<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::IndexType>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::IndexType>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::DynamicIndexType>& GetDynamicRootIndices(uint8_t registerSpace) const;
 
     private:
         GraphicsPipelineSpecification m_Specification;
@@ -64,8 +79,7 @@ namespace Nano::Graphics::Internal
         DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
         DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
 
-        // Note: The index is the Set ID / Register space
-        std::pair<uint32_t, uint16_t> m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
+        RootParameterIndices::IndexType m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
         std::array<RootParameterIndices, GraphicsPipelineSpecification::MaxBindings> m_RootParameterIndices = {};
 
         friend class Dx12Device;
@@ -90,10 +104,11 @@ namespace Nano::Graphics::Internal
         inline DxPtr<ID3D12RootSignature> GetD3D12RootSignature() const { return m_RootSignature; }
         inline DxPtr<ID3D12PipelineState> GetD3D12PipelineState() const { return m_PipelineState; }
 
-        inline const std::pair<uint32_t, uint16_t>& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
+        inline const RootParameterIndices::IndexType& GetPushConstantsRootIndex() const { return m_PushConstantsIndex; }
 
-        const std::vector<std::tuple<uint32_t, uint16_t, bool>>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
-        const std::vector<std::tuple<uint32_t, uint16_t>>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::IndexType>& GetSRVAndUAVAndCBVRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::IndexType>& GetSamplerRootIndices(uint8_t registerSpace) const;
+        const std::vector<RootParameterIndices::DynamicIndexType>& GetDynamicRootIndices(uint8_t registerSpace) const;
 
     private:
         ComputePipelineSpecification m_Specification;
@@ -101,8 +116,7 @@ namespace Nano::Graphics::Internal
         DxPtr<ID3D12RootSignature> m_RootSignature = nullptr;
         DxPtr<ID3D12PipelineState> m_PipelineState = nullptr;
 
-        // Note: The index is the Set ID / Register space
-        std::pair<uint32_t, uint16_t> m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
+        RootParameterIndices::IndexType m_PushConstantsIndex = { 0, RootParameterIndices::Invalid };
         std::array<RootParameterIndices, GraphicsPipelineSpecification::MaxBindings> m_RootParameterIndices = {};
 
         friend class Dx12Device;

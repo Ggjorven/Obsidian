@@ -49,7 +49,7 @@ namespace Nano::Graphics::Internal
                 break;
             }
 
-            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+            return D3D12_COMMAND_LIST_TYPE_NONE;
         }
 
     }
@@ -158,7 +158,7 @@ namespace Nano::Graphics::Internal
             DX_VERIFY(queue->Wait(m_Pool.GetDx12Swapchain().GetD3D12Fence().Get(), m_Pool.GetDx12Swapchain().GetPreviousCommandListWaitValue(*api_cast<const Dx12CommandList*>(list))));
         }
 
-        // Note: Waiting on swapchain image is not a thing that needs to handled manually for DX12
+        // Note: Waiting on swapchain image is not a thing that needs to be handled manually for DX12
         
         ID3D12CommandList* lists[] = { m_CommandList.Get() };
         queue->ExecuteCommandLists(1, lists);
@@ -416,19 +416,6 @@ namespace Nano::Graphics::Internal
         NG_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "[Dx12CommandList] A pipeline must be bound to bind bindingsets.");
         const Dx12BindingSet& dxSet = *api_cast<const Dx12BindingSet*>(&set);
 
-        std::vector<uint32_t> resolvedOffsets;
-        size_t currentOffset = 0;
-        {
-            resolvedOffsets.reserve(dynamicOffsets.size());
-
-            for (const auto offset : dynamicOffsets)
-            {
-                static_assert(BufferSpecification::DefaultUniformBufferAlignment == BufferSpecification::DefaultStorageBufferAlignment, "[Dx12CommandList] Current dx12 implementation requires Uniform and Storage buffer alignment to be the same.");
-                NG_ASSERT((offset % BufferSpecification::DefaultUniformBufferAlignment == 0), "[Dx12CommandList] Offset must be aligned to the same alignment as the buffer.");
-                resolvedOffsets.emplace_back(static_cast<uint32_t>(static_cast<size_t>(offset) / BufferSpecification::DefaultUniformBufferAlignment));
-            }
-        }
-
         // Graphics pipeline
         if (m_CurrentGraphicsPipeline)
         {
@@ -437,29 +424,28 @@ namespace Nano::Graphics::Internal
 
             const auto& srvAndUAVandCBVRootIndices = graphicsPipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
             const auto& samplerRootIndices = graphicsPipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
+            const auto& dynamicRootIndices = graphicsPipeline.GetDynamicRootIndices(layout.GetBindingSpecification().RegisterSpace);
 
             if constexpr (Information::Validation)
             {
-                const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
-                const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+                const auto& srvAndUAVAndCBVRanges = layout.GetSRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = layout.GetSamplerRanges();
+                const auto& dynamicRanges = layout.GetDynamicRanges();
 
                 if (!srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndices.empty()))
                     NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
                 if (!samplerRanges.empty() && (samplerRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+                if (!dynamicRanges.empty() && (dynamicRootIndices.empty()))
                     NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
             }
 
             const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
 
             // SRVs, UAVs & CBVs
-            for (const auto& [slot, index, isDynamic] : srvAndUAVandCBVRootIndices)
+            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
             {
-                DescriptorHeapIndex heapIndex = dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot);
-
-                if (isDynamic && !resolvedOffsets.empty())
-                    heapIndex += resolvedOffsets[currentOffset];
-
-                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(heapIndex);
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
                 m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
             }
 
@@ -468,6 +454,33 @@ namespace Nano::Graphics::Internal
             {
                 CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex() + layout.GetSlotToHeapOffset(slot));
                 m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
+            }
+
+            // Dynamic
+            size_t currentOffset = 0;
+            for (size_t i = 0; i < dynamicRootIndices.size(); i++)
+            {
+                auto& indexInfo = dynamicRootIndices[i];
+                NG_ASSERT((ResourceTypeIsDynamic(indexInfo.Type)), "[Dx12CommandList] Internal error: A non dynamic resource was passed into dynamic root indices.");
+
+                uint32_t offset = ((dynamicOffsets.empty()) ? 0 : dynamicOffsets[currentOffset++]);
+
+                switch (indexInfo.Type)
+                {
+                case ResourceType::DynamicStructuredBufferSRV:
+                    m_CommandList->SetGraphicsRootShaderResourceView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+                case ResourceType::DynamicStructuredBufferUAV:
+                    m_CommandList->SetGraphicsRootUnorderedAccessView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+                case ResourceType::DynamicConstantBuffer:
+                    m_CommandList->SetGraphicsRootConstantBufferView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+
+                default:
+                    NG_UNREACHABLE();
+                    break;
+                }
             }
         }
         // Compute pipeline
@@ -478,29 +491,28 @@ namespace Nano::Graphics::Internal
 
             const auto& srvAndUAVandCBVRootIndices = computePipeline.GetSRVAndUAVAndCBVRootIndices(layout.GetBindingSpecification().RegisterSpace);
             const auto& samplerRootIndices = computePipeline.GetSamplerRootIndices(layout.GetBindingSpecification().RegisterSpace);
+            const auto& dynamicRootIndices = computePipeline.GetDynamicRootIndices(layout.GetBindingSpecification().RegisterSpace);
 
             if constexpr (Information::Validation)
             {
-                const auto& srvAndUAVAndCBVRanges = layout.GetD3D12SRVAndUAVAndCBVRanges();
-                const auto& samplerRanges = layout.GetD3D12SamplerRanges();
+                const auto& srvAndUAVAndCBVRanges = layout.GetSRVAndUAVAndCBVRanges();
+                const auto& samplerRanges = layout.GetSamplerRanges();
+                const auto& dynamicRanges = layout.GetDynamicRanges();
 
                 if (!srvAndUAVAndCBVRanges.empty() && (srvAndUAVandCBVRootIndices.empty()))
                     NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
                 if (!samplerRanges.empty() && (samplerRootIndices.empty()))
+                    NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
+                if (!dynamicRanges.empty() && (dynamicRootIndices.empty()))
                     NG_ASSERT(false, "[Dx12CommandList] Internal error: Something went very wrong, the ranges aren't empty but there was no root parameter created for it.");
             }
 
             const auto& resources = m_Pool.GetDx12Swapchain().GetDx12Device().GetResources();
 
             // SRVs, UAVs & CBVs
-            for (const auto& [slot, index, isDynamic] : srvAndUAVandCBVRootIndices)
+            for (const auto& [slot, index] : srvAndUAVandCBVRootIndices)
             {
-                DescriptorHeapIndex heapIndex = dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot);
-
-                if (isDynamic && !resolvedOffsets.empty())
-                    heapIndex += resolvedOffsets[currentOffset];
-
-                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(heapIndex);
+                CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSRVAndUAVAndCBVHeap().GetGPUHandleForIndex(dxSet.GetSRVAndUAVAndCBVBeginIndex() + layout.GetSlotToHeapOffset(slot));
                 m_CommandList->SetGraphicsRootDescriptorTable(index, handle);
             }
 
@@ -509,6 +521,33 @@ namespace Nano::Graphics::Internal
             {
                 CD3DX12_GPU_DESCRIPTOR_HANDLE handle = resources.GetSamplerHeap().GetGPUHandleForIndex(dxSet.GetSamplerBeginIndex() + layout.GetSlotToHeapOffset(slot));
                 m_CommandList->SetComputeRootDescriptorTable(index, handle);
+            }
+
+            // Dynamic
+            size_t currentOffset = 0;
+            for (size_t i = 0; i < dynamicRootIndices.size(); i++)
+            {
+                auto& indexInfo = dynamicRootIndices[i];
+                NG_ASSERT((ResourceTypeIsDynamic(indexInfo.Type)), "[Dx12CommandList] Internal error: A non dynamic resource was passed into dynamic root indices.");
+
+                uint32_t offset = ((dynamicOffsets.empty()) ? 0 : dynamicOffsets[currentOffset++]);
+
+                switch (indexInfo.Type)
+                {
+                case ResourceType::DynamicStructuredBufferSRV:
+                    m_CommandList->SetComputeRootShaderResourceView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+                case ResourceType::DynamicStructuredBufferUAV:
+                    m_CommandList->SetComputeRootUnorderedAccessView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+                case ResourceType::DynamicConstantBuffer:
+                    m_CommandList->SetComputeRootConstantBufferView(indexInfo.Index, dxSet.GetD3D12GPUAddressForDynamicSlot(indexInfo.Slot) + offset);
+                    break;
+
+                default:
+                    NG_UNREACHABLE();
+                    break;
+                }
             }
         }
     }
@@ -732,14 +771,14 @@ namespace Nano::Graphics::Internal
         if (m_CurrentGraphicsPipeline)
         {
             const Dx12GraphicsPipeline& dxPipeline = *api_cast<const Dx12GraphicsPipeline*>(m_CurrentGraphicsPipeline);
-            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12GraphicsPipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
-            m_CommandList->SetGraphicsRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().Index != Dx12GraphicsPipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
+            m_CommandList->SetGraphicsRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().Index, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
         }
         else
         {
             const Dx12ComputePipeline& dxPipeline = *api_cast<const Dx12ComputePipeline*>(m_CurrentComputePipeline);
-            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().second != Dx12ComputePipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
-            m_CommandList->SetComputeRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().second, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
+            NG_ASSERT((dxPipeline.GetPushConstantsRootIndex().Index != Dx12ComputePipeline::RootParameterIndices::Invalid), "[Dx12CommandList] Trying to push constants with no root parameter created for constants.");
+            m_CommandList->SetComputeRoot32BitConstants(dxPipeline.GetPushConstantsRootIndex().Index, static_cast<UINT>(size / 4), static_cast<const uint8_t*>(memory) + srcOffset, static_cast<UINT>(dstOffset / 4));
         }
     }
 

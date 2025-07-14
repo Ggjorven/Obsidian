@@ -24,11 +24,10 @@ namespace Nano::Graphics::Internal
 
         // Sort the bindings by slot item from lowest to highest
         std::sort(mSpecs.Bindings.begin(), mSpecs.Bindings.end(), [](const BindingLayoutItem& a, const BindingLayoutItem& b) { return a.Slot < b.Slot; });
-
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
-        CreateRootParameters(items);
+        CreateRanges(items);
     }
 
     Dx12BindingLayout::Dx12BindingLayout(const Device& device, const BindlessLayoutSpecification& specs)
@@ -40,11 +39,10 @@ namespace Nano::Graphics::Internal
         
         // Sort the bindings by slot item from lowest to highest
         std::sort(mSpecs.Bindings.begin(), mSpecs.Bindings.end(), [](const BindingLayoutItem& a, const BindingLayoutItem& b) { return a.Slot < b.Slot; });
-
         std::span<const BindingLayoutItem> items = std::span<const BindingLayoutItem>(mSpecs.Bindings.begin(), mSpecs.Bindings.end());
 
         InitResourceCounts(items);
-        CreateRootParameters(items);
+        CreateRanges(items);
     }
 
     Dx12BindingLayout::~Dx12BindingLayout()
@@ -125,67 +123,75 @@ namespace Nano::Graphics::Internal
             m_ResourceCounts.emplace_back(type, count);
     }
 
-    void Dx12BindingLayout::CreateRootParameters(std::span<const BindingLayoutItem> items)
+    void Dx12BindingLayout::CreateRanges(std::span<const BindingLayoutItem> items)
     {
         m_SRVAndUAVAndCBVRanges.reserve(items.size());
         m_SamplerRanges.reserve(items.size());
+        m_DynamicRanges.reserve(items.size());
 
         // Create ranges
         {
             uint8_t registerSpace = GetRegisterSpace();
 
-            for (const auto& item : items)
+            for (const auto& item : items) // TODO: Create coherent ranges instead of every item a seperate range
             {
                 switch (item.Type)
                 {
+                // SRV
                 case ResourceType::TextureSRV:
                 case ResourceType::StructuredBufferSRV:
-                case ResourceType::DynamicStructuredBufferSRV:
                 {
-                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, visibility, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
                     
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, item.GetArraySize(), item.Slot, registerSpace);
-                    stage = item.Visibility;
                     slot = item.Slot;
-                    isDynamic = (item.Type == ResourceType::DynamicStructuredBufferSRV);
+                    visibility = item.Visibility;
 
                     break;
                 }
 
+                // UAV
                 case ResourceType::TextureUAV:
                 case ResourceType::StructuredBufferUAV:
-                case ResourceType::DynamicStructuredBufferUAV:
                 {
-                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, visibility, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, item.GetArraySize(), item.Slot, registerSpace);
-                    stage = item.Visibility;
                     slot = item.Slot;
-                    isDynamic = (item.Type == ResourceType::DynamicStructuredBufferUAV);
+                    visibility = item.Visibility;
 
                     break;
                 }
 
+                // CBV
                 case ResourceType::ConstantBuffer:
-                case ResourceType::DynamicConstantBuffer:
                 {
-                    auto& [slot, stage, isDynamic, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
+                    auto& [slot, visibility, range] = m_SRVAndUAVAndCBVRanges.emplace_back();
 
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, item.GetArraySize(), item.Slot, registerSpace);
-                    stage = item.Visibility;
                     slot = item.Slot;
-                    isDynamic = (item.Type == ResourceType::DynamicConstantBuffer);
+                    visibility = item.Visibility;
 
                     break;
                 }
 
+                // Dynamic
+                case ResourceType::DynamicStructuredBufferSRV:
+                case ResourceType::DynamicStructuredBufferUAV:
+                case ResourceType::DynamicConstantBuffer:
+                {
+                    m_DynamicRanges.emplace_back(item.Slot, item.Visibility, item.Type);
+                    break;
+                }
+
+                // Sampler
                 case ResourceType::Sampler:
                 {
-                    auto& [slot, stage, range] = m_SamplerRanges.emplace_back();
+                    auto& [slot, visibility, range] = m_SamplerRanges.emplace_back();
 
                     range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, item.GetArraySize(), item.Slot, registerSpace);
-                    stage = item.Visibility;
                     slot = item.Slot;
+                    visibility = item.Visibility;
 
                     break;
                 }
@@ -209,11 +215,12 @@ namespace Nano::Graphics::Internal
     Dx12BindingSet::Dx12BindingSet(BindingSetPool& pool, const BindingSetSpecification& specs)
         : m_Pool(*api_cast<Dx12BindingSetPool*>(&pool)), m_Specification(specs)
     {
-        // Get indices
-        {
-            // Note: Modifies m_XXXBeginIndex variables.
-            m_Pool.GetNextSetIndices(m_SRVAndUAVAndCBVBeginIndex, m_SamplerBeginIndex);
-        }
+        //Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
+        
+        // Note: Modifies m_XXXBeginIndex variables.
+        m_Pool.GetNextSetIndices(m_SRVAndUAVAndCBVBeginIndex, m_SamplerBeginIndex);
+        
+        //m_DynamicBeginAddresses.reserve(dxLayout.GetBindingItems().size());
     }
 
     Dx12BindingSet::~Dx12BindingSet()
@@ -291,57 +298,16 @@ namespace Nano::Graphics::Internal
             break;
 
         case ResourceType::DynamicStructuredBufferSRV:
-        {
-            NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
-            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
-
-            BufferRange dynamicRange = {};
-            dynamicRange.Offset = 0;
-            dynamicRange.Size = buffer.GetSpecification().Stride; // TODO: Aligned size
-
-            for (uint32_t i = 0; i < item.Size; i++)
-            {
-                heap.CreateSRV(index, buffer.GetSpecification(), dynamicRange, ResourceType::DynamicStructuredBufferSRV, dxBuffer.GetD3D12Resource().Get());
-                dynamicRange.Offset = Nano::Memory::AlignOffset(dynamicRange.Offset + buffer.GetSpecification().Stride, buffer.GetAlignment());
-            }
-            break;
-        }
         case ResourceType::DynamicStructuredBufferUAV:
-        {
-            NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
-            NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
-
-            BufferRange dynamicRange = {};
-            dynamicRange.Offset = 0;
-            dynamicRange.Size = buffer.GetSpecification().Stride; // TODO: Aligned size
-
-            for (uint32_t i = 0; i < item.Size; i++)
-            {
-                heap.CreateUAV(index, buffer.GetSpecification(), dynamicRange, ResourceType::DynamicStructuredBufferUAV, dxBuffer.GetD3D12Resource().Get());
-                dynamicRange.Offset = Nano::Memory::AlignOffset(dynamicRange.Offset + buffer.GetSpecification().Stride, buffer.GetAlignment());
-            }
-            break;
-        }
         case ResourceType::DynamicConstantBuffer:
         {
             NG_ASSERT((range.Size == BufferRange::FullSize), "[Dx12BindingSet] Dynamic buffers require a buffer range of FullSize.");
             NG_ASSERT((range.Offset == 0), "[Dx12BindingSet] Dynamic buffers require no buffer range offset.");
 
-            ID3D12Resource* resource = dxBuffer.GetD3D12Resource().Get();
-            size_t alignedSize = Nano::Memory::AlignOffset(buffer.GetSpecification().Stride, buffer.GetAlignment());
-
-            D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-            desc.SizeInBytes = static_cast<uint32_t>(alignedSize);
-            desc.BufferLocation = resource->GetGPUVirtualAddress();
-
-            for (uint32_t i = 0; i < item.Size; i++)
-            {
-                heap.CreateCBV(index, desc, resource);
-                desc.BufferLocation += alignedSize;
-            }
+            m_DynamicBeginAddresses[item.Slot] = dxBuffer.GetD3D12Resource()->GetGPUVirtualAddress();
             break;
         }
-
+        
         default:
             NG_UNREACHABLE();
             break;
