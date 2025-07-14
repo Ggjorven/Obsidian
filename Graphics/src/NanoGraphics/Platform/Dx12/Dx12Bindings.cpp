@@ -270,7 +270,7 @@ namespace Nano::Graphics::Internal
         Dx12BindingLayout& dxLayout = *api_cast<Dx12BindingLayout*>(m_Pool.GetSpecification().Layout);
         const auto& item = dxLayout.GetItem(slot);
 
-        NG_ASSERT(((item.Type == ResourceType::StructuredBufferSRV) || (item.Type == ResourceType::StructuredBufferUAV) || (item.Type == ResourceType::ConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StructuredBufferSRV, StructuredBufferUAV or ConstantBuffer.");
+        NG_ASSERT(((item.Type == ResourceType::StructuredBufferSRV) || (item.Type == ResourceType::DynamicStructuredBufferSRV) || (item.Type == ResourceType::StructuredBufferUAV) || (item.Type == ResourceType::DynamicStructuredBufferUAV) || (item.Type == ResourceType::ConstantBuffer) || (item.Type == ResourceType::DynamicConstantBuffer)), "[Dx12BindingSet] When uploading a buffer the ResourceType must be StructuredBufferSRV, DynamicStructuredBufferSRV, StructuredBufferUAV, DynamicStructuredBufferUAV, ConstantBuffer or DynamicConstantBuffer.");
 
         Dx12Buffer& dxBuffer = *api_cast<Dx12Buffer*>(&buffer);
         DescriptorHeapIndex index = m_SRVAndUAVAndCBVBeginIndex + dxLayout.GetSlotToHeapOffset(slot) + arrayIndex;
@@ -297,7 +297,7 @@ namespace Nano::Graphics::Internal
 
             BufferRange dynamicRange = {};
             dynamicRange.Offset = 0;
-            dynamicRange.Size = buffer.GetSpecification().Stride;
+            dynamicRange.Size = buffer.GetSpecification().Stride; // TODO: Aligned size
 
             for (uint32_t i = 0; i < item.Size; i++)
             {
@@ -313,7 +313,7 @@ namespace Nano::Graphics::Internal
 
             BufferRange dynamicRange = {};
             dynamicRange.Offset = 0;
-            dynamicRange.Size = buffer.GetSpecification().Stride;
+            dynamicRange.Size = buffer.GetSpecification().Stride; // TODO: Aligned size
 
             for (uint32_t i = 0; i < item.Size; i++)
             {
@@ -331,7 +331,7 @@ namespace Nano::Graphics::Internal
             size_t alignedSize = Nano::Memory::AlignOffset(buffer.GetSpecification().Stride, buffer.GetAlignment());
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-            desc.SizeInBytes = static_cast<uint32_t>(buffer.GetSpecification().Stride);
+            desc.SizeInBytes = static_cast<uint32_t>(alignedSize);
             desc.BufferLocation = resource->GetGPUVirtualAddress();
 
             for (uint32_t i = 0; i < item.Size; i++)

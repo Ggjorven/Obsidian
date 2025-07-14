@@ -425,7 +425,7 @@ namespace Nano::Graphics::Internal
             {
                 static_assert(BufferSpecification::DefaultUniformBufferAlignment == BufferSpecification::DefaultStorageBufferAlignment, "[Dx12CommandList] Current dx12 implementation requires Uniform and Storage buffer alignment to be the same.");
                 NG_ASSERT((offset % BufferSpecification::DefaultUniformBufferAlignment == 0), "[Dx12CommandList] Offset must be aligned to the same alignment as the buffer.");
-                resolvedOffsets.emplace_back(offset / BufferSpecification::DefaultUniformBufferAlignment);
+                resolvedOffsets.emplace_back(static_cast<uint32_t>(static_cast<size_t>(offset) / BufferSpecification::DefaultUniformBufferAlignment));
             }
         }
 

@@ -81,7 +81,7 @@ namespace Nano::Graphics::Internal
 	Dx12Buffer::Dx12Buffer(const Device& device, const BufferSpecification& specs)
 		: m_Specification(specs)
 	{
-        NG_ASSERT((specs.Size != 0), "[Dx12Buffer] Buffer size must not be equal to 0.");
+        NG_ASSERT((m_Specification.IsDynamic) || (m_Specification.Size != 0), "[Dx12Buffer] Buffer size must not be equal to 0.");
 
         const Dx12Device& dxDevice = *api_cast<const Dx12Device*>(&device);
 
@@ -145,10 +145,7 @@ namespace Nano::Graphics::Internal
                 if constexpr (Information::Validation)
                 {
                     if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
-                    {
-                        dxDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
-                        m_Specification.CpuAccess |= CpuAccessMode::Write;
-                    }
+                        dxDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This is needed for in frame updates without a staging buffer and copying.");
                 }
             }
             else

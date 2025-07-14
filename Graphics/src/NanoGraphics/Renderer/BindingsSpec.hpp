@@ -170,4 +170,16 @@ namespace Nano::Graphics
         inline BindingSetPoolSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
     };
 
+    namespace Internal
+    {
+        ////////////////////////////////////////////////////////////////////////////////////
+        // Helper methods
+        ////////////////////////////////////////////////////////////////////////////////////
+        inline constexpr bool ResourceTypeIsDynamic(ResourceType type)
+        {
+            return ((type == ResourceType::DynamicStorageBuffer) || (type == ResourceType::DynamicStorageBufferUnordered) || (type == ResourceType::DynamicConstantBuffer));
+        }
+
+    }
+
 }

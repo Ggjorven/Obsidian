@@ -107,7 +107,7 @@ namespace Nano::Graphics::Internal
     VulkanBuffer::VulkanBuffer(const Device& device, const BufferSpecification& specs)
         : m_Specification(specs)
     {
-        NG_ASSERT((specs.Size != 0), "[VkBuffer] Size must not equal 0.");
+        NG_ASSERT((m_Specification.IsDynamic) || (m_Specification.Size != 0), "[VkBuffer] Size must not equal 0.");
 
         const VulkanDevice& vulkanDevice = *api_cast<const VulkanDevice*>(&device);
 
@@ -203,10 +203,7 @@ namespace Nano::Graphics::Internal
                 if constexpr (Information::Validation)
                 {
                     if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
-                    {
-                        vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This must be added.");
-                        m_Specification.CpuAccess |= CpuAccessMode::Write;
-                    }
+                        vulkanDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This is needed for in frame updates without a staging buffer and copying.");
                 }
             }
             else

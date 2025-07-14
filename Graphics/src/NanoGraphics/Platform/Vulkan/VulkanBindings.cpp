@@ -58,7 +58,7 @@ namespace Nano::Graphics::Internal
 
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
             descriptorSetLayoutBinding.binding = item.Slot;
-            descriptorSetLayoutBinding.descriptorCount = descriptorCount;
+            descriptorSetLayoutBinding.descriptorCount = (ResourceTypeIsDynamic(item.Type) ? 1 : descriptorCount);
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
             
@@ -86,7 +86,7 @@ namespace Nano::Graphics::Internal
 
             VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
             descriptorSetLayoutBinding.binding = item.Slot;
-            descriptorSetLayoutBinding.descriptorCount = descriptorCount;
+            descriptorSetLayoutBinding.descriptorCount = (ResourceTypeIsDynamic(item.Type) ? 1 : descriptorCount);
             descriptorSetLayoutBinding.descriptorType = descriptorType;
             descriptorSetLayoutBinding.stageFlags = ShaderStageToVkShaderStageFlags(item.Visibility);
 
@@ -249,7 +249,7 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(item.Type);
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
         
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
@@ -257,7 +257,10 @@ namespace Nano::Graphics::Internal
 
     void VulkanBindingSet::SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex)
     {
-        NG_ASSERT((api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout)->GetItem(slot).Type == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
+        const auto& item = vkLayout.GetItem(slot);
+        
+        NG_ASSERT((item.Type == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
         
         VulkanSampler& vulkanSampler = *api_cast<VulkanSampler*>(&sampler);
 
@@ -270,7 +273,7 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
@@ -286,22 +289,22 @@ namespace Nano::Graphics::Internal
 
         NG_ASSERT(((item.Type == ResourceType::StorageBuffer) || (item.Type == ResourceType::StorageBufferUnordered) || (item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::DynamicStorageBufferUnordered) || (item.Type == ResourceType::UniformBuffer) || (item.Type == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, DynamicStorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
+        VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
+        BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
+
         if constexpr (Information::Validation)
         {
-            if ((item.Type == ResourceType::DynamicStorageBuffer) || (item.Type == ResourceType::DynamicStorageBufferUnordered) || (item.Type == ResourceType::DynamicUniformBuffer))
+            if (ResourceTypeIsDynamic(item.Type))
             {
                 NG_ASSERT((range.Size == BufferRange::FullSize), "[VkBindingSet] Dynamic buffers require either a buffer range of FullSize.");
                 NG_ASSERT((range.Offset == 0), "[VkBindingSet] Dynamic buffers require no buffer range offset.");
             }
         }
 
-        VulkanBuffer& vulkanBuffer = *api_cast<VulkanBuffer*>(&buffer);
-        BufferRange resRange = ResolveBufferRange(range, buffer.GetSpecification());
-
         VkDescriptorBufferInfo bufferInfo = {};
         bufferInfo.buffer = vulkanBuffer.GetVkBuffer();
         bufferInfo.offset = resRange.Offset;
-        bufferInfo.range = resRange.Size;
+        bufferInfo.range = (ResourceTypeIsDynamic(item.Type) ? buffer.GetSpecification().Stride : resRange.Size);
 
         VkWriteDescriptorSet descriptorWrite = {};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -309,7 +312,7 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(item.Type);
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = (ResourceTypeIsDynamic(item.Type) ? 1 : item.GetArraySize());
         descriptorWrite.pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
@@ -320,6 +323,9 @@ namespace Nano::Graphics::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanBindingSet::UploadImage(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Image& image, const ImageSubresourceSpecification& subresources, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
+        const auto& item = vkLayout.GetItem(slot);
+
         NG_ASSERT(((resourceType == ResourceType::Image) || (resourceType == ResourceType::ImageUnordered)), "[VkBindingSet] When uploading an image the ResourceType must be Image or ImageUnordered.");
     
         VulkanImage& vulkanImage = *api_cast<VulkanImage*>(&image);
@@ -338,12 +344,15 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(resourceType);
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
     }
 
     void VulkanBindingSet::UploadSampler(std::vector<VkWriteDescriptorSet>& writes, std::vector<VkDescriptorImageInfo>& imageInfos, Sampler& sampler, ResourceType resourceType, uint32_t slot, uint32_t arrayIndex) const
     {
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
+        const auto& item = vkLayout.GetItem(slot);
+
         NG_ASSERT((resourceType == ResourceType::Sampler), "[VkBindingSet] When uploading a sampler the ResourceType must be Sampler.");
     
         VulkanSampler& vulkanSampler = *api_cast<VulkanSampler*>(&sampler);
@@ -357,7 +366,7 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
     }
 
@@ -366,11 +375,14 @@ namespace Nano::Graphics::Internal
         // Note: I don't know if arrayIndex is actually usable for buffers, but for now
         // it exists, it might not translate to vulkan/glsl. Careful with this.
 
+        VulkanBindingLayout& vkLayout = *api_cast<VulkanBindingLayout*>(m_Pool.GetSpecification().Layout);
+        const auto& item = vkLayout.GetItem(slot);
+
         NG_ASSERT(((resourceType == ResourceType::StorageBuffer) || (resourceType == ResourceType::StorageBufferUnordered) || (resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::DynamicStorageBufferUnordered) || (resourceType == ResourceType::UniformBuffer) || (resourceType == ResourceType::DynamicUniformBuffer)), "[VkBindingSet] When uploading a buffer the ResourceType must be StorageBuffer, StorageBufferUnordered, DynamicStorageBuffer, DynamicStorageBufferUnordered, UniformBuffer or DynamicUniformBuffer.");
 
         if constexpr (Information::Validation)
         {
-            if ((resourceType == ResourceType::DynamicStorageBuffer) || (resourceType == ResourceType::DynamicStorageBufferUnordered) || (resourceType == ResourceType::DynamicUniformBuffer))
+            if (ResourceTypeIsDynamic(resourceType))
             {
                 NG_ASSERT((range.Size == BufferRange::FullSize), "[VkBindingSet] Dynamic buffers require either a buffer range of FullSize.");
                 NG_ASSERT((range.Offset == 0), "[VkBindingSet] Dynamic buffers require no buffer range offset.");
@@ -383,7 +395,7 @@ namespace Nano::Graphics::Internal
         VkDescriptorBufferInfo& bufferInfo = bufferInfos.emplace_back();
         bufferInfo.buffer = vulkanBuffer.GetVkBuffer();
         bufferInfo.offset = resRange.Offset;
-        bufferInfo.range = resRange.Size;
+        bufferInfo.range = (ResourceTypeIsDynamic(item.Type) ? buffer.GetSpecification().Stride : resRange.Size);
 
         VkWriteDescriptorSet& descriptorWrite = writes.emplace_back();
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -391,7 +403,7 @@ namespace Nano::Graphics::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(resourceType);
-        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorCount = (ResourceTypeIsDynamic(item.Type) ? 1 : item.GetArraySize());
         descriptorWrite.pBufferInfo = &bufferInfo;
     }
 
