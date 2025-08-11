@@ -1,4 +1,6 @@
-MacOSVersion = MacOSVersion or "14.5"
+local Dependencies = local_require("../Dependencies.lua")
+local MacOSVersion = MacOSVersion or "14.5"
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
 project "Graphics"
 	kind "StaticLib"
@@ -10,8 +12,8 @@ project "Graphics"
 
 	warnings "Extra"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	-- Note: VS2022/Make only need the pchheader filename
 	pchheader "ngpch.h"
@@ -36,18 +38,20 @@ project "Graphics"
 	}
 
 	-- Rendering API specfic selections
-	if gfxapi == "vulkan" then
+	if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
         defines { "NG_API_VULKAN" }
 		removefiles { "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
-		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
-    elseif gfxapi == "dx12" then
+		includedirs(Dependencies.Vulkan.IncludeDir)
+    elseif NANOGRAPHICS_GRAPHICS_API == "dx12" then
         defines { "NG_API_DX12" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/Metal/**", "src/NanoGraphics/Platform/Dummy/**" }
-		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}", "%{Dependencies.DXC.IncludeDir}" }
-	elseif gfxapi == "metal" then
+		includedirs(Dependencies.DX12.IncludeDir)
+		includedirs(Dependencies.D3D12MA.IncludeDir)
+		includedirs(Dependencies.DXC.IncludeDir)
+	elseif NANOGRAPHICS_GRAPHICS_API == "metal" then
         defines { "NG_API_METAL" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Dummy/**" }
-	elseif gfxapi == "dummy" then
+	elseif NANOGRAPHICS_GRAPHICS_API == "dummy" then
         defines { "NG_API_DUMMY" }
 		removefiles { "src/NanoGraphics/Platform/Vulkan/**", "src/NanoGraphics/Platform/DX12/**", "src/NanoGraphics/Platform/Metal/**" }
     end
@@ -56,23 +60,20 @@ project "Graphics"
 	{
 		"src",
 		"src/NanoGraphics",
-
-		"%{Dependencies.GLFW.IncludeDir}",
-		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.Tracy.IncludeDir}",
-		"%{Dependencies.Nano.IncludeDir}",
-		"%{Dependencies.shaderc.IncludeDir}",
-		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
-	links
-	{
-		"%{Dependencies.GLFW.LibName}",
-		"%{Dependencies.Tracy.LibName}",
-		"%{Dependencies.shaderc.LibName}",
-		"%{Dependencies.SPIRVCross.LibName}",
-	}
+	includedirs(Dependencies.GLFW.IncludeDir)
+	includedirs(Dependencies.glm.IncludeDir)
+	includedirs(Dependencies.Tracy.IncludeDir)
+	includedirs(Dependencies.Nano.IncludeDir)
+	includedirs(Dependencies.shaderc.IncludeDir)
+	includedirs(Dependencies.SPIRVCross.IncludeDir)
 
+	links(Dependencies.GLFW.LibName)
+	links(Dependencies.Tracy.LibName)
+	links(Dependencies.shaderc.LibName)
+	links(Dependencies.SPIRVCross.LibName)
+ 
 	filter "system:windows"
 		defines "NG_PLATFORM_DESKTOP"
 		defines "NG_PLATFORM_WINDOWS"
@@ -86,22 +87,19 @@ project "Graphics"
             "NOMINMAX"
         }
 
-		if gfxapi == "vulkan" then
-			links
-			{
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			}
-		elseif gfxapi == "dx12" then
+		if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
+			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
+		elseif NANOGRAPHICS_GRAPHICS_API == "dx12" then
 			links
 			{
 				"d3d12",
 				"dxgi",
 				"dxguid",
 				"dxcompiler",
-
-				"%{Dependencies.D3D12MA.LibName}",
-				"%{Dependencies.DXC.LibName}",
 			}
+
+			links(Dependencies.D3D12MA.LibName)
+			links(Dependencies.DXC.LibName)
 		end
 
 	filter "system:linux"
@@ -111,10 +109,7 @@ project "Graphics"
 		staticruntime "on"
 
 		if gfxapi == "vulkan" then
-			links
-			{
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			}
+			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
 		end
 		
 		links
@@ -139,25 +134,7 @@ project "Graphics"
 
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
-		externalincludedirs
-		{
-			"src",
-			"src/NanoGraphics",
-
-			"%{Dependencies.GLFW.IncludeDir}",
-			"%{Dependencies.glm.IncludeDir}",
-			"%{Dependencies.Tracy.IncludeDir}",
-			"%{Dependencies.Nano.IncludeDir}",
-			"%{Dependencies.shaderc.IncludeDir}",
-			"%{Dependencies.SPIRVCross.IncludeDir}",
-		}
-		
-		if gfxapi == "vulkan" then
-			externalincludedirs
-			{
-				"%{Dependencies.Vulkan.IncludeDir}",
-			}
-		end
+		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"

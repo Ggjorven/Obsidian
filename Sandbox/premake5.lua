@@ -1,4 +1,6 @@
-MacOSVersion = MacOSVersion or "14.5"
+local Dependencies = local_require("../Dependencies.lua")
+local MacOSVersion = MacOSVersion or "14.5"
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
 project "Sandbox"
 	kind "ConsoleApp"
@@ -12,8 +14,8 @@ project "Sandbox"
 
 	warnings "Extra"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	files
 	{
@@ -34,15 +36,17 @@ project "Sandbox"
 	}
 
 	-- Rendering API specfic selections
-	if gfxapi == "vulkan" then
+	if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
         defines { "NG_API_VULKAN" }
-		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
-    elseif gfxapi == "dx12" then
+		includedirs(Dependencies.Vulkan.IncludeDir)
+    elseif NANOGRAPHICS_GRAPHICS_API == "dx12" then
         defines { "NG_API_DX12" }
-		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}", "%{Dependencies.DXC.IncludeDir}" }
-    elseif gfxapi == "metal" then
+		includedirs(Dependencies.DX12.IncludeDir)
+		includedirs(Dependencies.D3D12MA.IncludeDir)
+		includedirs(Dependencies.DXC.IncludeDir)
+	elseif NANOGRAPHICS_GRAPHICS_API == "metal" then
         defines { "NG_API_METAL" }
-    elseif gfxapi == "dummy" then
+	elseif NANOGRAPHICS_GRAPHICS_API == "dummy" then
         defines { "NG_API_DUMMY" }
     end
 
@@ -51,15 +55,15 @@ project "Sandbox"
 		"src",
 		"vendor",
 
-		"%{wks.location}/Graphics/src",
-
-		"%{Dependencies.GLFW.IncludeDir}",
-		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.Tracy.IncludeDir}",
-		"%{Dependencies.Nano.IncludeDir}",
-		"%{Dependencies.shaderc.IncludeDir}",
-		"%{Dependencies.SPIRVCross.IncludeDir}",
+		this_directory() .. "../Graphics/src",
 	}
+
+	includedirs(Dependencies.GLFW.IncludeDir)
+	includedirs(Dependencies.glm.IncludeDir)
+	includedirs(Dependencies.Tracy.IncludeDir)
+	includedirs(Dependencies.Nano.IncludeDir)
+	includedirs(Dependencies.shaderc.IncludeDir)
+	includedirs(Dependencies.SPIRVCross.IncludeDir)
 
 	links
 	{
@@ -85,19 +89,13 @@ project "Sandbox"
 		systemversion "latest"
 		staticruntime "on"
 
-		links
-		{
-			"%{Dependencies.GLFW.LibName}",
-			"%{Dependencies.Tracy.LibName}",
-			"%{Dependencies.shaderc.LibName}",
-			"%{Dependencies.SPIRVCross.LibName}",
-		}
+		links(Dependencies.GLFW.LibName)
+		links(Dependencies.Tracy.LibName)
+		links(Dependencies.shaderc.LibName)
+		links(Dependencies.SPIRVCross.LibName)
 
-		if gfxapi == "vulkan" then
-			links
-			{
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			}
+		if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
+			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
 		end
 
     filter "system:macosx"
@@ -118,20 +116,13 @@ project "Sandbox"
 		}
 
 		if gfxapi == "vulkan" then
-			libdirs
-			{
-				"%{Dependencies.Vulkan.LibDir}"
-			}
-
-			links
-			{
-				"%{Dependencies.Vulkan.LibName}",
-			}
+			libdirs(Dependencies.Vulkan.LibDir)
+			links(Dependencies.Vulkan.LibName)
 
 			postbuildcommands
 			{
-				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/libvulkan.1.dylib" "%{cfg.targetdir}"',
-				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/lib%{Dependencies.Vulkan.LibName}.dylib" "%{cfg.targetdir}"',
+				'{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '/libvulkan.1.dylib" "%{cfg.targetdir}"',
+				'{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '//lib' .. Dependencies.Vulkan.LibName .. '.dylib" "%{cfg.targetdir}"',
 			}
 		end
 
@@ -141,26 +132,7 @@ project "Sandbox"
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
-		externalincludedirs
-		{
-			"src",
-
-			"%{wks.location}/Lumen/src",
-
-			"%{Dependencies.GLFW.IncludeDir}",
-			"%{Dependencies.glm.IncludeDir}",
-			"%{Dependencies.Tracy.IncludeDir}",
-			"%{Dependencies.Nano.IncludeDir}",
-			"%{Dependencies.shaderc.IncludeDir}",
-			"%{Dependencies.SPIRVCross.IncludeDir}",
-		}
-
-		if gfxapi == "vulkan" then
-			externalincludedirs
-			{
-				"%{Dependencies.Vulkan.IncludeDir}",
-			}
-		end
+		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
 		defines "NG_CONFIG_DEBUG"

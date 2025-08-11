@@ -1,22 +1,5 @@
-------------------------------------------------------------------------------
--- Graphics API option
-------------------------------------------------------------------------------
-newoption 
-{
-    trigger     = "gfxapi",
-    value       = "API",
-    description = "Choose a graphics API",
-    allowed = 
-	{
-        { "vulkan", "Vulkan graphics API (windows, linux, macosx)" },
-        { "dx12", "DirectX 12 (windows)" },
-        { "metal", "Metal (macosx)" },
-        { "dummy", "No GraphicsAPI, passthrough function calls. (windows, linux, macosx)" },
-    }
-}
-
-NANOGRAPHICS_GRAPHICS_API = _OPTIONS["gfxapi"] or "vulkan"
-------------------------------------------------------------------------------
+-- Note: This is the premake5 file made to allow for using
+-- NanoGraphics as a submodule/dependency without the main workspace.
 
 ------------------------------------------------------------------------------
 -- Utils
@@ -52,23 +35,7 @@ end)
 -- Solution
 ------------------------------------------------------------------------------
 local MacOSVersion = "14.5"
-OutputDir = "%{cfg.buildcfg}-%{cfg.system}"
-
-workspace "NanoGraphics"
-	architecture "x86_64"
-	startproject "Sandbox"
-
-	configurations
-	{
-		"Debug",
-		"Release",
-		"Dist"
-	}
-
-	flags
-	{
-		"MultiProcessorCompile"
-	}
+local OutputDir = "%{cfg.buildcfg}-%{cfg.system}"
 
 group "Dependencies"
 	include "vendor/GLFW"
@@ -80,11 +47,7 @@ group "Dependencies"
 
 	include "vendor/shaderc"
 	include "vendor/SPIRV-Cross"
-group ""
 
-group "NanoGraphics"
-	include "Graphics"
+    include "Graphics"
 group ""
-
-include "Sandbox"
 ------------------------------------------------------------------------------
