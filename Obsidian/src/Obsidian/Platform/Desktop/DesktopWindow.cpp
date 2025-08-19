@@ -188,7 +188,8 @@ namespace Obsidian::Internal
 
     void DesktopWindow::SwapBuffers()
     {
-        OB_ASSERT(false, "[DesktopWindow] Unimplemented, maybe needs to be removed.");
+        // Note: Currently the renderer handles presenting to the screen using Swapchain::Present()
+        // This function exists for future API's like OpenGL which require a seperate swapbuffers call
     }
 
     void DesktopWindow::Show()
