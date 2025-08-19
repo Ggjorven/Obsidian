@@ -204,7 +204,7 @@ elseif OBSIDIAN_GRAPHICS_API == "metal" then
 end
 
 -- LibNames
-append_to_table(Dependencies.Obsidian.LibName, "NanoNetworking")
+append_to_table(Dependencies.Obsidian.LibName, "Obsidian")
 
 if os.target() == "linux" then
 	append_to_table(Dependencies.Obsidian.LibName, Dependencies.GLFW.LibName)

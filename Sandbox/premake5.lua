@@ -49,18 +49,10 @@ project "Sandbox"
 	includedirs
 	{
 		"src",
-		"vendor",
-
-		this_directory() .. "../Obsidian/src",
 	}
 
 	includedirs(Dependencies.Obsidian.IncludeDir)
 	
-	links
-	{
-		"Obsidian",
-	}
-
 	links(Dependencies.Obsidian.LibName)
 
 	filter "system:windows"
