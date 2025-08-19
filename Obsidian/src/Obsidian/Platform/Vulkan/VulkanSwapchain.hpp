@@ -5,12 +5,12 @@
 #include "Obsidian/Maths/Structs.hpp"
 
 #include "Obsidian/Renderer/API.hpp"
+#include "Obsidian/Renderer/Image.hpp"
 #include "Obsidian/Renderer/ResourceSpec.hpp"
 #include "Obsidian/Renderer/SwapchainSpec.hpp"
 
 #include "Obsidian/Platform/Vulkan/Vulkan.hpp"
 #include "Obsidian/Platform/Vulkan/VulkanResources.hpp"
-#include "Obsidian/Platform/Vulkan/VulkanImage.hpp"
 
 #include <Nano/Nano.hpp>
 
