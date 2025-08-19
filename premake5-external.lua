@@ -45,6 +45,6 @@ group "Dependencies"
 	include "vendor/shaderc"
 	include "vendor/SPIRV-Cross"
 
-    include "Graphics"
+    include "Obsidian"
 group ""
 ------------------------------------------------------------------------------
