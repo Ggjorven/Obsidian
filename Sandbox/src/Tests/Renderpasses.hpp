@@ -1,7 +1,7 @@
 #include "Tests/TestBase.hpp"
 #include "Common/Camera2D.hpp"
 
-#include <NanoGraphics/Maths/Functions.hpp>
+#include <Obsidian/Maths/Functions.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Shaders
@@ -556,10 +556,10 @@ private:
 		switch (msgType)
 		{
 		case DeviceMessageType::Warn:
-			NG_LOG_WARN("Device Warning: {0}", message);
+			OB_LOG_WARN("Device Warning: {0}", message);
 			break;
 		case DeviceMessageType::Error:
-			NG_LOG_ERROR("Device Error: {0}", message);
+			OB_LOG_ERROR("Device Error: {0}", message);
 			break;
 
 		default:

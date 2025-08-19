@@ -1,5 +1,5 @@
 -- Note: This is the premake5 file made to allow for using
--- NanoGraphics as a submodule/dependency without the main workspace.
+-- Obsidian as a submodule/dependency without the main workspace.
 
 ------------------------------------------------------------------------------
 -- Utils
@@ -41,7 +41,7 @@ group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
 
-	if NANOGRAPHICS_GRAPHICS_API == "dx12" then
+	if OBSIDIAN_GRAPHICS_API == "dx12" then
 		include "vendor/DirectX"
 	end
 

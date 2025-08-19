@@ -373,10 +373,10 @@ private:
 		switch (msgType)
 		{
 		case DeviceMessageType::Warn:
-			NG_LOG_WARN("Device Warning: {0}", message);
+			OB_LOG_WARN("Device Warning: {0}", message);
 			break;
 		case DeviceMessageType::Error:
-			NG_LOG_ERROR("Device Error: {0}", message);
+			OB_LOG_ERROR("Device Error: {0}", message);
 			break;
 
 		default:

@@ -36,18 +36,18 @@ project "Sandbox"
 	}
 
 	-- Rendering API specfic selections
-	if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
-        defines { "NG_API_VULKAN" }
+	if OBSIDIAN_GRAPHICS_API == "vulkan" then
+        defines { "OB_API_VULKAN" }
 		includedirs(Dependencies.Vulkan.IncludeDir)
-    elseif NANOGRAPHICS_GRAPHICS_API == "dx12" then
-        defines { "NG_API_DX12" }
+    elseif OBSIDIAN_GRAPHICS_API == "dx12" then
+        defines { "OB_API_DX12" }
 		includedirs(Dependencies.DX12.IncludeDir)
 		includedirs(Dependencies.D3D12MA.IncludeDir)
 		includedirs(Dependencies.DXC.IncludeDir)
-	elseif NANOGRAPHICS_GRAPHICS_API == "metal" then
-        defines { "NG_API_METAL" }
-	elseif NANOGRAPHICS_GRAPHICS_API == "dummy" then
-        defines { "NG_API_DUMMY" }
+	elseif OBSIDIAN_GRAPHICS_API == "metal" then
+        defines { "OB_API_METAL" }
+	elseif OBSIDIAN_GRAPHICS_API == "dummy" then
+        defines { "OB_API_DUMMY" }
     end
 
 	includedirs
@@ -55,7 +55,7 @@ project "Sandbox"
 		"src",
 		"vendor",
 
-		this_directory() .. "../Graphics/src",
+		this_directory() .. "../Obsidian/src",
 	}
 
 	includedirs(Dependencies.GLFW.IncludeDir)
@@ -67,12 +67,10 @@ project "Sandbox"
 
 	links
 	{
-		"Graphics",
+		"Obsidian",
 	}
 
 	filter "system:windows"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_WINDOWS"
 		systemversion "latest"
 		staticruntime "on"
 		editandcontinue "off"
@@ -83,9 +81,6 @@ project "Sandbox"
         }
 
 	filter "system:linux"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_LINUX"
-		defines "NG_PLATFORM_UNIX"
 		systemversion "latest"
 		staticruntime "on"
 
@@ -94,15 +89,11 @@ project "Sandbox"
 		links(Dependencies.shaderc.LibName)
 		links(Dependencies.SPIRVCross.LibName)
 
-		if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
+		if OBSIDIAN_GRAPHICS_API == "vulkan" then
 			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
 		end
 
     filter "system:macosx"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_MACOS"
-		defines "NG_PLATFORM_UNIX"
-		defines "NG_PLATFORM_APPLE"
 		systemversion(MacOSVersion)
 		staticruntime "on"
 
@@ -135,7 +126,7 @@ project "Sandbox"
 		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
-		defines "NG_CONFIG_DEBUG"
+		defines "OB_CONFIG_DEBUG"
 		defines "NANO_DEBUG"
 		runtime "Debug"
 		symbols "on"
@@ -146,7 +137,7 @@ project "Sandbox"
 		}
 		
 	filter "configurations:Release"
-		defines "NG_CONFIG_RELEASE"
+		defines "OB_CONFIG_RELEASE"
 		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
@@ -158,7 +149,7 @@ project "Sandbox"
 
 	filter "configurations:Dist"
 		kind "WindowedApp"
-		defines "NG_CONFIG_DIST"
+		defines "OB_CONFIG_DIST"
 		runtime "Release"
 		optimize "Full"
 		linktimeoptimization "on"

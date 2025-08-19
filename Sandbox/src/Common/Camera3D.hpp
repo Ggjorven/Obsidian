@@ -1,13 +1,13 @@
 #pragma once
 
-#include "NanoGraphics/Core/Logging.hpp"
-#include "NanoGraphics/Core/Window.hpp"
+#include "Obsidian/Core/Logging.hpp"
+#include "Obsidian/Core/Window.hpp"
 
-#include "NanoGraphics/Renderer/Device.hpp"
+#include "Obsidian/Renderer/Device.hpp"
 
-#include "NanoGraphics/Maths/Structs.hpp"
+#include "Obsidian/Maths/Structs.hpp"
 
-using namespace Nano::Graphics;
+using namespace Obsidian;
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Camera3DData

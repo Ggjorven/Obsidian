@@ -15,7 +15,7 @@ newoption
     }
 }
 
-NANOGRAPHICS_GRAPHICS_API = _OPTIONS["gfxapi"] or "vulkan"
+OBSIDIAN_GRAPHICS_API = _OPTIONS["gfxapi"] or "vulkan"
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ end)
 local MacOSVersion = "14.5"
 OutputDir = "%{cfg.buildcfg}-%{cfg.system}"
 
-workspace "NanoGraphics"
+workspace "Obsidian"
 	architecture "x86_64"
 	startproject "Sandbox"
 
@@ -74,7 +74,7 @@ group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
 
-	if NANOGRAPHICS_GRAPHICS_API == "dx12" then
+	if OBSIDIAN_GRAPHICS_API == "dx12" then
 		include "vendor/DirectX"
 	end
 
@@ -82,8 +82,8 @@ group "Dependencies"
 	include "vendor/SPIRV-Cross"
 group ""
 
-group "NanoGraphics"
-	include "Graphics"
+group "Obsidian"
+	include "Obsidian"
 group ""
 
 include "Sandbox"

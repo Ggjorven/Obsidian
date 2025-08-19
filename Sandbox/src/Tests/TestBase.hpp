@@ -1,16 +1,16 @@
-#include "NanoGraphics/Core/Logging.hpp"
-#include "NanoGraphics/Core/Window.hpp"
+#include "Obsidian/Core/Logging.hpp"
+#include "Obsidian/Core/Window.hpp"
 
-#include "NanoGraphics/Renderer/Device.hpp"
+#include "Obsidian/Renderer/Device.hpp"
 
-#include "NanoGraphics/Maths/Structs.hpp"
+#include "Obsidian/Maths/Structs.hpp"
 
 #include <Nano/Nano.hpp>
 
 #include <cstdint>
 #include <string_view>
 
-using namespace Nano::Graphics;
+using namespace Obsidian;
 
 class TestBase
 {
@@ -38,7 +38,7 @@ public:
 			.SetWindow(m_Window.Get())
 			.SetFormat(format)
 			.SetColourSpace(space)
-#if defined(NG_PLATFORM_APPLE)
+#if defined(OB_PLATFORM_APPLE)
 			.SetVSync(true) // Note: Vulkan via MoltenVK without VSync causes bad screen tearing.
 #else
 			.SetVSync(false)

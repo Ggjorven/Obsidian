@@ -4,8 +4,8 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/NanoGraphics.git
-    cd NanoGraphics
+    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    cd Obsidian
     ```
 
 2. Navigate to the scripts folder:
@@ -32,8 +32,8 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/NanoGraphics.git
-    cd NanoGraphics
+    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    cd Obsidian
     ```
 
 2. Navigate to the scripts folder:
@@ -57,8 +57,8 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/NanoGraphics.git
-    cd NanoGraphics
+    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    cd Obsidian
     ```
 
 2. Navigate to the scripts folder:
@@ -83,7 +83,7 @@
 ### Windows
 - Visual Studio 17 2022:
     1. Navigate to the root of the directory
-    2. Open the NanoGraphics.sln file
+    2. Open the Obsidian.sln file
     3. Start building in your desired configuration
     4. Build files can be in the bin/%Config%-windows/Sandbox/ folder.
     5. (Optional) Open a terminal and run the Sandbox project:
@@ -127,7 +127,7 @@
 
 ### MacOS
 1. Navigate to the root of the directory
-2. Open the NanoGraphics.xcworkspace file
+2. Open the Obsidian.xcworkspace file
 3. Start building in your desired configuration
 4. Build files can be in the bin/%Config%-macosx/Sandbox/ folder.
 5. (Optional) Open a terminal and run the Sandbox project:

@@ -325,7 +325,7 @@ public:
 			bool success = reader.ParseFromFile(inputfile);
 
 			if (!success && !reader.Error().empty())
-				NG_ASSERT(false, "{0}", reader.Error());
+				OB_ASSERT(false, "{0}", reader.Error());
 
 			auto& attrib = reader.GetAttrib();
 			auto& shapes = reader.GetShapes();
@@ -411,7 +411,7 @@ public:
 			{
 				int texChannels;
 				pixels = stbi_load("resources/images/viking_room.png", &width, &height, &texChannels, STBI_rgb_alpha);
-				NG_ASSERT(pixels, "Failed ot load image.");
+				OB_ASSERT(pixels, "Failed ot load image.");
 			}
 
 			// StagingImage
@@ -588,10 +588,10 @@ private:
 		switch (msgType)
 		{
 		case DeviceMessageType::Warn:
-			NG_LOG_WARN("Device Warning: {0}", message);
+			OB_LOG_WARN("Device Warning: {0}", message);
 			break;
 		case DeviceMessageType::Error:
-			NG_LOG_ERROR("Device Error: {0}", message);
+			OB_LOG_ERROR("Device Error: {0}", message);
 			break;
 
 		default:

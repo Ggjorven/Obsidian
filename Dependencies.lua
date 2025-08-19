@@ -15,12 +15,12 @@ end
 ------------------------------------------------------------------------------
 -- Graphics API
 ------------------------------------------------------------------------------
-NANOGRAPHICS_GRAPHICS_API = NANOGRAPHICS_GRAPHICS_API or "vulkan" -- This is global
+OBSIDIAN_GRAPHICS_API = OBSIDIAN_GRAPHICS_API or "vulkan" -- This is global
 local VULKAN_SDK = nil
 local VULKAN_VERSION = nil
 
 -- Vulkan
-if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
+if OBSIDIAN_GRAPHICS_API == "vulkan" then
 	VULKAN_SDK = os.getenv("VULKAN_SDK")
 
 	if not VULKAN_SDK or VULKAN_SDK == "" then
@@ -30,13 +30,13 @@ if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
 	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the .0)
 
 -- DirectX12
-elseif NANOGRAPHICS_GRAPHICS_API == "dx12" then
+elseif OBSIDIAN_GRAPHICS_API == "dx12" then
 	if os.target() ~= "windows" then
 		error("The DirectX12 Graphics API is not supported on the current platform.")
 	end
 
 -- Metal
-elseif NANOGRAPHICS_GRAPHICS_API == "metal" then
+elseif OBSIDIAN_GRAPHICS_API == "metal" then
 	if os.target() ~= "macosx" then
 		error("The Metal Graphics API is not supported on the current platform.")
 	end
@@ -100,7 +100,7 @@ local Dependencies =
 ------------------------------------------------------------------------------
 -- Platform specific
 ------------------------------------------------------------------------------
-if NANOGRAPHICS_GRAPHICS_API == "vulkan" then
+if OBSIDIAN_GRAPHICS_API == "vulkan" then
 	if os.target() == "windows" then
 		Dependencies.Vulkan =
 		{
