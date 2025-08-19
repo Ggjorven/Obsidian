@@ -107,7 +107,7 @@ namespace Obsidian::Information
     #elif defined(OB_API_DUMMY)
         inline constexpr const Structs::RenderingAPI RenderingAPI = Structs::RenderingAPI::Dummy;
     #else
-        #error Obsidian Settings: Unsupported API/Failed to query... Must define NG_API_XXX
+        #error Obsidian Settings: Unsupported API/Failed to query... Must define OB_API_XXX
     #endif
 
     // Note: This is only used in .cpp files, so as long as the Obsidian library is compiled with the appropriate
