@@ -1,14 +1,52 @@
 ------------------------------------------------------------------------------
 -- Utils
 ------------------------------------------------------------------------------
-function local_require(path)
+local function local_require(path)
 	return dofile(path)
 end
 
-function this_directory()
+local function this_directory()
     local str = debug.getinfo(2, "S").source:sub(2)
 	local path = str:match("(.*/)")
     return path:gsub("\\", "/") -- Replace \\ with /
+end
+
+function append_to_table(dest, value)
+	if type(value) == "table" then
+		for _, v in ipairs(value) do
+        	table.insert(dest, v)
+    	end
+    else
+		table.insert(dest, value)
+    end
+
+	return dest
+end
+
+function remove_from_table(dest, filter)
+    for i = #dest, 1, -1 do  -- Iterate backwards
+        local value = dest[i]
+
+		-- Note: Allows lua patterns
+        if string.find(value, filter) ~= nil then
+            table.remove(dest, i)
+        end
+    end
+
+	return dest
+end
+
+function copy_table(tbl)
+    if type(tbl) ~= "table" then 
+		return tbl 
+	end
+
+    local copy = {}
+    for k, v in pairs(tbl) do
+        copy[k] = copy_table(v)
+    end
+	
+    return copy
 end
 ------------------------------------------------------------------------------
 
@@ -50,6 +88,7 @@ end
 ------------------------------------------------------------------------------
 local Dependencies =
 {
+	-- Internal Dependencies
 	GLFW =
 	{
 		LibName = "GLFW",
@@ -93,6 +132,15 @@ local Dependencies =
 	{
 		LibName = this_directory() .. "/vendor/DirectX/DXC/lib/dxcompiler",
 		IncludeDir = this_directory() .. "/vendor/DirectX/DXC/include",
+	},
+
+	-- Export Dependencies (Note: Makes using as submodule easier.)
+	Obsidian =
+	{
+		IncludeDir = {},
+		LibName = {},
+		LibDir = {},
+		PostBuildCommands = {},
 	}
 }
 ------------------------------------------------------------------------------
@@ -131,32 +179,53 @@ end
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
--- Merge
+-- Export Dependencies
 ------------------------------------------------------------------------------
-Dependencies.Combined =
-{
-    IncludeDir = {},
-    LibName = {},
-    LibDir = {}
-}
+-- IncludeDirs
+append_to_table(Dependencies.Obsidian.IncludeDir, this_directory() .. "Obsidian/src")
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.GLFW.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.glm.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.Tracy.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.Nano.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.shaderc.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.SPIRVCross.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.DX12.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.D3D12MA.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.DXC.IncludeDir)
 
-for name, dep in pairs(Dependencies) do
-    if name ~= "Combined" then
-        -- IncludeDirs
-        if dep.IncludeDir then
-            table.insert(Dependencies.Combined.IncludeDir, dep.IncludeDir)
-        end
-        
-        -- LibNames
-        if dep.LibName then
-            table.insert(Dependencies.Combined.LibName, dep.LibName)
-        end
+if OBSIDIAN_GRAPHICS_API == "vulkan" then
+	append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.Vulkan.IncludeDir)
+elseif OBSIDIAN_GRAPHICS_API == "dx12" then
+	append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.DX12.IncludeDir)
+	append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.D3D12MA.IncludeDir)
+	append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.DXC.IncludeDir)
+elseif OBSIDIAN_GRAPHICS_API == "metal" then
+	-- ...
+end
 
-        -- LibDirs
-        if dep.LibDir then
-            table.insert(Dependencies.Combined.LibDir, dep.LibDir)
-        end
-    end
+-- LibNames
+append_to_table(Dependencies.Obsidian.LibName, "NanoNetworking")
+
+if os.target() == "linux" then
+	append_to_table(Dependencies.Obsidian.LibName, Dependencies.GLFW.LibName)
+	append_to_table(Dependencies.Obsidian.LibName, Dependencies.Tracy.LibName)
+	append_to_table(Dependencies.Obsidian.LibName, Dependencies.shaderc.LibName)
+	append_to_table(Dependencies.Obsidian.LibName, Dependencies.SPIRVCross.LibName)
+
+	if OBSIDIAN_GRAPHICS_API == "vulkan" then
+		links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
+	end
+end
+
+-- LibDirs
+if OBSIDIAN_GRAPHICS_API == "vulkan" then
+	append_to_table(Dependencies.Obsidian.LibDir, ependencies.Vulkan.LibDir)
+end
+
+-- PostBuildCommands
+if os.target() == "macosx" then
+	append_to_table(Dependencies.Obsidian.PostBuildCommands, '{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '/libvulkan.1.dylib" "%{cfg.targetdir}"')
+	append_to_table(Dependencies.Obsidian.PostBuildCommands, '{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '/lib' .. Dependencies.Vulkan.LibName .. '.dylib" "%{cfg.targetdir}"')
 end
 ------------------------------------------------------------------------------
 

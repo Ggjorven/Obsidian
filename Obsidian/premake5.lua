@@ -41,13 +41,9 @@ project "Obsidian"
 	if OBSIDIAN_GRAPHICS_API == "vulkan" then
         defines { "OB_API_VULKAN" }
 		removefiles { "src/Obsidian/Platform/DX12/**", "src/Obsidian/Platform/Metal/**", "src/Obsidian/Platform/Dummy/**" }
-		includedirs(Dependencies.Vulkan.IncludeDir)
     elseif OBSIDIAN_GRAPHICS_API == "dx12" then
         defines { "OB_API_DX12" }
 		removefiles { "src/Obsidian/Platform/Vulkan/**", "src/Obsidian/Platform/Metal/**", "src/Obsidian/Platform/Dummy/**" }
-		includedirs(Dependencies.DX12.IncludeDir)
-		includedirs(Dependencies.D3D12MA.IncludeDir)
-		includedirs(Dependencies.DXC.IncludeDir)
 	elseif OBSIDIAN_GRAPHICS_API == "metal" then
         defines { "OB_API_METAL" }
 		removefiles { "src/Obsidian/Platform/Vulkan/**", "src/Obsidian/Platform/DX12/**", "src/Obsidian/Platform/Dummy/**" }
@@ -62,12 +58,7 @@ project "Obsidian"
 		"src/Obsidian",
 	}
 
-	includedirs(Dependencies.GLFW.IncludeDir)
-	includedirs(Dependencies.glm.IncludeDir)
-	includedirs(Dependencies.Tracy.IncludeDir)
-	includedirs(Dependencies.Nano.IncludeDir)
-	includedirs(Dependencies.shaderc.IncludeDir)
-	includedirs(Dependencies.SPIRVCross.IncludeDir)
+	includedirs(Dependencies.Obsidian.IncludeDir)
 
 	links(Dependencies.GLFW.LibName)
 	links(Dependencies.Tracy.LibName)

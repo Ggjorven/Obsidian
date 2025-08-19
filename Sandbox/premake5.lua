@@ -38,12 +38,8 @@ project "Sandbox"
 	-- Rendering API specfic selections
 	if OBSIDIAN_GRAPHICS_API == "vulkan" then
         defines { "OB_API_VULKAN" }
-		includedirs(Dependencies.Vulkan.IncludeDir)
     elseif OBSIDIAN_GRAPHICS_API == "dx12" then
         defines { "OB_API_DX12" }
-		includedirs(Dependencies.DX12.IncludeDir)
-		includedirs(Dependencies.D3D12MA.IncludeDir)
-		includedirs(Dependencies.DXC.IncludeDir)
 	elseif OBSIDIAN_GRAPHICS_API == "metal" then
         defines { "OB_API_METAL" }
 	elseif OBSIDIAN_GRAPHICS_API == "dummy" then
@@ -58,17 +54,14 @@ project "Sandbox"
 		this_directory() .. "../Obsidian/src",
 	}
 
-	includedirs(Dependencies.GLFW.IncludeDir)
-	includedirs(Dependencies.glm.IncludeDir)
-	includedirs(Dependencies.Tracy.IncludeDir)
-	includedirs(Dependencies.Nano.IncludeDir)
-	includedirs(Dependencies.shaderc.IncludeDir)
-	includedirs(Dependencies.SPIRVCross.IncludeDir)
-
+	includedirs(Dependencies.Obsidian.IncludeDir)
+	
 	links
 	{
 		"Obsidian",
 	}
+
+	links(Dependencies.Obsidian.LibName)
 
 	filter "system:windows"
 		systemversion "latest"
@@ -83,15 +76,6 @@ project "Sandbox"
 	filter "system:linux"
 		systemversion "latest"
 		staticruntime "on"
-
-		links(Dependencies.GLFW.LibName)
-		links(Dependencies.Tracy.LibName)
-		links(Dependencies.shaderc.LibName)
-		links(Dependencies.SPIRVCross.LibName)
-
-		if OBSIDIAN_GRAPHICS_API == "vulkan" then
-			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
-		end
 
     filter "system:macosx"
 		systemversion(MacOSVersion)
@@ -110,11 +94,7 @@ project "Sandbox"
 			libdirs(Dependencies.Vulkan.LibDir)
 			links(Dependencies.Vulkan.LibName)
 
-			postbuildcommands
-			{
-				'{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '/libvulkan.1.dylib" "%{cfg.targetdir}"',
-				'{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '//lib' .. Dependencies.Vulkan.LibName .. '.dylib" "%{cfg.targetdir}"',
-			}
+			postbuildcommands(Dependencies.Obsidian.PostBuildCommands)
 		end
 
 	filter "action:vs*"
