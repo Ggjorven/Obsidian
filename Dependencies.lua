@@ -217,11 +217,6 @@ if os.target() == "linux" then
 	end
 end
 
--- LibDirs
-if OBSIDIAN_GRAPHICS_API == "vulkan" then
-	append_to_table(Dependencies.Obsidian.LibDir, ependencies.Vulkan.LibDir)
-end
-
 -- PostBuildCommands
 if os.target() == "macosx" then
 	append_to_table(Dependencies.Obsidian.PostBuildCommands, '{COPYFILE} "' .. Dependencies.Vulkan.LibDir .. '/libvulkan.1.dylib" "%{cfg.targetdir}"')
