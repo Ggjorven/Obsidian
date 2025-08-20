@@ -246,6 +246,16 @@ namespace Obsidian::Internal
         glfwSetWindowTitle(m_Window, m_Specification.Title.data());
     }
 
+    void DesktopWindow::SetIcon(uint32_t width, uint32_t height, const uint8_t* data)
+    {
+        GLFWimage image = {};
+        image.width = static_cast<int>(width);
+        image.height = static_cast<int>(height);
+        image.pixels = const_cast<uint8_t*>(data);
+
+        glfwSetWindowIcon(m_Window, 1, &image);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////
     // Getters
     ////////////////////////////////////////////////////////////////////////////////////

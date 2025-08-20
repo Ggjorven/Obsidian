@@ -49,6 +49,9 @@ namespace Obsidian
 		inline void SetSize(uint32_t width, uint32_t height) { m_Window.SetSize(width, height); }
 		inline void SetTitle(std::string_view title) { m_Window.SetTitle(title); }
 
+		// Note: This is in format RGBA, 4 channels, arranged left-to-right, top-to-bottom.
+		inline void SetIcon(uint32_t width, uint32_t height, const uint8_t* data) { m_Window.SetIcon(width, height, data); }
+
 		// Additional getters
 		inline bool IsOpen() const { return m_Window.IsOpen(); }
 		inline bool IsFocused() const { return m_Window.IsFocused(); }

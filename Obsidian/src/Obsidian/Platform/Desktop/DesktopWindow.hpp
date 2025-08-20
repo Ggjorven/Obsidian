@@ -54,6 +54,7 @@ namespace Obsidian::Internal
 		// Setters
 		void SetSize(uint32_t width, uint32_t height);
 		void SetTitle(std::string_view title);
+		void SetIcon(uint32_t width, uint32_t height, const uint8_t* data);
 
 		// Additional getters
 		inline bool IsOpen() const { return !m_Closed; }
