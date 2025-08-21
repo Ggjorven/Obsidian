@@ -88,15 +88,15 @@ namespace
         .shaderUniformTexelBufferArrayNonUniformIndexing = VK_FALSE,
         .shaderStorageTexelBufferArrayNonUniformIndexing = VK_FALSE,
         .descriptorBindingUniformBufferUpdateAfterBind = VK_FALSE,
-        .descriptorBindingSampledImageUpdateAfterBind = VK_FALSE, // Needed for bindless
+        .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE, // Needed for bindless
         .descriptorBindingStorageImageUpdateAfterBind = VK_FALSE,
         .descriptorBindingStorageBufferUpdateAfterBind = VK_FALSE,
         .descriptorBindingUniformTexelBufferUpdateAfterBind = VK_FALSE,
         .descriptorBindingStorageTexelBufferUpdateAfterBind = VK_FALSE,
         .descriptorBindingUpdateUnusedWhilePending = VK_FALSE,
-        .descriptorBindingPartiallyBound = VK_FALSE, // Needed for bindless
-        .descriptorBindingVariableDescriptorCount = VK_FALSE, // Needed for bindless
-        .runtimeDescriptorArray = VK_FALSE, // Needed for bindless
+        .descriptorBindingPartiallyBound = VK_TRUE, // Needed for bindless
+        .descriptorBindingVariableDescriptorCount = VK_TRUE, // Needed for bindless
+        .runtimeDescriptorArray = VK_TRUE, // Needed for bindless
     };
 
     inline constexpr static VkPhysicalDeviceTimelineSemaphoreFeatures s_RequestedTimelineSemaphoreFeatures = {

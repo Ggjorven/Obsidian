@@ -41,7 +41,7 @@ namespace Obsidian
         inline void Open() { m_Impl->Open(); }
         inline void Close() { m_Impl->Close(); }
 
-        inline void Submit(const CommandListSubmitArgs& args) { return m_Impl->Submit(args); }
+        inline void Submit(const CommandListSubmitArgs& args = CommandListSubmitArgs()) { return m_Impl->Submit(args); }
 
         inline void WaitTillComplete() const { m_Impl->WaitTillComplete(); }
 
@@ -80,7 +80,7 @@ namespace Obsidian
 
     public: //private:
         // Constructor
-        inline CommandList(CommandListPool& pool, const CommandListSpecification& specs) { m_Impl.Construct(pool, specs); }
+        inline CommandList(CommandListPool& pool, const CommandListSpecification& specs = CommandListSpecification()) { m_Impl.Construct(pool, specs); }
 
     private:
         Internal::APIObject<Type> m_Impl = {};
@@ -106,7 +106,7 @@ namespace Obsidian
         ~CommandListPool() = default;
 
         // Creation methods // Note: Copy elision (RVO/NRVO) ensures object is constructed directly in the caller's stack frame.
-        inline CommandList AllocateList(const CommandListSpecification& specs) { return CommandList(*this, specs); }
+        inline CommandList AllocateList(const CommandListSpecification& specs = CommandListSpecification()) { return CommandList(*this, specs); }
         inline void FreeList(CommandList& list) const { m_Impl->FreeList(list); }
         inline void FreeLists(std::span<CommandList*> lists) const { m_Impl->FreeLists(lists); }
 
