@@ -73,9 +73,9 @@ namespace Obsidian
         ~BindingSet() = default;
 
         // Methods
-        inline void SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources, uint32_t arrayIndex = 0) { m_Impl->SetItem(slot, image, subresources, arrayIndex); }
+        inline void SetItem(uint32_t slot, Image& image, const ImageSubresourceSpecification& subresources = ImageSubresourceSpecification(), uint32_t arrayIndex = 0) { m_Impl->SetItem(slot, image, subresources, arrayIndex); }
         inline void SetItem(uint32_t slot, Sampler& sampler, uint32_t arrayIndex = 0) { m_Impl->SetItem(slot, sampler, arrayIndex); }
-        inline void SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range, uint32_t arrayIndex = 0) { m_Impl->SetItem(slot, buffer, range, arrayIndex); }
+        inline void SetItem(uint32_t slot, Buffer& buffer, const BufferRange& range = BufferRange(), uint32_t arrayIndex = 0) { m_Impl->SetItem(slot, buffer, range, arrayIndex); }
 
         // Getters
         inline const BindingSetSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
