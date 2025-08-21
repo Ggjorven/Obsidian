@@ -249,7 +249,7 @@ namespace Obsidian::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(item.Type);
-        descriptorWrite.descriptorCount = item.GetArraySize();
+        descriptorWrite.descriptorCount = 1; // Note: This is 1 because it is a single SetItem so only 1 array element (ever). //item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
         
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
@@ -273,7 +273,7 @@ namespace Obsidian::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorWrite.descriptorCount = item.GetArraySize();
+        descriptorWrite.descriptorCount = 1; // Note: This is 1 because it is a single SetItem so only 1 array element (ever). //item.GetArraySize();
         descriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
@@ -312,7 +312,7 @@ namespace Obsidian::Internal
         descriptorWrite.dstBinding = slot;
         descriptorWrite.dstArrayElement = arrayIndex;
         descriptorWrite.descriptorType = ResourceTypeToVkDescriptorType(item.Type);
-        descriptorWrite.descriptorCount = (ResourceTypeIsDynamic(item.Type) ? 1 : item.GetArraySize());
+        descriptorWrite.descriptorCount = 1; // Note: This is 1 because it is a single SetItem so only 1 array element (ever). //item.GetArraySize();
         descriptorWrite.pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(m_Pool.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
