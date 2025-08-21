@@ -77,6 +77,8 @@ namespace
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
         .pNext = nullptr,
 
+        // FUTURE TODO: Make set all to true so all use cases work directly without having
+        // to modify this.
         .shaderInputAttachmentArrayDynamicIndexing = VK_FALSE,
         .shaderUniformTexelBufferArrayDynamicIndexing = VK_FALSE,
         .shaderStorageTexelBufferArrayDynamicIndexing = VK_FALSE,
@@ -87,7 +89,7 @@ namespace
         .shaderInputAttachmentArrayNonUniformIndexing = VK_FALSE,
         .shaderUniformTexelBufferArrayNonUniformIndexing = VK_FALSE,
         .shaderStorageTexelBufferArrayNonUniformIndexing = VK_FALSE,
-        .descriptorBindingUniformBufferUpdateAfterBind = VK_FALSE,
+        .descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE, // Needed for bindless
         .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE, // Needed for bindless
         .descriptorBindingStorageImageUpdateAfterBind = VK_FALSE,
         .descriptorBindingStorageBufferUpdateAfterBind = VK_FALSE,
