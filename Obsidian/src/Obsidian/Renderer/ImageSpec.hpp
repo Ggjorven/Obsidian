@@ -353,9 +353,11 @@ namespace Obsidian
         inline constexpr SamplerSpecification& SetMinFilter(FilterMode filter) { MinFilter = filter; return *this; }
         inline constexpr SamplerSpecification& SetMagFilter(FilterMode filter) { MagFilter = filter; return *this; }
         inline constexpr SamplerSpecification& SetMipFilter(FilterMode filter) { MipFilter = filter; return *this; }
+        inline constexpr SamplerSpecification& SetAllFilters(FilterMode filter) { MinFilter = filter; MagFilter = filter; MipFilter = filter; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeU(SamplerAddressMode u) { AddressU = u; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeV(SamplerAddressMode v) { AddressV = v; return *this; }
         inline constexpr SamplerSpecification& SetAddressModeW(SamplerAddressMode w) { AddressW = w; return *this; }
+        inline constexpr SamplerSpecification& SetAllAddressModes(SamplerAddressMode mode) { AddressU = mode; AddressV = mode; AddressW = mode; return *this; }
         inline constexpr SamplerSpecification& SetUVW(SamplerAddressMode u, SamplerAddressMode v, SamplerAddressMode w) { AddressU = u; AddressV = v; AddressW = w; return *this; }
         inline constexpr SamplerSpecification& SetReductionType(SamplerReductionType type) { ReductionType = type; return *this; }
         inline SamplerSpecification& SetDebugName(const std::string& name) { DebugName = name; return *this; }
