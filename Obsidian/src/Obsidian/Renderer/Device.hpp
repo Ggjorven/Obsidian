@@ -69,7 +69,7 @@ namespace Obsidian
         inline void DestroySampler(Sampler& sampler) const { m_Impl->DestroySampler(sampler); }
 
         inline Buffer CreateBuffer(const BufferSpecification& specs) const { return Buffer(*this, specs); }
-        inline void DestroyBuffer(Buffer& buffer) { m_Impl->DestroyBuffer(buffer); }
+        inline void DestroyBuffer(Buffer& buffer) const { m_Impl->DestroyBuffer(buffer); }
 
         inline Renderpass CreateRenderpass(const RenderpassSpecification& specs) const { return Renderpass(*this, specs); }
         inline void DestroyRenderpass(Renderpass& renderpass) const { m_Impl->DestroyRenderpass(renderpass); }
