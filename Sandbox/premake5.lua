@@ -1,4 +1,6 @@
-MacOSVersion = MacOSVersion or "14.5"
+local Dependencies = local_require("../Dependencies.lua")
+local MacOSVersion = MacOSVersion or "14.5"
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
 project "Sandbox"
 	kind "ConsoleApp"
@@ -12,8 +14,8 @@ project "Sandbox"
 
 	warnings "Extra"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	files
 	{
@@ -34,41 +36,26 @@ project "Sandbox"
 	}
 
 	-- Rendering API specfic selections
-	if gfxapi == "vulkan" then
-        defines { "NG_API_VULKAN" }
-		includedirs { "%{Dependencies.Vulkan.IncludeDir}" }
-    elseif gfxapi == "dx12" then
-        defines { "NG_API_DX12" }
-		includedirs { "%{Dependencies.DX12.IncludeDir}", "%{Dependencies.D3D12MA.IncludeDir}", "%{Dependencies.DXC.IncludeDir}" }
-    elseif gfxapi == "metal" then
-        defines { "NG_API_METAL" }
-    elseif gfxapi == "dummy" then
-        defines { "NG_API_DUMMY" }
+	if OBSIDIAN_GRAPHICS_API == "vulkan" then
+        defines { "OB_API_VULKAN" }
+    elseif OBSIDIAN_GRAPHICS_API == "dx12" then
+        defines { "OB_API_DX12" }
+	elseif OBSIDIAN_GRAPHICS_API == "metal" then
+        defines { "OB_API_METAL" }
+	elseif OBSIDIAN_GRAPHICS_API == "dummy" then
+        defines { "OB_API_DUMMY" }
     end
 
 	includedirs
 	{
 		"src",
-		"vendor",
-
-		"%{wks.location}/Graphics/src",
-
-		"%{Dependencies.GLFW.IncludeDir}",
-		"%{Dependencies.glm.IncludeDir}",
-		"%{Dependencies.Tracy.IncludeDir}",
-		"%{Dependencies.Nano.IncludeDir}",
-		"%{Dependencies.shaderc.IncludeDir}",
-		"%{Dependencies.SPIRVCross.IncludeDir}",
 	}
 
-	links
-	{
-		"Graphics",
-	}
+	includedirs(Dependencies.Obsidian.IncludeDir)
+	
+	links(Dependencies.Obsidian.LibName)
 
 	filter "system:windows"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_WINDOWS"
 		systemversion "latest"
 		staticruntime "on"
 		editandcontinue "off"
@@ -79,32 +66,10 @@ project "Sandbox"
         }
 
 	filter "system:linux"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_LINUX"
-		defines "NG_PLATFORM_UNIX"
 		systemversion "latest"
 		staticruntime "on"
 
-		links
-		{
-			"%{Dependencies.GLFW.LibName}",
-			"%{Dependencies.Tracy.LibName}",
-			"%{Dependencies.shaderc.LibName}",
-			"%{Dependencies.SPIRVCross.LibName}",
-		}
-
-		if gfxapi == "vulkan" then
-			links
-			{
-				"%{Dependencies.Vulkan.LibDir}/%{Dependencies.Vulkan.LibName}",
-			}
-		end
-
     filter "system:macosx"
-		defines "NG_PLATFORM_DESKTOP"
-		defines "NG_PLATFORM_MACOS"
-		defines "NG_PLATFORM_UNIX"
-		defines "NG_PLATFORM_APPLE"
 		systemversion(MacOSVersion)
 		staticruntime "on"
 
@@ -118,21 +83,10 @@ project "Sandbox"
 		}
 
 		if gfxapi == "vulkan" then
-			libdirs
-			{
-				"%{Dependencies.Vulkan.LibDir}"
-			}
+			libdirs(Dependencies.Vulkan.LibDir)
+			links(Dependencies.Vulkan.LibName)
 
-			links
-			{
-				"%{Dependencies.Vulkan.LibName}",
-			}
-
-			postbuildcommands
-			{
-				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/libvulkan.1.dylib" "%{cfg.targetdir}"',
-				'{COPYFILE} "%{Dependencies.Vulkan.LibDir}/lib%{Dependencies.Vulkan.LibName}.dylib" "%{cfg.targetdir}"',
-			}
+			postbuildcommands(Dependencies.Obsidian.PostBuildCommands)
 		end
 
 	filter "action:vs*"
@@ -141,29 +95,10 @@ project "Sandbox"
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
-		externalincludedirs
-		{
-			"src",
-
-			"%{wks.location}/Lumen/src",
-
-			"%{Dependencies.GLFW.IncludeDir}",
-			"%{Dependencies.glm.IncludeDir}",
-			"%{Dependencies.Tracy.IncludeDir}",
-			"%{Dependencies.Nano.IncludeDir}",
-			"%{Dependencies.shaderc.IncludeDir}",
-			"%{Dependencies.SPIRVCross.IncludeDir}",
-		}
-
-		if gfxapi == "vulkan" then
-			externalincludedirs
-			{
-				"%{Dependencies.Vulkan.IncludeDir}",
-			}
-		end
+		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
-		defines "NG_CONFIG_DEBUG"
+		defines "OB_CONFIG_DEBUG"
 		defines "NANO_DEBUG"
 		runtime "Debug"
 		symbols "on"
@@ -174,7 +109,7 @@ project "Sandbox"
 		}
 		
 	filter "configurations:Release"
-		defines "NG_CONFIG_RELEASE"
+		defines "OB_CONFIG_RELEASE"
 		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
@@ -186,7 +121,7 @@ project "Sandbox"
 
 	filter "configurations:Dist"
 		kind "WindowedApp"
-		defines "NG_CONFIG_DIST"
+		defines "OB_CONFIG_DIST"
 		runtime "Release"
 		optimize "Full"
 		linktimeoptimization "on"

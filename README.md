@@ -1,6 +1,6 @@
-# NanoGraphics
+# Obsidian
 
-NanoGraphics is an extensive abstraction layer around multiple graphics APIs allowing for performance-based rendering.
+Obsidian is an extensive abstraction layer around multiple graphics APIs allowing for performance-based rendering.
 Heavily inspired by NVRHI, but with a more modern API and more abstraction.
 
 ## Features
@@ -46,11 +46,20 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 // TODO: ...
 
 ## TODO List
-- [ ] Pushconstants
-- [ ] Tesselation control
+- [x] Pushconstants
+- [x] Bindless support
+- [x] Tesselation control
+- [ ] Dynamic buffers
+- [ ] **Vulkan**
+  - [x] Pushconstants
+  - [x] Bindless support
+  - [x] Tesselation control
+  - [ ] Dynamic buffers
 - [ ] **Dx12**
-  - [ ] Bindless support
-  - [ ] Pushconstants
+  - [x] Bindless support
+  - [x] Pushconstants
+  - [x] Tesselation control
+  - [ ] Dynamic buffers
 - [ ] **Metal**
   - [ ] Window
   - [ ] Device
@@ -58,10 +67,10 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 
 ## Additional information
 
-Apart from the main development happening in the `main` (or `dev`) branch, there's an [`imgui`](https://github.com/your-repo/NanoGraphics/tree/imgui) branch that includes **Dear ImGui** integration for NanoGraphics. This branch is designed to make it easy to plug in GUI support without adding clutter to the core abstraction layers in the main branch.
+Apart from the main development happening in the `main` (or `dev`) branch, there's an [`imgui`](https://github.com/your-repo/Obsidian/tree/imgui) branch that includes **Dear ImGui** integration for Obsidian. This branch is designed to make it easy to plug in GUI support without adding clutter to the core abstraction layers in the main branch.
 
 
-Inside the `Sandbox` project, you’ll also find several example applications demonstrating usage of NanoGraphics.
+Inside the `Sandbox` project, you’ll also find several example applications demonstrating usage of Obsidian.
 - **TexturedQuad Example**: Loads and renders an image using [`stb_image`](https://github.com/nothings/stb/blob/master/stb_image.h), working for all supported backends.
 - **TinyObjLoader Example**: Loads and renders 3D models using [`tinyobjloader`](https://github.com/tinyobjloader/tinyobjloader), again working across all supported backends.
 

@@ -1,11 +1,13 @@
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
+
 project "D3D12MA"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++14"
 	warnings "Off"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	files
 	{

@@ -1,6 +1,6 @@
 #include "Camera3D.hpp"
 
-#include "NanoGraphics/Maths/Functions.hpp"
+#include "Obsidian/Maths/Functions.hpp"
 
 #include <Nano/Nano.hpp>
 

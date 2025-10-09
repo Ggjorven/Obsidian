@@ -192,8 +192,18 @@ public:
 		std::vector<uint32_t> vertexSPIRV = compiler.CompileToSPIRV(ShaderStage::Vertex, std::string(g_VertexShader), "main", g_ShadingLanguage);
 		std::vector<uint32_t> fragmentSPIRV = compiler.CompileToSPIRV(ShaderStage::Fragment, std::string(g_FragmentShader), "main", g_ShadingLanguage);
 
-		Shader vertexShader = m_Device->CreateShader({ ShaderStage::Vertex, "main", vertexSPIRV, "Vertex Shader" });
-		Shader fragmentShader = m_Device->CreateShader({ ShaderStage::Fragment, "main", fragmentSPIRV, "Fragment Shader" });
+		Shader vertexShader = m_Device->CreateShader(ShaderSpecification()
+			.SetShaderStage(ShaderStage::Vertex)
+			.SetMainName("main")
+			.SetSPIRV(vertexSPIRV)
+			.SetDebugName("Vertex Shader")
+		);
+		Shader fragmentShader = m_Device->CreateShader(ShaderSpecification()
+			.SetShaderStage(ShaderStage::Fragment)
+			.SetMainName("main")
+			.SetSPIRV(fragmentSPIRV)
+			.SetDebugName("Fragment Shader")
+		);
 
 		// Input & Binding layout
 		m_InputLayout.Construct(m_Device.Get(), std::initializer_list{
@@ -315,7 +325,7 @@ public:
 			bool success = reader.ParseFromFile(inputfile);
 
 			if (!success && !reader.Error().empty())
-				NG_ASSERT(false, "{0}", reader.Error());
+				OB_ASSERT(false, "{0}", reader.Error());
 
 			auto& attrib = reader.GetAttrib();
 			auto& shapes = reader.GetShapes();
@@ -401,7 +411,7 @@ public:
 			{
 				int texChannels;
 				pixels = stbi_load("resources/images/viking_room.png", &width, &height, &texChannels, STBI_rgb_alpha);
-				NG_ASSERT(pixels, "Failed ot load image.");
+				OB_ASSERT(pixels, "Failed ot load image.");
 			}
 
 			// StagingImage
@@ -578,10 +588,10 @@ private:
 		switch (msgType)
 		{
 		case DeviceMessageType::Warn:
-			NG_LOG_WARN("Device Warning: {0}", message);
+			OB_LOG_WARN("Device Warning: {0}", message);
 			break;
 		case DeviceMessageType::Error:
-			NG_LOG_ERROR("Device Error: {0}", message);
+			OB_LOG_ERROR("Device Error: {0}", message);
 			break;
 
 		default:

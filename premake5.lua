@@ -14,21 +14,16 @@ newoption
         { "dummy", "No GraphicsAPI, passthrough function calls. (windows, linux, macosx)" },
     }
 }
+
+OBSIDIAN_GRAPHICS_API = _OPTIONS["gfxapi"] or "vulkan"
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
--- Utilities
+-- Utils
 ------------------------------------------------------------------------------
-local function GetIOResult(cmd)
-	local handle = io.popen(cmd) -- Open a console and execute the command.
-	local output = handle:read("*a") -- Read the output.
-	handle:close() -- Close the handle.
-
-	return output:match("^%s*(.-)%s*$") -- Trim any trailing whitespace (such as newlines)
+function local_require(path)
+	return dofile(path)
 end
-
-platform = os.target()
-gfxapi = _OPTIONS["gfxapi"] or "vulkan"
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -54,129 +49,12 @@ end)
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
--- Graphics API
-------------------------------------------------------------------------------
-VULKAN_SDK = nil
-VULKAN_VERSION = nil
-
--- Vulkan
-if gfxapi == "vulkan" then
-	VULKAN_SDK = os.getenv("VULKAN_SDK")
-
-	if not VULKAN_SDK or VULKAN_SDK == "" then
-		error("VULKAN_SDK environment variable is not set. Please make sure it properly installed.")
-	end
-
-	VULKAN_VERSION = VULKAN_SDK:match("(%d+%.%d+%.%d+)") -- Example: 1.3.290 (without the 0)
-
--- DirectX12
-elseif gfxapi == "dx12" then
-	if platform ~= "windows" then
-		error("The DirectX12 Graphics API is not supported on the current platform.")
-	end
-
--- Metal
-elseif gfxapi == "metal" then
-	if platform ~= "macosx" then
-		error("The Metal Graphics API is not supported on the current platform.")
-	end
-	
-	error("Metal is currently not supported.")
-end
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
--- Dependencies
-------------------------------------------------------------------------------
-MacOSVersion = "14.5"
-
-Dependencies =
-{
-	GLFW =
-	{
-		LibName = "GLFW",
-		IncludeDir = "%{wks.location}/vendor/GLFW/GLFW/include"
-	},
-	glm =
-	{
-		IncludeDir = "%{wks.location}/vendor/glm/glm"
-	},
-	Tracy = 
-	{
-		LibName = "Tracy",
-		IncludeDir = "%{wks.location}/vendor/tracy/tracy/public"
-	},
-	Nano = 
-	{
-		IncludeDir = "%{wks.location}/vendor/Nano/Nano/Nano/include"
-	},
-
-	shaderc = 
-	{
-		LibName = "shaderc",
-		IncludeDir = "%{wks.location}/vendor/shaderc/ShaderCompiler/ShaderCompiler/include"
-	},
-	SPIRVCross = 
-	{
-		LibName = "SPIRVCross",
-		IncludeDir = "%{wks.location}/vendor/SPIRV-Cross/SPIRV-Cross" 
-	},
-
-	DX12 = 
-	{
-		IncludeDir = "%{wks.location}/vendor/DirectX/DirectX-Headers/include"
-	},
-	D3D12MA = 
-	{
-		LibName = "D3D12MA",
-		IncludeDir = "%{wks.location}/vendor/DirectX/D3D12MA/include"
-	},
-	DXC = 
-	{
-		LibName = "%{wks.location}/vendor/DirectX/DXC/lib/dxcompiler",
-		IncludeDir = "%{wks.location}/vendor/DirectX/DXC/include",
-	}
-}
-
-------------------------------------------------------------------------------
--- Platform specific
-------------------------------------------------------------------------------
-if gfxapi == "vulkan" then
-	if platform == "windows" then
-		Dependencies.Vulkan =
-		{
-			LibName = "vulkan-1",
-			IncludeDir = "%{VULKAN_SDK}/Include/",
-			LibDir = "%{VULKAN_SDK}/Lib/"
-		}
-
-	elseif platform == "linux" then
-		Dependencies.Vulkan =
-		{
-			LibName = "vulkan",
-			IncludeDir = "%{VULKAN_SDK}/include/",
-			LibDir = "%{VULKAN_SDK}/lib/"
-		}
-
-	elseif platform == "macosx" then
-		Dependencies.Vulkan = -- Note: Vulkan on MacOS is currently dynamic. (Example: libvulkan1.3.290.dylib)
-		{
-			LibName = "vulkan.%{VULKAN_VERSION}",
-			IncludeDir = "%{VULKAN_SDK}/../macOS/include/",
-			LibDir = "%{VULKAN_SDK}/../macOS/lib/",
-		}
-	else
-		error("Failed to initialize Vulkan headers for current platform.")
-	end
-end
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 -- Solution
 ------------------------------------------------------------------------------
-outputdir = "%{cfg.buildcfg}-%{cfg.system}"
+MacOSVersion = "14.5"
+OutputDir = "%{cfg.buildcfg}-%{cfg.system}"
 
-workspace "NanoGraphics"
+workspace "Obsidian"
 	architecture "x86_64"
 	startproject "Sandbox"
 
@@ -196,7 +74,7 @@ group "Dependencies"
 	include "vendor/GLFW"
 	include "vendor/tracy"
 
-	if gfxapi == "dx12" then
+	if OBSIDIAN_GRAPHICS_API == "dx12" then
 		include "vendor/DirectX"
 	end
 
@@ -204,8 +82,8 @@ group "Dependencies"
 	include "vendor/SPIRV-Cross"
 group ""
 
-group "NanoGraphics"
-	include "Graphics"
+group "Obsidian"
+	include "Obsidian"
 group ""
 
 include "Sandbox"

@@ -1,4 +1,5 @@
-MacOSVersion = MacOSVersion or "14.5"
+local MacOSVersion = MacOSVersion or "14.5"
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
 project "shaderc"
 	kind "StaticLib"
@@ -8,8 +9,8 @@ project "shaderc"
 
 	architecture "x86_64"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	warnings "Off"
 
@@ -101,11 +102,7 @@ project "shaderc"
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
-		externalincludedirs
-		{
-			"ShaderCompiler/ShaderCompiler/src",
-			"ShaderCompiler/ShaderCompiler/include",
-		}
+		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
 		defines "NDEBUG"

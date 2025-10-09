@@ -1,4 +1,5 @@
-MacOSVersion = MacOSVersion or "14.5"
+local MacOSVersion = MacOSVersion or "14.5"
+local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
 project "Tracy"
 	kind "StaticLib"
@@ -7,8 +8,8 @@ project "Tracy"
 	-- staticruntime "Off"
 	warnings "Off"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
 	files
 	{
@@ -79,11 +80,7 @@ project "Tracy"
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
-		externalincludedirs
-		{
-			"tracy/public/"
-		}
-
+		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
 		runtime "Debug"
