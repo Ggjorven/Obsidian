@@ -36,7 +36,7 @@ namespace Obsidian::Internal
 			swapchainDesc.SampleDesc.Quality = 0;
 			swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 			swapchainDesc.BufferCount = static_cast<UINT>(Information::FramesInFlight);
-			swapchainDesc.Scaling = DXGI_SCALIOB_STRETCH;
+			swapchainDesc.Scaling = DXGI_SCALING_STRETCH;
 			swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 			swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 			swapchainDesc.Flags = (m_Device.GetContext().AllowsTearing() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);

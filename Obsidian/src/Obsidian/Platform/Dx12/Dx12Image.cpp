@@ -102,22 +102,24 @@ namespace Obsidian::Internal
 	Dx12Image::Dx12Image(const Device& device, const ImageSpecification& specs)
 		: m_Device(*api_cast<const Dx12Device*>(&device)), m_Specification(specs)
 	{
-		OB_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[Dx12Image] Invalid width/height passed in.");
-		OB_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[Dx12Image] Invalid format passed in.");
-
-		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
-	
-		m_PlaneCount = Dx12FormatToPlaneCount(device, (m_Specification.IsTypeless ? FormatToFormatMapping(m_Specification.ImageFormat).ResourceFormat : FormatToFormatMapping(m_Specification.ImageFormat).RTVFormat));
-
-		if constexpr (Information::Validation)
-		{
-			if (!m_Specification.DebugName.empty())
-				m_Device.GetContext().SetDebugName(m_Resource.Get(), m_Specification.DebugName);
-		}
+		CreateImage();
 	}
 
 	Dx12Image::~Dx12Image()
 	{
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Methods
+	////////////////////////////////////////////////////////////////////////////////////
+	void Dx12Image::Resize(uint32_t width, uint32_t height)
+	{
+		m_Device.DestroyImage(*api_cast<Image*>(this));
+
+		m_Specification.Width = width;
+		m_Specification.Height = height;
+
+		CreateImage();
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +213,25 @@ namespace Obsidian::Internal
 
 		imageView.m_Index = index;
 		return imageView;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	// Private methods
+	////////////////////////////////////////////////////////////////////////////////////
+	void Dx12Image::CreateImage()
+	{
+		OB_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[Dx12Image] Invalid width/height passed in.");
+		OB_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[Dx12Image] Invalid format passed in.");
+
+		m_Allocation = m_Device.GetAllocator().CreateImage(m_Resource, ResourceStateToD3D12ResourceStates(m_Specification.PermanentState), ImageSpecificationToD3D12ResourceDesc(m_Specification), D3D12_HEAP_TYPE_DEFAULT);
+	
+		m_PlaneCount = Dx12FormatToPlaneCount(*api_cast<const Device*>(&m_Device), (m_Specification.IsTypeless ? FormatToFormatMapping(m_Specification.ImageFormat).ResourceFormat : FormatToFormatMapping(m_Specification.ImageFormat).RTVFormat));
+
+		if constexpr (Information::Validation)
+		{
+			if (!m_Specification.DebugName.empty())
+				m_Device.GetContext().SetDebugName(m_Resource.Get(), m_Specification.DebugName);
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////

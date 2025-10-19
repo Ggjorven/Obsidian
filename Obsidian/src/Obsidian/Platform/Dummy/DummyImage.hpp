@@ -33,6 +33,9 @@ namespace Obsidian::Internal
 			: m_Specification(specs) { (void)device; }
 		constexpr ~DummyImage() = default;
 
+		// Methods
+		inline constexpr void Resize(uint32_t width, uint32_t height) { (void)width; (void)height; }
+
 		// Getters
 		inline constexpr const ImageSpecification& GetSpecification() const { return m_Specification; }
 
