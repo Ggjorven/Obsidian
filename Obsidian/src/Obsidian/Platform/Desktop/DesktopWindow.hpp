@@ -36,7 +36,6 @@ namespace Obsidian::Internal
 		~DesktopWindow();
 
 		// Methods
-		void PollEvents();
 		void WaitEvents();
 		void WaitEvents(double timeout);
 		void SwapBuffers();
@@ -44,6 +43,9 @@ namespace Obsidian::Internal
 		void Show();
 		void SetFocus();
 		void Close();
+
+		// Static methods
+		static void PollEvents();
 
 		// Getters
 		Obsidian::Maths::Vec2<uint32_t> GetSize() const;

@@ -30,7 +30,6 @@ namespace Obsidian
 		~Window() = default;
 
 		// Methods
-		inline void PollEvents() { m_Window.PollEvents(); }
 		inline void WaitEvents() { m_Window.WaitEvents(); }
 		inline void WaitEvents(double timeout) { m_Window.WaitEvents(timeout); } // Note: Timeout is in seconds
 		inline void SwapBuffers() { m_Window.SwapBuffers(); }
@@ -38,6 +37,9 @@ namespace Obsidian
 		inline void Show() { m_Window.Show(); }
 		inline void SetFocus() { m_Window.SetFocus(); }
 		inline void Close() { m_Window.Close(); }
+
+		// Static methods
+		inline static void PollEvents() { Type::PollEvents(); } // Note: PollEvents() is global for all windows.
 
 		// Getters
 		inline Obsidian::Maths::Vec2<uint32_t> GetSize() const { return m_Window.GetSize(); }
