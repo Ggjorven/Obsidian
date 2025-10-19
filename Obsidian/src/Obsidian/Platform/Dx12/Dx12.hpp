@@ -91,7 +91,7 @@ namespace Obsidian::Internal
             flags,
             nullptr,
             hr,
-            MAKELANGID(LAOB_NEUTRAL, SUBLAOB_DEFAULT),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             reinterpret_cast<LPSTR>(&msgBuffer),
             0,
             nullptr);

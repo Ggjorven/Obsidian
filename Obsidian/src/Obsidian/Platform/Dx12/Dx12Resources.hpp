@@ -562,7 +562,7 @@ namespace Obsidian::Internal
     public:
         LoadOperation Operation;
 
-        D3D12_RENDER_PASS_BEGINNIOB_ACCESS_TYPE BeginningAccess;
+        D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE BeginningAccess;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -570,9 +570,9 @@ namespace Obsidian::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const auto g_LoadOperationMapping = std::to_array<LoadOperationMapping>({
         // Operation                        BeginningAccess
-        { LoadOperation::None/*/DontCare*/, D3D12_RENDER_PASS_BEGINNIOB_ACCESS_TYPE_DISCARD },
-        { LoadOperation::Clear,             D3D12_RENDER_PASS_BEGINNIOB_ACCESS_TYPE_CLEAR },
-        { LoadOperation::Load,              D3D12_RENDER_PASS_BEGINNIOB_ACCESS_TYPE_PRESERVE }
+        { LoadOperation::None/*/DontCare*/, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD },
+        { LoadOperation::Clear,             D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR },
+        { LoadOperation::Load,              D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE }
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -583,7 +583,7 @@ namespace Obsidian::Internal
     public:
         StoreOperation Operation;
 
-        D3D12_RENDER_PASS_ENDIOB_ACCESS_TYPE EndingAccess;
+        D3D12_RENDER_PASS_ENDING_ACCESS_TYPE EndingAccess;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -591,8 +591,8 @@ namespace Obsidian::Internal
     ////////////////////////////////////////////////////////////////////////////////////
     inline constexpr const auto g_StoreOperationMapping = std::to_array<StoreOperationMapping>({
         // Operation                            EndingAccess
-        { StoreOperation::None/*/DontCare*/,    D3D12_RENDER_PASS_ENDIOB_ACCESS_TYPE_DISCARD},
-        { StoreOperation::Store,                D3D12_RENDER_PASS_ENDIOB_ACCESS_TYPE_PRESERVE },
+        { StoreOperation::None/*/DontCare*/,    D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD},
+        { StoreOperation::Store,                D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE },
     });
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -664,8 +664,8 @@ namespace Obsidian::Internal
     inline constexpr D3D12_FILL_MODE RasterFillModeTOD3D12FillMode(RasterFillMode mode) { OB_ASSERT((static_cast<size_t>(mode) < g_RasterFillModeMapping.size()), "Mode value exceeds mappings."); return g_RasterFillModeMapping[static_cast<size_t>(mode)].D3D12FillMode; }
     inline constexpr D3D12_CULL_MODE RasterCullingModeTOD3D12CullMode(RasterCullingMode mode) { OB_ASSERT((static_cast<size_t>(mode) < g_RasterCullingModeMapping.size()), "Mode value exceeds mappings."); return g_RasterCullingModeMapping[static_cast<size_t>(mode)].D3D12CullMode; }
 
-    inline constexpr D3D12_RENDER_PASS_BEGINNIOB_ACCESS_TYPE LoadOperationToD3D12BeginningAccess(LoadOperation operation) { OB_ASSERT((static_cast<size_t>(operation) < g_LoadOperationMapping.size()), "Operation value exceeds mappings."); return g_LoadOperationMapping[static_cast<size_t>(operation)].BeginningAccess; }
-    inline constexpr D3D12_RENDER_PASS_ENDIOB_ACCESS_TYPE StoreOperationToD3D12EndingAccess(StoreOperation operation) { OB_ASSERT((static_cast<size_t>(operation) < g_StoreOperationMapping.size()), "Operation value exceeds mappings."); return g_StoreOperationMapping[static_cast<size_t>(operation)].EndingAccess; }
+    inline constexpr D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE LoadOperationToD3D12BeginningAccess(LoadOperation operation) { OB_ASSERT((static_cast<size_t>(operation) < g_LoadOperationMapping.size()), "Operation value exceeds mappings."); return g_LoadOperationMapping[static_cast<size_t>(operation)].BeginningAccess; }
+    inline constexpr D3D12_RENDER_PASS_ENDING_ACCESS_TYPE StoreOperationToD3D12EndingAccess(StoreOperation operation) { OB_ASSERT((static_cast<size_t>(operation) < g_StoreOperationMapping.size()), "Operation value exceeds mappings."); return g_StoreOperationMapping[static_cast<size_t>(operation)].EndingAccess; }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Dx12Resources
