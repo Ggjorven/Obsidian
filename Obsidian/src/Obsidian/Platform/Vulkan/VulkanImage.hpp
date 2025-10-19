@@ -85,6 +85,9 @@ namespace Obsidian::Internal
 		VulkanImage(const Device& device, const ImageSpecification& specs);
 		~VulkanImage();
 
+		// Methods
+		void Resize(uint32_t width, uint32_t height);
+
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
@@ -97,6 +100,10 @@ namespace Obsidian::Internal
 
 		const VulkanImageSubresourceView& GetSubresourceView(const ImageSubresourceSpecification& specs, ImageDimension dimension = ImageDimension::Unknown, Format format = Format::Unknown, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, ImageSubresourceViewType viewType = ImageSubresourceViewType::AllAspects);
 		inline std::unordered_map<VulkanImageSubresourceView::Key, VulkanImageSubresourceView, VulkanImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
+
+	private:
+		// Private methods
+		void CreateImage();
 
 	private:
 		const VulkanDevice& m_Device;

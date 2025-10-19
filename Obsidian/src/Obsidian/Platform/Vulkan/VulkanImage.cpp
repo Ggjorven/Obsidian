@@ -35,36 +35,7 @@ namespace Obsidian::Internal
     VulkanImage::VulkanImage(const Device& device, const ImageSpecification& specs)
         : m_Device(*api_cast<const VulkanDevice*>(&device)), m_Specification(specs)
     {
-        OB_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[VkImage] Invalid width/height passed in.");
-        OB_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
-
-        // Validation checks
-        if constexpr (Information::Validation)
-        {
-            if (!((m_Specification.SampleCount >= 1) && (m_Specification.SampleCount <= 64) && (m_Specification.SampleCount & (m_Specification.SampleCount - 1)) == 0))
-            {
-                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", m_Specification.SampleCount));
-            }
-        }
-
-        // Creation
-        m_Allocation = m_Device.GetAllocator().CreateImage(VMA_MEMORY_USAGE_AUTO, m_Image, 
-            ImageDimensionToVkImageType(m_Specification.Dimension), 
-            m_Specification.Width, m_Specification.Height, m_Specification.Depth, 
-            m_Specification.MipLevels, m_Specification.ArraySize, 
-            FormatToVkFormat(m_Specification.ImageFormat), VK_IMAGE_TILING_OPTIMAL, 
-            ImageSpecificationToVkImageUsageFlags(m_Specification),
-            SampleCountToVkSampleCountFlags(m_Specification.SampleCount)
-        );
-
-        if constexpr (Information::Validation)
-        {
-            if (!m_Specification.DebugName.empty())
-            {
-                m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
-                m_Device.GetContext().SetDebugName(m_Device.GetAllocator().GetUnderlyingMemory(m_Allocation), VK_OBJECT_TYPE_DEVICE_MEMORY, std::format("Memory for: {0}", m_Specification.DebugName));
-            }
-        }
+        CreateImage();
     }
 
     VulkanImage::~VulkanImage()
@@ -73,6 +44,19 @@ namespace Obsidian::Internal
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanImage::Resize(uint32_t width, uint32_t height)
+    {
+        m_Device.DestroyImage(*api_cast<Image*>(this));
+
+        m_Specification.Width = width;
+        m_Specification.Height = height;
+
+        CreateImage();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Internal getters
     ////////////////////////////////////////////////////////////////////////////////////
     const VulkanImageSubresourceView& VulkanImage::GetSubresourceView(const ImageSubresourceSpecification& specs, ImageDimension dimension, Format format, VkImageUsageFlags usage, ImageSubresourceViewType viewType)
     {
@@ -150,6 +134,43 @@ namespace Obsidian::Internal
     {
         m_Specification = specs;
         m_Image = image;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Private methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanImage::CreateImage()
+    {
+        OB_ASSERT(((m_Specification.Width != 0) && (m_Specification.Height != 0)), "[VkImage] Invalid width/height passed in.");
+        OB_ASSERT((m_Specification.ImageFormat != Format::Unknown), "[VkImage] Invalid format passed in.");
+
+        // Validation checks
+        if constexpr (Information::Validation)
+        {
+            if (!((m_Specification.SampleCount >= 1) && (m_Specification.SampleCount <= 64) && (m_Specification.SampleCount & (m_Specification.SampleCount - 1)) == 0))
+            {
+                m_Device.GetContext().Error(std::format("[VkImage] Invalid samplecount passed in: {0}", m_Specification.SampleCount));
+            }
+        }
+
+        // Creation
+        m_Allocation = m_Device.GetAllocator().CreateImage(VMA_MEMORY_USAGE_AUTO, m_Image,
+            ImageDimensionToVkImageType(m_Specification.Dimension),
+            m_Specification.Width, m_Specification.Height, m_Specification.Depth,
+            m_Specification.MipLevels, m_Specification.ArraySize,
+            FormatToVkFormat(m_Specification.ImageFormat), VK_IMAGE_TILING_OPTIMAL,
+            ImageSpecificationToVkImageUsageFlags(m_Specification),
+            SampleCountToVkSampleCountFlags(m_Specification.SampleCount)
+        );
+
+        if constexpr (Information::Validation)
+        {
+            if (!m_Specification.DebugName.empty())
+            {
+                m_Device.GetContext().SetDebugName(m_Image, VK_OBJECT_TYPE_IMAGE, std::string(m_Specification.DebugName));
+                m_Device.GetContext().SetDebugName(m_Device.GetAllocator().GetUnderlyingMemory(m_Allocation), VK_OBJECT_TYPE_DEVICE_MEMORY, std::format("Memory for: {0}", m_Specification.DebugName));
+            }
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

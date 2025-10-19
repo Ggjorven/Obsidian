@@ -90,6 +90,9 @@ namespace Obsidian::Internal
 		Dx12Image(const Device& device, const ImageSpecification& specs);
 		~Dx12Image();
 
+		// Methods
+		void Resize(uint32_t width, uint32_t height);
+
 		// Getters
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
@@ -107,6 +110,10 @@ namespace Obsidian::Internal
 		inline std::unordered_map<Dx12ImageSubresourceView::Key, Dx12ImageSubresourceView, Dx12ImageSubresourceView::Hash>& GetImageViews() { return m_ImageViews; }
 
 		inline uint8_t GetPlaneCount() const { return m_PlaneCount; }
+
+	private:
+		// Private methods
+		void CreateImage();
 
 	private:
 		const Dx12Device& m_Device;

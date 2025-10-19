@@ -38,6 +38,9 @@ namespace Obsidian
         // Destructor
         ~Image() = default;
 
+        // Methods
+        inline void Resize(uint32_t width, uint32_t height) { m_Impl->Resize(width, height); }
+
         // Getters
         inline const ImageSpecification& GetSpecification() const { return m_Impl->GetSpecification(); }
 
