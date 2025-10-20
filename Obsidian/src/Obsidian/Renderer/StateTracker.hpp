@@ -100,6 +100,12 @@ namespace Obsidian::Internal
         inline std::vector<ImageBarrier>& GetImageBarriers(const CommandList& list) const { return m_ImageBarriers[&list]; }
         inline std::vector<BufferBarrier>& GetBufferBarriers(const CommandList& list) const { return m_BufferBarriers[&list]; }
 
+        // Setters
+        // Note: Under special circumstances the outside modifies the state
+        // We need to reflect that here
+        void SetImageState(const Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) const;
+        void SetBufferState(const Buffer& buffer, ResourceState state) const;
+
     private:
         const Device& m_Device;
 

@@ -253,6 +253,9 @@ namespace Obsidian::Internal
             {
                 new (m_Images[i].GetInternalBytes()) Image(*api_cast<const Device*>(&m_Device));
                 vkImage.SetInternalData(imageSpec, swapchainImages[i]);
+
+                //m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(), ResourceState::Unknown);
+                m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(), ResourceState::Present); // Note: We set it to present because below we transition to that manually
             }
 
             ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);

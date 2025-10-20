@@ -329,6 +329,15 @@ namespace Obsidian::Internal
             }
             VulkanFramebuffer& vkFramebuffer = *api_cast<VulkanFramebuffer*>(framebuffer);
 
+            // Verify that expected begin state is equal to the actual state
+            if constexpr (Information::Validation)
+            {
+                if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                    OB_ASSERT((renderpass.GetSpecification().ColourImageStartState == m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources)), "[VkCommandList] Begin state doesn't match the actual framebuffer's image state.");
+                if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                    OB_ASSERT((renderpass.GetSpecification().DepthImageStartState == m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources)), "[VkCommandList] Begin state doesn't match the actual framebuffer's image state.");
+            }
+
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderpassInfo.renderPass = renderpass.GetVkRenderPass();
@@ -362,14 +371,29 @@ namespace Obsidian::Internal
 
     void VulkanCommandList::EndRenderpass(const RenderpassEndArgs& args)
     {
-        (void)args;
-
         OB_PROFILE("VulkanCommandList::EndRenderpass()");
 
         VkSubpassEndInfo endInfo = {};
         endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
 
         vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
+
+        // Refresh StateTrackers internal states to reflect the end states
+        {
+            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
+
+            Framebuffer* framebuffer = args.Frame;
+            if (!framebuffer)
+            {
+                OB_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetVulkanSwapchain().GetImageCount()), "[VkCommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
+                framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
+            }
+
+            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageEndState);
+            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageEndState);
+        }
     }
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const
