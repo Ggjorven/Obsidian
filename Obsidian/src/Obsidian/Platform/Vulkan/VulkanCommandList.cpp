@@ -333,9 +333,19 @@ namespace Obsidian::Internal
             if constexpr (Information::Validation)
             {
                 if (framebuffer->GetSpecification().ColourAttachment.IsValid())
-                    OB_ASSERT((renderpass.GetSpecification().ColourImageStartState == m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources)), "[VkCommandList] Begin state doesn't match the actual framebuffer's image state.");
+                {
+                    ResourceState currentState = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources);
+                    ResourceState startState = renderpass.GetSpecification().ColourImageStartState;
+                    if (currentState != startState)
+                        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().Error(std::format("[VkCommandList] Current colour image state ({0}) doesn't match the renderpass' specified colour image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                }
                 if (framebuffer->GetSpecification().DepthAttachment.IsValid())
-                    OB_ASSERT((renderpass.GetSpecification().DepthImageStartState == m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources)), "[VkCommandList] Begin state doesn't match the actual framebuffer's image state.");
+                {
+                    ResourceState currentState = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources);
+                    ResourceState startState = renderpass.GetSpecification().DepthImageStartState;
+                    if (currentState != startState)
+                        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().Error(std::format("[VkCommandList] Current depth image state ({0}) doesn't match the renderpass' specified depth image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                }
             }
 
             VkRenderPassBeginInfo renderpassInfo = {};
