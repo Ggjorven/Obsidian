@@ -69,6 +69,11 @@ namespace Obsidian
 
         inline void Dispatch(uint32_t groupsX, uint32_t groupsY = 1, uint32_t groupsZ = 1) const { m_Impl->Dispatch(groupsX, groupsY, groupsZ); }
 
+        // State methods // Note: These methods should only be used in very special cases,
+        // because internal methods change the state all the time based on needs. Make sure you know what you are doing.
+        inline void RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) { m_Impl->RequireState(image, subresources, state); }
+        inline void RequireState(Buffer& buffer, ResourceState state) { m_Impl->RequireState(buffer, state); }
+
         // Draw methods
         inline void DrawIndexed(const DrawArguments& args) const { m_Impl->DrawIndexed(args); }
 

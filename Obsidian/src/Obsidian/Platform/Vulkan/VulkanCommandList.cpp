@@ -710,6 +710,19 @@ namespace Obsidian::Internal
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // State methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state)
+    {
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), image, subresources, state);
+    }
+
+    void VulkanCommandList::RequireState(Buffer& buffer, ResourceState state)
+    {
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), buffer, state);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Draw methods
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::DrawIndexed(const DrawArguments& args) const

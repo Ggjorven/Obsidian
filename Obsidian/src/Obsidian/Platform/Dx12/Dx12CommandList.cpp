@@ -748,6 +748,19 @@ namespace Obsidian::Internal
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
+    // State methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void Dx12CommandList::RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state)
+    {
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), image, subresources, state);
+    }
+
+    void Dx12CommandList::RequireState(Buffer& buffer, ResourceState state)
+    {
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), buffer, state);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
     // Draw methods
     ////////////////////////////////////////////////////////////////////////////////////
     void Dx12CommandList::DrawIndexed(const DrawArguments& args) const
