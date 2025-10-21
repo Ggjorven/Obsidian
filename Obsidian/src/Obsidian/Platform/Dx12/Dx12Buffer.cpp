@@ -145,7 +145,7 @@ namespace Obsidian::Internal
                 if constexpr (Information::Validation)
                 {
                     if (!static_cast<bool>(m_Specification.CpuAccess & CpuAccessMode::Write))
-                        dxDevice.GetContext().Warn("[VkBuffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This is needed for in frame updates without a staging buffer and copying.");
+                        dxDevice.GetContext().Warn("[Dx12Buffer] Creating a Dynamic buffer with out CpuAccessMode::Write flag. This is needed for in frame updates without a staging buffer and copying.");
                 }
             }
             else
