@@ -354,13 +354,6 @@ namespace Obsidian::Internal
                 OB_ASSERT((dxRenderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
                 framebuffer = &dxRenderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
             }
-            Dx12Framebuffer& dxFramebuffer = *api_cast<Dx12Framebuffer*>(framebuffer);
-
-            if (dxFramebuffer.GetSpecification().ColourAttachment.IsValid())
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr, dxFramebuffer.GetSpecification().ColourAttachment.Subresources, dxRenderpass.GetSpecification().ColourImageEndState);
-            if (dxFramebuffer.GetSpecification().DepthAttachment.IsValid())
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr, dxFramebuffer.GetSpecification().DepthAttachment.Subresources, dxRenderpass.GetSpecification().DepthImageEndState);
-            CommitBarriers();
 
             // Note: On Dx12 we need to manually transition to the EndState
             {
