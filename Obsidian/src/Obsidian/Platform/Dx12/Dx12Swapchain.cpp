@@ -79,7 +79,7 @@ namespace Obsidian::Internal
 			
 				// Start tracking to allow transitioning
 				{
-					m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Present);
+					m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices), ResourceState::Unknown);
 				}
 
 				// Debug naming

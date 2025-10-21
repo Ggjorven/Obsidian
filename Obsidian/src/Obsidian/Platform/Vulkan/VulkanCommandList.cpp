@@ -329,23 +329,19 @@ namespace Obsidian::Internal
             }
             VulkanFramebuffer& vkFramebuffer = *api_cast<VulkanFramebuffer*>(framebuffer);
 
-            // Verify that expected begin state is equal to the actual state
-            if constexpr (Information::Validation)
+            // Make sure the attachments are in the begin state
             {
                 if (framebuffer->GetSpecification().ColourAttachment.IsValid())
                 {
-                    ResourceState currentState = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources);
-                    ResourceState startState = renderpass.GetSpecification().ColourImageStartState;
-                    if (currentState != startState)
-                        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().Error(std::format("[VkCommandList] Current colour image state ({0}) doesn't match the renderpass' specified colour image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageStartState);
                 }
                 if (framebuffer->GetSpecification().DepthAttachment.IsValid())
                 {
-                    ResourceState currentState = m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().GetResourceState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources);
-                    ResourceState startState = renderpass.GetSpecification().DepthImageStartState;
-                    if (currentState != startState)
-                        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().Error(std::format("[VkCommandList] Current depth image state ({0}) doesn't match the renderpass' specified depth image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
                 }
+                CommitBarriers();
             }
 
             VkRenderPassBeginInfo renderpassInfo = {};
@@ -399,10 +395,19 @@ namespace Obsidian::Internal
                 framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
             }
 
-            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
-                m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*framebuffer->GetSpecification().ColourAttachment.ImagePtr, framebuffer->GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageEndState);
-            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
-                m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*framebuffer->GetSpecification().DepthAttachment.ImagePtr, framebuffer->GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageEndState);
+            // Set the internal tracking state to reflect the actual end state
+            {
+                if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                    m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageEndState);
+                }
+                if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                    m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageEndState);
+                }
+            }
         }
     }
 
