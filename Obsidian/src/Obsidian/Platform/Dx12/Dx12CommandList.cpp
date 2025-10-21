@@ -311,7 +311,7 @@ namespace Obsidian::Internal
 
             // Transition to rendering state
             if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
+                RequireState(*api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
         }
         if (depthImage)
         {
@@ -326,7 +326,7 @@ namespace Obsidian::Internal
 
             // Transition to rendering state
             if (renderpass.GetSpecification().DepthImageStartState != renderpass.GetSpecification().DepthImageRenderingState)
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
+                RequireState(*api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
         }
         CommitBarriers();
 
@@ -670,8 +670,8 @@ namespace Obsidian::Internal
         srcBox.bottom = resSrcSlice.Y + resSrcSlice.Height;
         srcBox.back = resSrcSlice.Z + resSrcSlice.Depth;
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
         CommitBarriers();
 
         m_CommandList->CopyTextureRegion(&dstLocation, resDstSlice.X, resDstSlice.Y, resDstSlice.Z, &srcLocation, &srcBox);
@@ -699,8 +699,8 @@ namespace Obsidian::Internal
             resDstSlice.ImageArraySlice, 1
         );
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(*api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
         CommitBarriers();
 
         auto srcRegion = dxSrc.GetSliceRegion(resSrcSlice.ImageMipLevel, resSrcSlice.ImageArraySlice);
@@ -738,8 +738,8 @@ namespace Obsidian::Internal
         Dx12Buffer& dxDst = *api_cast<Dx12Buffer*>(&dst);
         Dx12Buffer& dxSrc = *api_cast<Dx12Buffer*>(&src);
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
+        RequireState(dst, ResourceState::CopyDst);
+        RequireState(src, ResourceState::CopySrc);
         CommitBarriers();
 
         m_CommandList->CopyBufferRegion(dxDst.GetD3D12Resource().Get(), dstOffset, dxSrc.GetD3D12Resource().Get(), srcOffset, size);

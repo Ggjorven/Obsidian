@@ -600,8 +600,8 @@ namespace Obsidian::Internal
             std::min(resSrcSlice.Depth, resDstSlice.Depth)
         );
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyImageInfo2 copyInfo = {};
@@ -678,8 +678,8 @@ namespace Obsidian::Internal
         copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
         copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, dstSubresource, ResourceState::CopyDst);
+        RequireState(*api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        RequireState(dst, dstSubresource, ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyBufferToImageInfo2 copyBufferToImageInfo = {};
@@ -713,8 +713,8 @@ namespace Obsidian::Internal
         VulkanBuffer& dstVulkanBuffer = *api_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *api_cast<VulkanBuffer*>(&src);
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
+        RequireState(src, ResourceState::CopySrc);
+        RequireState(dst, ResourceState::CopyDst);
         CommitBarriers();
 
         VkBufferCopy2 copyRegion = {};
