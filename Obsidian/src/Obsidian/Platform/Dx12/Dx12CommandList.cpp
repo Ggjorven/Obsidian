@@ -280,12 +280,12 @@ namespace Obsidian::Internal
 
         // Make sure the attachments are in the begin state
         {
-            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+            if (framebuffer->GetSpecification().ColourAttachment.IsValid() && (renderpass.GetSpecification().ColourImageStartState != ResourceState::Unknown))
             {
                 const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
                 RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageStartState);
             }
-            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+            if (framebuffer->GetSpecification().DepthAttachment.IsValid() && (renderpass.GetSpecification().DepthImageStartState != ResourceState::Unknown))
             {
                 const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
                 RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
