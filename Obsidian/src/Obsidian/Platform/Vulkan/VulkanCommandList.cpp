@@ -329,6 +329,21 @@ namespace Obsidian::Internal
             }
             VulkanFramebuffer& vkFramebuffer = *api_cast<VulkanFramebuffer*>(framebuffer);
 
+            // Make sure the attachments are in the begin state
+            {
+                if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageStartState);
+                }
+                if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
+                }
+                CommitBarriers();
+            }
+
             VkRenderPassBeginInfo renderpassInfo = {};
             renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderpassInfo.renderPass = renderpass.GetVkRenderPass();
@@ -362,14 +377,38 @@ namespace Obsidian::Internal
 
     void VulkanCommandList::EndRenderpass(const RenderpassEndArgs& args)
     {
-        (void)args;
-
         OB_PROFILE("VulkanCommandList::EndRenderpass()");
 
         VkSubpassEndInfo endInfo = {};
         endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
 
         vkCmdEndRenderPass2(m_CommandBuffer, &endInfo);
+
+        // Refresh StateTrackers internal states to reflect the end states
+        {
+            VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
+
+            Framebuffer* framebuffer = args.Frame;
+            if (!framebuffer)
+            {
+                OB_ASSERT((renderpass.GetFramebuffers().size() == m_Pool.GetVulkanSwapchain().GetImageCount()), "[VkCommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
+                framebuffer = &renderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetVulkanSwapchain().GetAcquiredImage()));
+            }
+
+            // Set the internal tracking state to reflect the actual end state
+            {
+                if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                    m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageEndState);
+                }
+                if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                    m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().SetImageState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageEndState);
+                }
+            }
+        }
     }
 
     void VulkanCommandList::SetViewport(const Viewport& viewport) const
@@ -561,8 +600,8 @@ namespace Obsidian::Internal
             std::min(resSrcSlice.Depth, resDstSlice.Depth)
         );
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyImageInfo2 copyInfo = {};
@@ -639,8 +678,8 @@ namespace Obsidian::Internal
         copyInfo.imageOffset = { resDstSlice.X, resDstSlice.Y, resDstSlice.Z };
         copyInfo.imageExtent = { resDstSlice.Width, resDstSlice.Height, resDstSlice.Depth };
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, dstSubresource, ResourceState::CopyDst);
+        RequireState(*api_cast<Buffer*>(&srcVulkanBuffer), ResourceState::CopySrc);
+        RequireState(dst, dstSubresource, ResourceState::CopyDst);
         CommitBarriers();
 
         VkCopyBufferToImageInfo2 copyBufferToImageInfo = {};
@@ -674,8 +713,8 @@ namespace Obsidian::Internal
         VulkanBuffer& dstVulkanBuffer = *api_cast<VulkanBuffer*>(&dst);
         VulkanBuffer& srcVulkanBuffer = *api_cast<VulkanBuffer*>(&src);
 
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
-        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
+        RequireState(src, ResourceState::CopySrc);
+        RequireState(dst, ResourceState::CopyDst);
         CommitBarriers();
 
         VkBufferCopy2 copyRegion = {};
@@ -707,6 +746,19 @@ namespace Obsidian::Internal
     {
         OB_PROFILE("VulkanCommandList::Dispatch()");
         vkCmdDispatch(m_CommandBuffer, groupsX, groupsY, groupsZ);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // State methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void VulkanCommandList::RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state)
+    {
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), image, subresources, state);
+    }
+
+    void VulkanCommandList::RequireState(Buffer& buffer, ResourceState state)
+    {
+        m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), buffer, state);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////

@@ -47,6 +47,9 @@ namespace Obsidian
         inline void StartTracking(const Image& image, ImageSubresourceSpecification subresources = ImageSubresourceSpecification(), ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, subresources, currentState); }
         inline void StartTracking(const StagingImage& image, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(image, currentState); }
         inline void StartTracking(const Buffer& buffer, ResourceState currentState = ResourceState::Unknown) { m_Impl->StartTracking(buffer, currentState); }
+        
+        // Note: State changes are done through a commandlist
+        
         inline void StopTracking(const Image& image) { m_Impl->StopTracking(image); }
         inline void StopTracking(const StagingImage& image) { m_Impl->StopTracking(image); }
         inline void StopTracking(const Buffer& buffer) { m_Impl->StopTracking(buffer); }

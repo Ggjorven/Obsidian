@@ -95,6 +95,10 @@ namespace Obsidian::Internal
 
 		inline constexpr void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const { (void)groupsX; (void)groupsY; (void)groupsZ; }
 
+		// State methods
+		inline constexpr void RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) { (void)image; (void)subresources; (void)state; }
+		inline constexpr void RequireState(Buffer& buffer, ResourceState state) { (void)buffer; (void)state; }
+
 		// Draw methods
 		inline constexpr void DrawIndexed(const DrawArguments& args) const { (void)args; }
 

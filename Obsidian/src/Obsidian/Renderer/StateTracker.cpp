@@ -32,25 +32,7 @@ namespace Obsidian::Internal
         OB_ASSERT((!Contains(image)), "[StateTracker] Started tracking an object that's already being tracked.");
 
         m_ImageStates.emplace();
-        ImageState& state = m_ImageStates[&image];
-        const ImageSpecification& imageSpec = image.GetSpecification();
-        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, imageSpec, false);
-
-        if (resSubresources.IsEntireTexture(imageSpec))
-        {
-            state.State = currentState;
-        }
-        else
-        {
-            state.SubresourceStates.resize(static_cast<size_t>(imageSpec.MipLevels) * imageSpec.ArraySize, state.State);
-            state.State = ResourceState::Unknown;
-
-            for (MipLevel mipLevel = resSubresources.BaseMipLevel; mipLevel < resSubresources.BaseMipLevel + resSubresources.NumMipLevels; mipLevel++)
-            {
-                for (ArraySlice arraySlice = resSubresources.BaseArraySlice; arraySlice < resSubresources.BaseArraySlice + resSubresources.NumArraySlices; arraySlice++)
-                    state.SubresourceStates[ImageSubresourceSpecification::SubresourceIndex(mipLevel, arraySlice, imageSpec)] = currentState;
-            }
-        }
+        SetImageState(image, subresources, currentState);
     }
 
     void StateTracker::StartTracking(const Buffer& buffer, ResourceState currentState) const
@@ -58,9 +40,7 @@ namespace Obsidian::Internal
         OB_ASSERT((!Contains(buffer)), "[StateTracker] Started tracking an object that's already being tracked.");
 
         m_BufferStates.emplace();
-        BufferState& state = m_BufferStates[&buffer];
-
-        state.State = currentState;
+        SetBufferState(buffer, currentState);
     }
 
     void StateTracker::StopTracking(const Image& image)
@@ -252,6 +232,38 @@ namespace Obsidian::Internal
     {
         OB_ASSERT((Contains(buffer)), "[StateTracker] Cannot get resourcestate for an untracked object.");
         return m_BufferStates.at(&buffer).State;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Setters
+    ////////////////////////////////////////////////////////////////////////////////////
+    void StateTracker::SetImageState(const Image& image, const ImageSubresourceSpecification& subresources, ResourceState state) const
+    {
+        ImageState& currentState = m_ImageStates[&image];
+        const ImageSpecification& imageSpec = image.GetSpecification();
+        ImageSubresourceSpecification resSubresources = ResolveImageSubresource(subresources, imageSpec, false);
+
+        if (resSubresources.IsEntireTexture(imageSpec))
+        {
+            currentState.State = state;
+        }
+        else
+        {
+            currentState.SubresourceStates.resize(static_cast<size_t>(imageSpec.MipLevels) * imageSpec.ArraySize, currentState.State);
+            currentState.State = ResourceState::Unknown;
+
+            for (MipLevel mipLevel = resSubresources.BaseMipLevel; mipLevel < resSubresources.BaseMipLevel + resSubresources.NumMipLevels; mipLevel++)
+            {
+                for (ArraySlice arraySlice = resSubresources.BaseArraySlice; arraySlice < resSubresources.BaseArraySlice + resSubresources.NumArraySlices; arraySlice++)
+                    currentState.SubresourceStates[ImageSubresourceSpecification::SubresourceIndex(mipLevel, arraySlice, imageSpec)] = state;
+            }
+        }
+    }
+
+    void StateTracker::SetBufferState(const Buffer& buffer, ResourceState state) const
+    {
+        BufferState& currentState = m_BufferStates[&buffer];
+        currentState.State = state;
     }
 
 }

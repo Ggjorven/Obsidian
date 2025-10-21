@@ -253,6 +253,8 @@ namespace Obsidian::Internal
             {
                 new (m_Images[i].GetInternalBytes()) Image(*api_cast<const Device*>(&m_Device));
                 vkImage.SetInternalData(imageSpec, swapchainImages[i]);
+
+                m_Device.GetTracker().StartTracking(m_Images[i].Get(), ImageSubresourceSpecification(), ResourceState::Unknown);
             }
 
             ImageSubresourceSpecification imageViewSpec = ImageSubresourceSpecification(0, ImageSubresourceSpecification::AllMipLevels, 0, ImageSubresourceSpecification::AllArraySlices);
@@ -263,72 +265,6 @@ namespace Obsidian::Internal
                 if (!m_Specification.DebugName.empty())
                     m_Device.GetContext().SetDebugName(swapchainImages[i], VK_OBJECT_TYPE_IMAGE, imageSpec.DebugName);
             }
-        }
-
-        // Transition to PresentSrc
-        {
-            VK_VERIFY(vkResetCommandBuffer(m_ResizeCommand, 0));
-
-            VkCommandBufferBeginInfo beginInfo = {};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            VK_VERIFY(vkBeginCommandBuffer(m_ResizeCommand, &beginInfo));
-
-            VkImageMemoryBarrier2 barrier2 = {};
-            barrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-            barrier2.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
-            barrier2.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-            barrier2.srcAccessMask = VK_ACCESS_2_NONE;
-            barrier2.dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT;
-            barrier2.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            barrier2.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            barrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-            barrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier2.subresourceRange.baseMipLevel = 0;
-            barrier2.subresourceRange.levelCount = 1;
-            barrier2.subresourceRange.baseArrayLayer = 0;
-            barrier2.subresourceRange.layerCount = 1;
-
-            // Set all the images
-            Nano::Memory::StaticVector<VkImageMemoryBarrier2, Information::MaxImageCount> barriers = { };
-            barriers.resize(m_Images.size());
-            for (size_t i = 0; i < m_Images.size(); i++)
-            {
-                barriers[i] = barrier2;
-                barriers[i].image = api_cast<VulkanImage*>(&m_Images[i].Get())->GetVkImage();
-            }
-
-            VkDependencyInfo dependencyInfo = {};
-            dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-            dependencyInfo.imageMemoryBarrierCount = static_cast<uint32_t>(barriers.size());
-            dependencyInfo.pImageMemoryBarriers = barriers.data();
-
-
-#if defined(OB_PLATFORM_APPLE)
-            VkExtension::g_vkCmdPipelineBarrier2KHR(m_ResizeCommand, &dependencyInfo);
-#else
-            vkCmdPipelineBarrier2(m_ResizeCommand, &dependencyInfo);
-#endif
-
-            VK_VERIFY(vkEndCommandBuffer(m_ResizeCommand));
-
-            VkCommandBufferSubmitInfo commandBufferInfo = {};
-            commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-            commandBufferInfo.commandBuffer = m_ResizeCommand;
-
-            VkSubmitInfo2 submitInfo = {};
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-            submitInfo.commandBufferInfoCount = 1;
-            submitInfo.pCommandBufferInfos = &commandBufferInfo;
-#if defined(OB_PLATFORM_APPLE)
-            VkExtension::g_vkQueueSubmit2KHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
-#else
-            vkQueueSubmit2(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics), 1, &submitInfo, VK_NULL_HANDLE);
-#endif
-            
-            VK_VERIFY(vkQueueWaitIdle(m_Device.GetContext().GetVulkanLogicalDevice().GetVkQueue(CommandQueue::Graphics)));
         }
     }
 

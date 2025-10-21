@@ -105,6 +105,10 @@ namespace Obsidian::Internal
 
 		void Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) const;
 
+		// State methods
+		void RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state);
+		void RequireState(Buffer& buffer, ResourceState state);
+
 		// Draw methods
 		void DrawIndexed(const DrawArguments& args) const;
 

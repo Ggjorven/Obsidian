@@ -278,23 +278,19 @@ namespace Obsidian::Internal
         Dx12Image* colourImage = api_cast<Dx12Image*>(dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr);
         Dx12Image* depthImage = api_cast<Dx12Image*>(dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr);
 
-        // Validation checks
-        if constexpr (Information::Validation)
+        // Make sure the attachments are in the begin state
         {
-            if (colourImage)
+            if (framebuffer->GetSpecification().ColourAttachment.IsValid())
             {
-                ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources);
-                ResourceState startState = renderpass.GetSpecification().ColourImageStartState;
-                if (currentState != startState)
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current colour image state ({0}) doesn't match the renderpass' specified colour image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().ColourImageStartState);
             }
-            if (depthImage)
+            if (framebuffer->GetSpecification().DepthAttachment.IsValid())
             {
-                ResourceState currentState = m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().GetResourceState(*api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources);
-                ResourceState startState = renderpass.GetSpecification().DepthImageStartState;
-                if (currentState != startState)
-                    m_Pool.GetDx12Swapchain().GetDx12Device().GetContext().Error(std::format("[Dx12CommandList] Current depth image state ({0}) doesn't match the renderpass' specified depth image start state ({1}).", ResourceStateToString(currentState), ResourceStateToString(startState)));
+                const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
             }
+            CommitBarriers();
         }
 
         D3D12_RENDER_PASS_RENDER_TARGET_DESC colourDesc = {};
@@ -315,7 +311,7 @@ namespace Obsidian::Internal
 
             // Transition to rendering state
             if (renderpass.GetSpecification().ColourImageStartState != renderpass.GetSpecification().ColourImageRenderingState)
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
+                RequireState(*api_cast<Image*>(colourImage), dxFramebuffer.GetSpecification().ColourAttachment.Subresources, renderpass.GetSpecification().ColourImageRenderingState);
         }
         if (depthImage)
         {
@@ -330,7 +326,7 @@ namespace Obsidian::Internal
 
             // Transition to rendering state
             if (renderpass.GetSpecification().DepthImageStartState != renderpass.GetSpecification().DepthImageRenderingState)
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
+                RequireState(*api_cast<Image*>(depthImage), dxFramebuffer.GetSpecification().DepthAttachment.Subresources, renderpass.GetSpecification().DepthImageRenderingState);
         }
         CommitBarriers();
 
@@ -358,13 +354,21 @@ namespace Obsidian::Internal
                 OB_ASSERT((dxRenderpass.GetFramebuffers().size() == m_Pool.GetDx12Swapchain().GetImageCount()), "[Dx12CommandList] No framebuffer was passed into GraphicsState, but renderpass' framebuffer count doesn't align with swapchain image count.");
                 framebuffer = &dxRenderpass.GetFramebuffer(static_cast<uint8_t>(m_Pool.GetDx12Swapchain().GetAcquiredImage()));
             }
-            Dx12Framebuffer& dxFramebuffer = *api_cast<Dx12Framebuffer*>(framebuffer);
 
-            if (dxFramebuffer.GetSpecification().ColourAttachment.IsValid())
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().ColourAttachment.ImagePtr, dxFramebuffer.GetSpecification().ColourAttachment.Subresources, dxRenderpass.GetSpecification().ColourImageEndState);
-            if (dxFramebuffer.GetSpecification().DepthAttachment.IsValid())
-                m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), *dxFramebuffer.GetSpecification().DepthAttachment.ImagePtr, dxFramebuffer.GetSpecification().DepthAttachment.Subresources, dxRenderpass.GetSpecification().DepthImageEndState);
-            CommitBarriers();
+            // Note: On Dx12 we need to manually transition to the EndState
+            {
+                if (framebuffer->GetSpecification().ColourAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, dxRenderpass.GetSpecification().ColourImageEndState);
+                }
+                if (framebuffer->GetSpecification().DepthAttachment.IsValid())
+                {
+                    const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
+                    RequireState(*attachment.ImagePtr, attachment.Subresources, dxRenderpass.GetSpecification().DepthImageEndState);
+                }
+                CommitBarriers();
+            }
         }
     }
 
@@ -666,8 +670,8 @@ namespace Obsidian::Internal
         srcBox.bottom = resSrcSlice.Y + resSrcSlice.Height;
         srcBox.back = resSrcSlice.Z + resSrcSlice.Depth;
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(src, ImageSubresourceSpecification(resSrcSlice.ImageMipLevel, 1, resSrcSlice.ImageArraySlice, 1), ResourceState::CopySrc);
         CommitBarriers();
 
         m_CommandList->CopyTextureRegion(&dstLocation, resDstSlice.X, resDstSlice.Y, resDstSlice.Z, &srcLocation, &srcBox);
@@ -695,8 +699,8 @@ namespace Obsidian::Internal
             resDstSlice.ImageArraySlice, 1
         );
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), *api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
+        RequireState(dst, ImageSubresourceSpecification(resDstSlice.ImageMipLevel, 1, resDstSlice.ImageArraySlice, 1), ResourceState::CopyDst);
+        RequireState(*api_cast<Buffer*>(&dxSrc.GetDx12Buffer()), ResourceState::CopySrc);
         CommitBarriers();
 
         auto srcRegion = dxSrc.GetSliceRegion(resSrcSlice.ImageMipLevel, resSrcSlice.ImageArraySlice);
@@ -734,8 +738,8 @@ namespace Obsidian::Internal
         Dx12Buffer& dxDst = *api_cast<Dx12Buffer*>(&dst);
         Dx12Buffer& dxSrc = *api_cast<Dx12Buffer*>(&src);
 
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), dst, ResourceState::CopyDst);
-        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), src, ResourceState::CopySrc);
+        RequireState(dst, ResourceState::CopyDst);
+        RequireState(src, ResourceState::CopySrc);
         CommitBarriers();
 
         m_CommandList->CopyBufferRegion(dxDst.GetD3D12Resource().Get(), dstOffset, dxSrc.GetD3D12Resource().Get(), srcOffset, size);
@@ -745,6 +749,19 @@ namespace Obsidian::Internal
     {
         OB_PROFILE("Dx12CommandList::Dispatch()");
         m_CommandList->Dispatch(groupsX, groupsY, groupsZ);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // State methods
+    ////////////////////////////////////////////////////////////////////////////////////
+    void Dx12CommandList::RequireState(Image& image, const ImageSubresourceSpecification& subresources, ResourceState state)
+    {
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireImageState(*api_cast<const CommandList*>(this), image, subresources, state);
+    }
+
+    void Dx12CommandList::RequireState(Buffer& buffer, ResourceState state)
+    {
+        m_Pool.GetDx12Swapchain().GetDx12Device().GetTracker().RequireBufferState(*api_cast<const CommandList*>(this), buffer, state);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
