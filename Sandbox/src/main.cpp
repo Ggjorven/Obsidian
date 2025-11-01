@@ -1,8 +1,8 @@
 // Note: Specify the test to run here since the Main function
 // is defined in the header file.
-#include "Tests/DynamicUniformBuffer.hpp"
+#include "Tests/Renderpasses.hpp"
 
-// Note: On windows to remove the terminal on distributions we need a special main function
+// Note: On windows to remove the terminal on distribution we need a special main function
 // on linux and macos a regular main function is fine.
 #if defined(OB_CONFIG_DIST) && defined(OB_PLATFORM_WINDOWS) 
 	#include <Windows.h>
