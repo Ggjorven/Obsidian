@@ -23,13 +23,13 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline WindowResizeEvent(uint32_t width, uint32_t height)
+        inline constexpr WindowResizeEvent(uint32_t width, uint32_t height)
             : m_Width(width), m_Height(height) {}
-        ~WindowResizeEvent() = default;
+        constexpr ~WindowResizeEvent() = default;
 
         // Getters
-        inline uint32_t GetWidth() const { return m_Width; }
-        inline uint32_t GetHeight() const { return m_Height; }
+        inline constexpr uint32_t GetWidth() const { return m_Width; }
+        inline constexpr uint32_t GetHeight() const { return m_Height; }
 
     private:
         uint32_t m_Width, m_Height;
@@ -39,8 +39,8 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        WindowCloseEvent() = default;
-        ~WindowCloseEvent() = default;
+        constexpr WindowCloseEvent() = default;
+        constexpr ~WindowCloseEvent() = default;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -50,13 +50,13 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline KeyPressedEvent(int keycode, int repeatCount)
+        inline constexpr KeyPressedEvent(int keycode, int repeatCount)
             : m_KeyCode(static_cast<Key>(keycode)), m_RepeatCount(repeatCount) {}
-        ~KeyPressedEvent() = default;
+        constexpr ~KeyPressedEvent() = default;
 
         // Getters
-        inline Key GetKeyCode() const { return m_KeyCode; }
-        inline int GetRepeatCount() const { return m_RepeatCount; }
+        inline constexpr Key GetKeyCode() const { return m_KeyCode; }
+        inline constexpr int GetRepeatCount() const { return m_RepeatCount; }
 
     private:
         Key m_KeyCode;
@@ -67,12 +67,12 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline KeyReleasedEvent(int keycode)
+        inline constexpr KeyReleasedEvent(int keycode)
             : m_KeyCode(static_cast<Key>(keycode)) {}
-        ~KeyReleasedEvent() = default;
+        constexpr ~KeyReleasedEvent() = default;
 
         // Getters
-        inline Key GetKeyCode() const { return m_KeyCode; }
+        inline constexpr Key GetKeyCode() const { return m_KeyCode; }
 
     private:
         Key m_KeyCode;
@@ -82,12 +82,12 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline KeyTypedEvent(int keycode)
+        inline constexpr KeyTypedEvent(int keycode)
             : m_KeyCode(static_cast<Key>(keycode)) {}
-        ~KeyTypedEvent() = default;
+        constexpr ~KeyTypedEvent() = default;
 
         // Getters
-        Key GetKeyCode() const { return m_KeyCode; }
+        inline constexpr Key GetKeyCode() const { return m_KeyCode; }
 
     private:
         Key m_KeyCode;
@@ -100,13 +100,13 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline MouseMovedEvent(float x, float y)
+        inline constexpr MouseMovedEvent(float x, float y)
             : m_MouseX(x), m_MouseY(y) {}
-        ~MouseMovedEvent() = default;
+        constexpr ~MouseMovedEvent() = default;
 
         // Getters
-        inline float GetX() const { return m_MouseX; }
-        inline float GetY() const { return m_MouseY; }
+        inline constexpr float GetX() const { return m_MouseX; }
+        inline constexpr float GetY() const { return m_MouseY; }
 
     private:
         float m_MouseX, m_MouseY;
@@ -116,13 +116,13 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline MouseScrolledEvent(float xOffset, float yOffset)
+        inline constexpr MouseScrolledEvent(float xOffset, float yOffset)
             : m_XOffset(xOffset), m_YOffset(yOffset) {}
-        ~MouseScrolledEvent() = default;
+        constexpr ~MouseScrolledEvent() = default;
 
         // Getters
-        inline float GetXOffset() const { return m_XOffset; }
-        inline float GetYOffset() const { return m_YOffset; }
+        inline constexpr float GetXOffset() const { return m_XOffset; }
+        inline constexpr float GetYOffset() const { return m_YOffset; }
 
     private:
         float m_XOffset, m_YOffset;
@@ -132,12 +132,12 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline MouseButtonPressedEvent(int button)
+        inline constexpr MouseButtonPressedEvent(int button)
             : m_Button(static_cast<MouseButton>(button)) {}
-        ~MouseButtonPressedEvent() = default;
+        constexpr ~MouseButtonPressedEvent() = default;
 
         // Getters
-        inline MouseButton GetButtonCode() const { return m_Button; }
+        inline constexpr MouseButton GetButtonCode() const { return m_Button; }
 
     private:
         MouseButton m_Button;
@@ -147,12 +147,12 @@ namespace Obsidian
     {
     public:
         // Constructors & Destructor
-        inline MouseButtonReleasedEvent(int button)
+        inline constexpr MouseButtonReleasedEvent(int button)
             : m_Button(static_cast<MouseButton>(button)) {}
-        ~MouseButtonReleasedEvent() = default;
+        constexpr ~MouseButtonReleasedEvent() = default;
 
         // Getters
-        inline MouseButton GetButtonCode() const { return m_Button; }
+        inline constexpr MouseButton GetButtonCode() const { return m_Button; }
 
     private:
         MouseButton m_Button;
