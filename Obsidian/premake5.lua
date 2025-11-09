@@ -94,13 +94,20 @@ project "Obsidian"
 		systemversion "latest"
 		staticruntime "on"
 
-		if gfxapi == "vulkan" then
+		if OBSIDIAN_GRAPHICS_API == "vulkan" then
 			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
 		end
 		
+		if OBSIDIAN_DISPLAY_MANAGER == "x11" then
+			links
+			{
+				"Xrandr", "Xi", "GLU", "GL", "GLX", "X11"
+			}
+		end
+
 		links
 		{
-			"Xrandr", "Xi", "GLU", "GL", "GLX", "X11", "dl", "pthread", "stdc++fs"
+			"dl", "pthread", "stdc++fs"
 		}
 
     filter "system:macosx"
