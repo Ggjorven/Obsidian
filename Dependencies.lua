@@ -220,7 +220,7 @@ end
 
 -- LibDir
 if OBSIDIAN_GRAPHICS_API == "vulkan" then
-	append_to_table(Dependencies.Obsidian.LibDir, Dependencies.Vulkan.LibName)
+	append_to_table(Dependencies.Obsidian.LibDir, Dependencies.Vulkan.LibDir)
 end
 
 -- PostBuildCommands
