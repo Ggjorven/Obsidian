@@ -54,6 +54,7 @@ project "Sandbox"
 	includedirs(Dependencies.Obsidian.IncludeDir)
 	
 	links(Dependencies.Obsidian.LibName)
+	links(Dependencies.Obsidian.LibDir)
 
 	filter "system:windows"
 		systemversion "latest"
