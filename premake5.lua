@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------
--- Graphics API option
+-- Custom options
 ------------------------------------------------------------------------------
 newoption 
 {
@@ -16,6 +16,26 @@ newoption
 }
 
 OBSIDIAN_GRAPHICS_API = _OPTIONS["gfxapi"] or "vulkan"
+
+newoption 
+{
+    trigger     = "dm",
+    value       = "Display Manager",
+    description = "Choose the display manager for linux (wayland or x11)",
+    allowed = 
+	{
+        { "wayland", "Wayland" },
+        { "x11", "X11" },
+    }
+}
+
+if not _OPTIONS["dm"] and os.target() == "linux" then
+	if os.getenv("WAYLAND_DISPLAY") then
+		OBSIDIAN_DISPLAY_MANAGER = "wayland"
+	else
+		OBSIDIAN_DISPLAY_MANAGER = "x11"
+	end
+end
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------

@@ -64,6 +64,8 @@ project "Obsidian"
 	links(Dependencies.Tracy.LibName)
 	links(Dependencies.shaderc.LibName)
 	links(Dependencies.SPIRVCross.LibName)
+
+	libdirs(Dependencies.Obsidian.LibDir)
  
 	filter "system:windows"
 		systemversion "latest"
@@ -94,13 +96,24 @@ project "Obsidian"
 		systemversion "latest"
 		staticruntime "on"
 
-		if gfxapi == "vulkan" then
-			links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
+		if OBSIDIAN_GRAPHICS_API == "vulkan" then
+			libdirs(Dependencies.Vulkan.LibDir)
+			links(Dependencies.Vulkan.LibName)
 		end
 		
+		if OBSIDIAN_DISPLAY_MANAGER == "x11" then
+			defines("OB_DISPLAY_MANAGER_X11")
+			links
+			{
+				"Xrandr", "Xi", "GLU", "GL", "GLX", "X11"
+			}
+		elseif OBSIDIAN_DISPLAY_MANAGER == "wayland" then
+			defines("OB_DISPLAY_MANAGER_WAYLAND")
+		end
+
 		links
 		{
-			"Xrandr", "Xi", "GLU", "GL", "GLX", "X11", "dl", "pthread", "stdc++fs"
+			"dl", "pthread", "stdc++fs"
 		}
 
     filter "system:macosx"
