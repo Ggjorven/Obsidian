@@ -102,10 +102,13 @@ project "Obsidian"
 		end
 		
 		if OBSIDIAN_DISPLAY_MANAGER == "x11" then
+			defines("OB_DISPLAY_MANAGER_X11")
 			links
 			{
 				"Xrandr", "Xi", "GLU", "GL", "GLX", "X11"
 			}
+		elseif OBSIDIAN_DISPLAY_MANAGER == "wayland" then
+			defines("OB_DISPLAY_MANAGER_WAYLAND")
 		end
 
 		links

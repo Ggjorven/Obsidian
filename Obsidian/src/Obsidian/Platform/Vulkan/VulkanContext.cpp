@@ -26,11 +26,17 @@ namespace
     #if defined(OB_PLATFORM_WINDOWS)
         #define VK_KHR_SURFACE_TYPE_NAME "VK_KHR_win32_surface"
     #elif defined(OB_PLATFORM_LINUX)
-        #define VK_KHR_SURFACE_TYPE_NAME "VK_KHR_xcb_surface"
+        #if defined(OB_DISPLAY_MANAGER_X11)
+            #define VK_KHR_SURFACE_TYPE_NAME "VK_KHR_xcb_surface"
+        #elif defined(OB_DISPLAY_MANAGER_WAYLAND)
+            #define VK_KHR_SURFACE_TYPE_NAME "VK_KHR_wayland_surface"
+        #else
+            #error Obsidian Vulkan: No proper display manager defined.
+        #endif
     #elif defined(OB_PLATFORM_MACOS)
         #define VK_KHR_SURFACE_TYPE_NAME "VK_EXT_metal_surface"
     #else
-        #error Nano Graphics Vulkan: Unsupported platform...
+        #error Obsidian Vulkan: Unsupported platform...
     #endif
 
     ////////////////////////////////////////////////////////////////////////////////////
