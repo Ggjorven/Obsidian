@@ -104,7 +104,6 @@ project "GLFW"
 				local code = proto:gsub("%.xml$", "-client-protocol-code.h")
 				prebuildcommands 
 				{
-					"pwd",
 					"wayland-scanner client-header " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. header,
 					"wayland-scanner private-code " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. code
 				}
