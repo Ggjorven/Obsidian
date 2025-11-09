@@ -110,12 +110,12 @@ inline constexpr auto g_VertexData = std::to_array<float>({
 	0.5f,  -0.5f, 0.0f,			1.0f, 0.0f,
 	0.5f,  0.5f,  0.0f,			1.0f, 1.0f,
 	-0.5f, 0.5f,  0.0f,			0.0f, 1.0f
-	});
+});
 
 inline constexpr auto g_IndexData = std::to_array<uint32_t>({
 	0u, 1u, 2u,
 	2u, 3u, 0u
-	});
+});
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Test
