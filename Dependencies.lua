@@ -213,7 +213,7 @@ if os.target() == "linux" then
 	append_to_table(Dependencies.Obsidian.LibName, Dependencies.SPIRVCross.LibName)
 
 	if OBSIDIAN_GRAPHICS_API == "vulkan" then
-		links(Dependencies.Vulkan.LibName)
+		append_to_table(Dependencies.Obsidian.LibName, Dependencies.Vulkan.LibName)
 	end
 end
 
