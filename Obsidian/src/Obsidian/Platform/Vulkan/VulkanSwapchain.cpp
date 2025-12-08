@@ -248,6 +248,8 @@ namespace Obsidian::Internal
             {
                 m_Device.DestroySubresourceViews(m_Images[i].Get());
                 vkImage.SetInternalData(imageSpec, swapchainImages[i]);
+
+                m_Device.GetTracker().SetImageState(m_Images[i].Get(), ImageSubresourceSpecification(), ResourceState::Unknown);
             }
             else
             {
