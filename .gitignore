@@ -52,6 +52,7 @@ DS_Store
 # Other
 **/.cache
 compile_commands.json
+**/compile_commands/**
 
 # GLFW Wayland
 /vendor/GLFW/wayland/**
