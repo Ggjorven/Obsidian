@@ -131,7 +131,7 @@ namespace Obsidian::Internal
         for (auto& image : vulkanSwapchain.m_Images)
             DestroySubresourceViews(*api_cast<Image*>(&image.Get()));
 
-        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore, resizePool = vulkanSwapchain.m_ResizePool]() mutable
+        m_Context.Destroy([instance = m_Context.GetVkInstance(), device = m_Context.GetVulkanLogicalDevice().GetVkDevice(), swapchain = vulkanSwapchain.m_Swapchain, surface = vulkanSwapchain.m_Surface, imageSemaphores = vulkanSwapchain.m_ImageAvailableSemaphores, swapchainPresentableSemaphores = vulkanSwapchain.m_SwapchainPresentableSemaphores, inFlightFences = vulkanSwapchain.m_InFlightFences,  timelineSemaphore = vulkanSwapchain.m_TimelineSemaphore, resizePool = vulkanSwapchain.m_ResizePool]() mutable
         {
             vkDestroyCommandPool(device, resizePool, VulkanAllocator::GetCallbacks());
 
@@ -141,7 +141,9 @@ namespace Obsidian::Internal
             for (size_t i = 0; i < imageSemaphores.size(); i++)
                 vkDestroySemaphore(device, imageSemaphores[i], VulkanAllocator::GetCallbacks());
             for (size_t i = 0; i < swapchainPresentableSemaphores.size(); i++)
-                vkDestroySemaphore(device, swapchainPresentableSemaphores[i], VulkanAllocator::GetCallbacks());
+				vkDestroySemaphore(device, swapchainPresentableSemaphores[i], VulkanAllocator::GetCallbacks());
+            for (size_t i = 0; i < inFlightFences.size(); i++)
+				vkDestroyFence(device, inFlightFences[i], VulkanAllocator::GetCallbacks());
 
             vkDestroySemaphore(device, timelineSemaphore, VulkanAllocator::GetCallbacks());
         });

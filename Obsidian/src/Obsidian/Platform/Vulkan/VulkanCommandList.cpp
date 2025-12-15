@@ -159,7 +159,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkTimelineSemaphore();
-            info.stageMask = m_WaitStage;
+            info.stageMask = m_WaitStage; // TODO: Make this the same as the waitstage above?
             info.value = swapchain.GetPreviousCommandListWaitValue(*api_cast<const VulkanCommandList*>(list));
         }
 
@@ -176,7 +176,7 @@ namespace Obsidian::Internal
         {
             VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetAcquiredImage());
+            info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetCurrentFrame());
             info.stageMask = m_WaitStage;
             info.value = 0ull;
         }
@@ -200,9 +200,9 @@ namespace Obsidian::Internal
         submitInfo.pSignalSemaphoreInfos = signalInfos.data();
         
 #if defined(OB_PLATFORM_APPLE)
-        VK_VERIFY(VkExtension::g_vkQueueSubmit2KHR(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(args.Queue), 1, &submitInfo, nullptr));
+        VK_VERIFY(VkExtension::g_vkQueueSubmit2KHR(swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(m_Pool.GetSpecification().Queue), 1, &submitInfo, (args.OnFinishMakeSwapchainPresentable ? m_Pool.GetVulkanSwapchain().GetVkInFlightFence(m_Pool.GetVulkanSwapchain().GetCurrentFrame()) : nullptr)));
 #else
-        VK_VERIFY(vkQueueSubmit2(m_Pool.GetVulkanSwapchain().GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(m_Pool.GetSpecification().Queue), 1, &submitInfo, nullptr));
+        VK_VERIFY(vkQueueSubmit2(swapchain.GetVulkanDevice().GetContext().GetVulkanLogicalDevice().GetVkQueue(m_Pool.GetSpecification().Queue), 1, &submitInfo, (args.OnFinishMakeSwapchainPresentable ? m_Pool.GetVulkanSwapchain().GetVkInFlightFence(m_Pool.GetVulkanSwapchain().GetCurrentFrame()) : nullptr)));
 #endif
     }
 
