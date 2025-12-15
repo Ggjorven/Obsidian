@@ -151,7 +151,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
-            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT : m_WaitStage);
+            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT : m_WaitStage);
             info.value = 0ull;
         }
         for (const CommandList* list : waitOn)
