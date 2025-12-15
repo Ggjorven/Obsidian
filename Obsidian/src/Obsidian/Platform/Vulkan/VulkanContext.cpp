@@ -236,8 +236,9 @@ namespace Obsidian::Internal
             if (validationSupport)
             {
                 instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-                instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-                instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+                // instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+                instanceExtensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+                // instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
             }
         }
 
@@ -254,22 +255,10 @@ namespace Obsidian::Internal
         createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
         createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-        if constexpr (Information::Validation)
-        {
-            if (validationSupport)
-            {
-                createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-                createInfo.ppEnabledLayerNames = ValidationLayers.data();
-            }
-            else
-            {
-                createInfo.enabledLayerCount = 0;
-            }
-        }
-        else
-        {
-            createInfo.enabledLayerCount = 0;
-        }
+		VkLayerSettingsCreateInfoEXT layerSettings = {};	
+		layerSettings.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+		layerSettings.settingCount = static_cast<uint32_t>(ValidationSettings.size());
+		layerSettings.pSettings = ValidationSettings.data();
 
         // Note: Setup the debug messenger also for the create instance
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
@@ -285,18 +274,17 @@ namespace Obsidian::Internal
                 createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
                 createInfo.ppEnabledLayerNames = ValidationLayers.data();
 
-                createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+				layerSettings.pNext = &debugCreateInfo;
+				createInfo.pNext = &layerSettings;
             }
             else
             {
                 createInfo.enabledLayerCount = 0;
-                createInfo.pNext = nullptr;
             }
         }
         else
         {
             createInfo.enabledLayerCount = 0;
-            createInfo.pNext = nullptr;
         }
 
         VK_VERIFY(vkCreateInstance(&createInfo, nullptr, &m_Instance));

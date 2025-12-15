@@ -38,7 +38,7 @@ namespace Obsidian::Internal
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
             #if defined(OB_PLATFORM_MACOS)
-            "VK_KHR_portability_subset",
+			"VK_KHR_portability_subset",
             #endif
 
             "VK_KHR_synchronization2",
