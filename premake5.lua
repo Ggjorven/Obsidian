@@ -29,11 +29,15 @@ newoption
     }
 }
 
-if not _OPTIONS["dm"] and os.target() == "linux" then
-	if os.getenv("WAYLAND_DISPLAY") then
-		OBSIDIAN_DISPLAY_MANAGER = "wayland"
+if os.target() == "linux" then
+	if _OPTIONS["dm"] then
+		OBSIDIAN_DISPLAY_MANAGER = _OPTIONS["dm"]
 	else
-		OBSIDIAN_DISPLAY_MANAGER = "x11"
+		if os.getenv("WAYLAND_DISPLAY") then
+			OBSIDIAN_DISPLAY_MANAGER = "wayland"
+		else
+			OBSIDIAN_DISPLAY_MANAGER = "x11"
+		end
 	end
 end
 ------------------------------------------------------------------------------
