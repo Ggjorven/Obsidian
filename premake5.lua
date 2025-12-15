@@ -4,8 +4,8 @@
 newoption 
 {
     trigger     = "gfxapi",
-    value       = "API",
-    description = "Choose a graphics API",
+    value       = "Graphics API",
+    description = "Choose a graphics API (vulkan, dx12, metal or dummy)",
     allowed = 
 	{
         { "vulkan", "Vulkan graphics API (windows, linux, macosx)" },
