@@ -74,7 +74,8 @@ namespace Obsidian::Internal
 		inline VkSemaphore GetVkTimelineSemaphore() const { return m_TimelineSemaphore; }
 
 		inline VkSemaphore GetVkImageAvailableSemaphore(uint8_t frame) const { return m_ImageAvailableSemaphores[frame]; }
-		inline VkSemaphore GetVkSwapchainPresentableSemaphore(uint8_t index) const { return m_SwapchainPresentableSemaphores[index]; }
+		inline VkSemaphore GetVkSwapchainPresentableSemaphore(uint8_t frame) const { return m_SwapchainPresentableSemaphores[frame]; }
+		inline const VkFence& GetVkInFlightFence(uint8_t frame) const { return m_InFlightFences[frame]; }
 
 		inline const VulkanDevice& GetVulkanDevice() const { return m_Device; }
 
@@ -90,8 +91,10 @@ namespace Obsidian::Internal
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
 		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Image, true>, Information::MaxImageCount> m_Images = { };
+
 		std::array<VkSemaphore, Information::FramesInFlight> m_ImageAvailableSemaphores = { };
 		Nano::Memory::StaticVector<VkSemaphore, Information::MaxImageCount> m_SwapchainPresentableSemaphores = { };
+		std::array<VkFence, Information::FramesInFlight> m_InFlightFences = { };
 
 		VkSemaphore m_TimelineSemaphore = VK_NULL_HANDLE;
 		uint64_t m_CurrentTimelineValue = 0;

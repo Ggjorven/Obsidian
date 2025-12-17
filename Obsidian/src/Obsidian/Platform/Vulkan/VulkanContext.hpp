@@ -29,16 +29,24 @@ namespace Obsidian::Internal
         inline constexpr static const std::tuple<uint8_t, uint8_t> Version = { 1, 3 };
         inline constexpr static auto ValidationLayers = std::to_array<const char*>({
             "VK_LAYER_KHRONOS_validation",
-
-            #if defined(OB_PLATFORM_MACOS)
             "VK_LAYER_KHRONOS_synchronization2"
-            #endif
         });
+
+	private:
+		inline constexpr static uint32_t TrueVal = 1u;
+	public:
+		inline constexpr static auto ValidationSettings = std::to_array<VkLayerSettingEXT>({
+			{ "<EMPTY ELEMENT>", "<EMPTY ELEMENT>", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+			// { "VK_LAYER_KHRONOS_validation", "gpu_validation", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+			// { "VK_LAYER_KHRONOS_validation", "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+			// { "VK_LAYER_KHRONOS_validation", "validate_best_practices", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal }
+		}); 
+
         inline constexpr static auto DeviceExtensions = std::to_array<const char*>({
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
             #if defined(OB_PLATFORM_MACOS)
-            "VK_KHR_portability_subset",
+			"VK_KHR_portability_subset",
             #endif
 
             "VK_KHR_synchronization2",

@@ -65,7 +65,7 @@ namespace Obsidian::Internal
                 }
             }
 
-            m_SwapchainPresentableSemaphores.resize(m_Images.size());
+			m_SwapchainPresentableSemaphores.resize(m_Images.size());
             for (size_t i = 0; i < m_SwapchainPresentableSemaphores.size(); i++)
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
@@ -74,6 +74,21 @@ namespace Obsidian::Internal
                 {
                     if (!m_Specification.DebugName.empty())
                         m_Device.GetContext().SetDebugName(m_SwapchainPresentableSemaphores[i], VK_OBJECT_TYPE_SEMAPHORE, std::format("Presentable Semaphore({0}) for: {1}", i, m_Specification.DebugName));
+                }
+            }
+
+			VkFenceCreateInfo fenceInfo = {};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+			for (size_t i = 0; i < m_InFlightFences.size(); i++)
+            {
+                VK_VERIFY(vkCreateFence(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &fenceInfo, VulkanAllocator::GetCallbacks(), &m_InFlightFences[i]));
+
+                if constexpr (Information::Validation)
+                {
+                    if (!m_Specification.DebugName.empty())
+                        m_Device.GetContext().SetDebugName(m_InFlightFences[i], VK_OBJECT_TYPE_FENCE, std::format("InFlight Fence({0}) for: {1}", i, m_Specification.DebugName));
                 }
             }
 
@@ -275,15 +290,17 @@ namespace Obsidian::Internal
         OB_PROFILE("VkSwapchain::AcquireImage()");
 
         // Wait for this frame's previous last value
-        {
-            VkSemaphoreWaitInfo waitInfo = {};
-            waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-            waitInfo.semaphoreCount = 1;
-            waitInfo.pSemaphores = &m_TimelineSemaphore;
-            waitInfo.pValues = &m_WaitTimelineValues[m_CurrentFrame];
+        // {
+        //     VkSemaphoreWaitInfo waitInfo = {};
+        //     waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        //     waitInfo.semaphoreCount = 1;
+        //     waitInfo.pSemaphores = &m_TimelineSemaphore;
+        //     waitInfo.pValues = &m_WaitTimelineValues[m_CurrentFrame];
 
-            vkWaitSemaphores(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &waitInfo, std::numeric_limits<uint64_t>::max());
-        }
+        //     vkWaitSemaphores(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &waitInfo, std::numeric_limits<uint64_t>::max());
+        // }
+		vkWaitForFences(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+		vkResetFences(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
         // Acquire image
         VkResult result = vkAcquireNextImageKHR(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), m_Swapchain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
