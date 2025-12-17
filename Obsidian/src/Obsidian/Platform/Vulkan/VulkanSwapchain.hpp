@@ -91,8 +91,9 @@ namespace Obsidian::Internal
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
 		Nano::Memory::StaticVector<Nano::Memory::DeferredConstruct<Image, true>, Information::MaxImageCount> m_Images = { };
+
 		std::array<VkSemaphore, Information::FramesInFlight> m_ImageAvailableSemaphores = { };
-		std::array<VkSemaphore, Information::FramesInFlight> m_SwapchainPresentableSemaphores = { };
+		Nano::Memory::StaticVector<VkSemaphore, Information::MaxImageCount> m_SwapchainPresentableSemaphores = { };
 		std::array<VkFence, Information::FramesInFlight> m_InFlightFences = { };
 
 		VkSemaphore m_TimelineSemaphore = VK_NULL_HANDLE;
