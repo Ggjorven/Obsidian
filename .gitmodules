@@ -4,9 +4,6 @@
 [submodule "vendor/glm/glm"]
 	path = vendor/glm/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "vendor/tracy/tracy"]
-	path = vendor/tracy/tracy
-	url = https://github.com/Ggjorven/tracy.git
 [submodule "vendor/Nano/Nano"]
 	path = vendor/Nano/Nano
 	url = https://github.com/Ggjorven/Nano.git
