@@ -151,7 +151,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
-            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT : m_WaitStage);
+            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT : m_WaitStage);
             info.value = 0ull;
         }
         for (const CommandList* list : waitOn)
@@ -159,7 +159,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkTimelineSemaphore();
-            info.stageMask = m_WaitStage; // TODO: Make this the same as the waitstage above?
+            info.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT; // TODO: Make the user tell the wait stage
             info.value = swapchain.GetPreviousCommandListWaitValue(*api_cast<const VulkanCommandList*>(list));
         }
 
@@ -177,7 +177,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetCurrentFrame());
-            info.stageMask = m_WaitStage;
+            info.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             info.value = 0ull;
         }
 
