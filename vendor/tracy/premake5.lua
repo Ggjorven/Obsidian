@@ -4,9 +4,9 @@ local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 project "Tracy"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++11"
 	-- staticruntime "Off"
-	warnings "Off"
+	-- warnings "Off"
 
 	targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
@@ -28,6 +28,11 @@ project "Tracy"
 		"tracy/public/libbacktrace/alloc.cpp",
 		"tracy/public/libbacktrace/sort.cpp",
 		"tracy/public/libbacktrace/state.cpp"
+	}
+
+	removefiles 
+	{
+		"tracy/public/client/TracyRocprof.cpp"
 	}
 
 	includedirs
@@ -81,6 +86,14 @@ project "Tracy"
 		-- Note: If we don't add the header files to the externalincludedirs
 		-- we can't use <angled> brackets to include files.
 		externalincludedirs(includedirs())
+
+	-- Note: Tracy doesn't include <cstring> with memcpy, so it needs these flags per platform
+	filter { "toolset:msc*" }
+		buildoptions { "/FIcstring" }	
+
+	filter { "toolset:gcc or toolset:clang" }
+		buildoptions { "-fpermissive" }	
+		buildoptions { "-include", "cstring" }
 
 	filter "configurations:Debug"
 		runtime "Debug"
