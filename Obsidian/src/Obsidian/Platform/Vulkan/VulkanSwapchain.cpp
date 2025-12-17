@@ -65,6 +65,7 @@ namespace Obsidian::Internal
                 }
             }
 
+			m_SwapchainPresentableSemaphores.resize(m_Images.size());
             for (size_t i = 0; i < m_SwapchainPresentableSemaphores.size(); i++)
             {
                 VK_VERIFY(vkCreateSemaphore(m_Device.GetContext().GetVulkanLogicalDevice().GetVkDevice(), &semaphoreInfo, VulkanAllocator::GetCallbacks(), &m_SwapchainPresentableSemaphores[i]));
@@ -320,7 +321,7 @@ namespace Obsidian::Internal
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &m_SwapchainPresentableSemaphores[m_CurrentFrame];
+        presentInfo.pWaitSemaphores = &m_SwapchainPresentableSemaphores[m_AcquiredImage];
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &m_Swapchain;
         presentInfo.pImageIndices = &m_AcquiredImage;
