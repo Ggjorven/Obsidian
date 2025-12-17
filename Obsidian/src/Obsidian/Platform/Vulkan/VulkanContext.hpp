@@ -38,7 +38,7 @@ namespace Obsidian::Internal
 		inline constexpr static auto ValidationSettings = std::to_array<VkLayerSettingEXT>({
 			{ "<EMPTY ELEMENT>", "<EMPTY ELEMENT>", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
 			// { "VK_LAYER_KHRONOS_validation", "gpu_validation", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
-			{ "VK_LAYER_KHRONOS_validation", "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+			// { "VK_LAYER_KHRONOS_validation", "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
 			// { "VK_LAYER_KHRONOS_validation", "validate_best_practices", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal }
 		}); 
 
