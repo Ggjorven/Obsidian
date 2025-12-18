@@ -116,6 +116,7 @@ namespace Obsidian::Internal
 
 		// Getters
 		inline const CommandListSpecification& GetSpecification() const { return m_Specification; }
+		inline VkPipelineStageFlags2 GetWaitStage() const;
 
 		// Internal Getters
 		inline VkCommandBuffer GetVkCommandBuffer() const { return m_CommandBuffer; }
