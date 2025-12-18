@@ -50,6 +50,7 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
 - [x] Bindless support
 - [x] Tesselation control
 - [ ] Dynamic buffers
+- [ ] Add profiling scopes to Dx12 API
 - [ ] **Vulkan**
   - [x] Pushconstants
   - [x] Bindless support
