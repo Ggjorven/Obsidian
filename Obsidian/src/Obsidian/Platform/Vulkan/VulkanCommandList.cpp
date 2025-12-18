@@ -767,6 +767,7 @@ namespace Obsidian::Internal
     void VulkanCommandList::DrawIndexed(const DrawArguments& args) const
     {
         OB_PROFILE("VulkanCommandList::DrawIndexed()");
+		// TODO: WaitStage COLOUR_ATTACHMENT?
         vkCmdDrawIndexed(m_CommandBuffer, args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 
