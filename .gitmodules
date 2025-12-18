@@ -4,9 +4,6 @@
 [submodule "vendor/glm/glm"]
 	path = vendor/glm/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "vendor/tracy/tracy"]
-	path = vendor/tracy/tracy
-	url = https://github.com/Ggjorven/tracy.git
 [submodule "vendor/Nano/Nano"]
 	path = vendor/Nano/Nano
 	url = https://github.com/Ggjorven/Nano.git
@@ -25,3 +22,6 @@
 [submodule "vendor/SPIRV-Cross/SPIRV-Cross"]
 	path = vendor/SPIRV-Cross/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "vendor/tracy/tracy"]
+	path = vendor/tracy/tracy
+	url = https://github.com/wolfpld/tracy.git
