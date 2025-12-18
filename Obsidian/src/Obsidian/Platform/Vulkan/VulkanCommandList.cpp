@@ -317,8 +317,6 @@ namespace Obsidian::Internal
 
         // Renderpass
         {
-            OB_PROFILE("VulkanCommandList::StartRenderpass::Renderpass");
-
             VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
 
             Framebuffer* framebuffer = args.Frame;
@@ -331,6 +329,8 @@ namespace Obsidian::Internal
 
             // Make sure the attachments are in the begin state
             {
+				OB_PROFILE("VulkanCommandList::StartRenderpass::TransitionImages");
+
                 if (framebuffer->GetSpecification().ColourAttachment.IsValid() && (renderpass.GetSpecification().ColourImageStartState != ResourceState::Unknown))
                 {
                     const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
@@ -341,6 +341,7 @@ namespace Obsidian::Internal
                     const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
                     RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
                 }
+
                 CommitBarriers();
             }
 
