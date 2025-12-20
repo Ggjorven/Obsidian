@@ -65,6 +65,33 @@ Build instructions for this project can be found in the [BUILDING.md](BUILDING.m
   - [ ] Window
   - [ ] Device
   - [ ] Other...
+     
+## Tested Platforms (API, OS, GPU & Display Manager)
+
+This is a list of platforms of where I have personally ran all tests. <br> Unless explicitly stated all of these platforms should work even when untested.
+
+- [ ] **Dx12**
+  - [ ] Windows
+    - [x] NVIDIA [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=4ca6e3c53a968432467b875f105f237d93862480&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/4ca6e3c53a968432467b875f105f237d93862480)
+    - [ ] AMD [![Last tested](https://img.shields.io/badge/Commits%20since%20last%20test-Never%20tested-E34234)](https://github.com/Ggjorven/Obsidian/commit/d270a0d5ccb405d4f10b7cb947d99af8cb21c0bf)
+    - [x] Intel [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=4ca6e3c53a968432467b875f105f237d93862480&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/4ca6e3c53a968432467b875f105f237d93862480)
+- [ ] **Vulkan**
+  - [ ] Windows
+    - [x] NVIDIA [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=4ca6e3c53a968432467b875f105f237d93862480&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/4ca6e3c53a968432467b875f105f237d93862480)
+    - [ ] AMD [![Last tested](https://img.shields.io/badge/Commits%20since%20last%20test-Never%20tested-E34234)](https://github.com/Ggjorven/Obsidian/commit/d270a0d5ccb405d4f10b7cb947d99af8cb21c0bf)
+    - [x] Intel [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=4ca6e3c53a968432467b875f105f237d93862480&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/4ca6e3c53a968432467b875f105f237d93862480)
+  - [ ] Linux
+    - [ ] X11
+      - [x] NVIDIA [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=d792a20a1041967d96a9d13cea37661bf9748de8&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/d792a20a1041967d96a9d13cea37661bf9748de8)
+      - [ ] AMD [![Last tested](https://img.shields.io/badge/Commits%20since%20last%20test-Never%20tested-E34234)](https://github.com/Ggjorven/Obsidian/commit/d270a0d5ccb405d4f10b7cb947d99af8cb21c0bf)
+      - [x] Intel [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=4ca6e3c53a968432467b875f105f237d93862480&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/4ca6e3c53a968432467b875f105f237d93862480)
+    - [ ] Wayland
+      - [ ] NVIDIA [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=main&head=main&label=Commits%20since%20last%20test&color=#E34234)](https://github.com/Ggjorven/Obsidian/commit/main)
+      - [ ] AMD [![Last tested](https://img.shields.io/badge/Commits%20since%20last%20test-Never%20tested-E34234)](https://github.com/Ggjorven/Obsidian/commit/d270a0d5ccb405d4f10b7cb947d99af8cb21c0bf)
+      - [x] Intel [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=main&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/main)
+  - [ ] MacOS
+    - [x] Intel [![Last tested](https://img.shields.io/github/commits-difference/Ggjorven/Obsidian?base=ab5da6bb2fd531449e51be5096deb58be1174052&head=main&label=Commits%20since%20last%20test&color=#32CD32)](https://github.com/Ggjorven/Obsidian/commit/ab5da6bb2fd531449e51be5096deb58be1174052)
+    - [ ] M(X) [![Last tested](https://img.shields.io/badge/Commits%20since%20last%20test-Never%20tested-E34234)](https://github.com/Ggjorven/Obsidian/commit/d270a0d5ccb405d4f10b7cb947d99af8cb21c0bf)
 
 ## Additional information
 
