@@ -49,6 +49,7 @@ project "Sandbox"
 	includedirs
 	{
 		"src",
+		"vendor"
 	}
 
 	includedirs(Dependencies.Obsidian.IncludeDir)
