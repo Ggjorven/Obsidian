@@ -2,13 +2,11 @@ local Dependencies = local_require("../Dependencies.lua")
 local MacOSVersion = MacOSVersion or "14.5"
 local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
-project "Sandbox"
-	kind "ConsoleApp"
+project "Obsidian"
+	kind "StaticLib"
 	language "C++"
 	cppdialect "C++23"
 	staticruntime "On"
-
-	debugdir ("%{prj.location}")
 
 	architecture "x86_64"
 
@@ -19,44 +17,30 @@ project "Sandbox"
 
 	files
 	{
-		"src/**.h",
-		"src/**.hpp",
-		"src/**.inl",
 		"src/**.cpp"
 	}
 
 	defines
 	{
-		"_CRT_SECURE_NO_WARNINGS",
-		"_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS",
-
 		"GLFW_INCLUDE_NONE",
-
-		"NANO_EXPERIMENTAL"
 	}
 
-	-- Rendering API specfic selections
-	if OBSIDIAN_GRAPHICS_API == "vulkan" then
-        defines { "OB_API_VULKAN" }
-    elseif OBSIDIAN_GRAPHICS_API == "dx12" then
-        defines { "OB_API_DX12" }
-	elseif OBSIDIAN_GRAPHICS_API == "metal" then
-        defines { "OB_API_METAL" }
-	elseif OBSIDIAN_GRAPHICS_API == "dummy" then
-        defines { "OB_API_DUMMY" }
-    end
+	defines { "OB_API_VULKAN" }
+	removefiles { "src/Obsidian/Platform/DX12/**", "src/Obsidian/Platform/Metal/**", "src/Obsidian/Platform/Dummy/**" }
 
 	includedirs
 	{
 		"src",
-		"vendor"
+		"src/Obsidian",
 	}
 
 	includedirs(Dependencies.Obsidian.IncludeDir)
-	
-	links(Dependencies.Obsidian.LibName)
-	libdirs(Dependencies.Obsidian.LibDir)
 
+	links(Dependencies.GLFW.LibName)
+	links(Dependencies.shaderc.LibName)
+
+	libdirs(Dependencies.Obsidian.LibDir)
+ 
 	filter "system:windows"
 		systemversion "latest"
 		staticruntime "on"
@@ -67,9 +51,29 @@ project "Sandbox"
             "NOMINMAX"
         }
 
+		links(Dependencies.Vulkan.LibDir .. "/" .. Dependencies.Vulkan.LibName)
+
 	filter "system:linux"
 		systemversion "latest"
 		staticruntime "on"
+
+		libdirs(Dependencies.Vulkan.LibDir)
+		links(Dependencies.Vulkan.LibName)
+		
+		if OBSIDIAN_DISPLAY_MANAGER == "x11" then
+			defines("OB_DISPLAY_MANAGER_X11")
+			links
+			{
+				"Xrandr", "Xi", "GLU", "GL", "GLX", "X11"
+			}
+		elseif OBSIDIAN_DISPLAY_MANAGER == "wayland" then
+			defines("OB_DISPLAY_MANAGER_WAYLAND")
+		end
+
+		links
+		{
+			"dl", "pthread", "stdc++fs"
+		}
 
     filter "system:macosx"
 		systemversion(MacOSVersion)
@@ -82,17 +86,15 @@ project "Sandbox"
 			"CoreGraphics.framework",
 			"CoreFoundation.framework",
 			"QuartzCore.framework",
-		}
+		}	
 
-		if gfxapi == "vulkan" then
-			libdirs(Dependencies.Vulkan.LibDir)
-			links(Dependencies.Vulkan.LibName)
+		libdirs(Dependencies.Vulkan.LibDir)
+		links(Dependencies.Vulkan.LibName)
 
-			postbuildcommands(Dependencies.Obsidian.PostBuildCommands)
-		end
+		postbuildcommands(Dependencies.Obsidian.PostBuildCommands)
 
 	filter "action:vs*"
-    	buildoptions { "/Zc:preprocessor" }
+		buildoptions { "/Zc:preprocessor" }
 
 	filter "action:xcode*"
 		-- Note: If we don't add the header files to the externalincludedirs
@@ -101,28 +103,15 @@ project "Sandbox"
 
 	filter "configurations:Debug"
 		defines "OB_CONFIG_DEBUG"
-		defines "NANO_DEBUG"
 		runtime "Debug"
 		symbols "on"
 		
-		defines
-		{
-			"TRACY_ENABLE"
-		}
-		
 	filter "configurations:Release"
 		defines "OB_CONFIG_RELEASE"
-		defines "NANO_DEBUG"
 		runtime "Release"
 		optimize "on"
 
-		defines
-		{
-			"TRACY_ENABLE"
-		}
-
 	filter "configurations:Dist"
-		kind "WindowedApp"
 		defines "OB_CONFIG_DIST"
 		runtime "Release"
 		optimize "Full"
