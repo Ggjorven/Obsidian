@@ -4,7 +4,7 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    git clone --recursive https://github.com/ggjorven/Obsidian.git -b minimal_issue
     cd Obsidian
     ```
 
@@ -32,7 +32,7 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    git clone --recursive https://github.com/ggjorven/Obsidian.git -b minimal_issue
     cd Obsidian
     ```
 
@@ -57,7 +57,7 @@
 
 1. Clone the repository:
     ```sh
-    git clone --recursive https://github.com/ggjorven/Obsidian.git
+    git clone --recursive https://github.com/ggjorven/Obsidian.git -b minimal_issue
     cd Obsidian
     ```
 
@@ -85,11 +85,11 @@
     1. Navigate to the root of the directory
     2. Open the Obsidian.sln file
     3. Start building in your desired configuration
-    4. Build files can be in the bin/%Config%-windows/Sandbox/ folder.
-    5. (Optional) Open a terminal and run the Sandbox project:
+    4. Build files can be in the bin/%Config%-windows/Main/ folder.
+    5. (Optional) Open a terminal and run the Main project:
 
         ```sh
-        ./Sandbox.exe 
+        ./Main.exe 
         ```
 
 - MinGW Make:
@@ -101,10 +101,10 @@
         make config=release
         ```
 
-    5. Build files can be in the bin/%Config%-linux/Sandbox/ folder.
-    6. (Optional) Open a terminal and run the Sandbox project:
+    5. Build files can be in the bin/%Config%-linux/Main/ folder.
+    6. (Optional) Open a terminal and run the Main project:
         ```sh
-        ./Sandbox.exe 
+        ./Main.exe 
         ```
 
 ### Linux
@@ -117,21 +117,21 @@
     make config=release
     ```
 
-5. Build files can be in the bin/%Config%-linux/Sandbox/ folder.
-6. (Optional) Open a terminal and run the Sandbox project:
+5. Build files can be in the bin/%Config%-linux/Main/ folder.
+6. (Optional) Open a terminal and run the Main project:
 
     ```sh
-    chmod +x Sandbox
-    ./Sandbox
+    chmod +x Main
+    ./Main
     ```
 
 ### MacOS
 1. Navigate to the root of the directory
 2. Open the Obsidian.xcworkspace file
 3. Start building in your desired configuration
-4. Build files can be in the bin/%Config%-macosx/Sandbox/ folder.
-5. (Optional) Open a terminal and run the Sandbox project:
+4. Build files can be in the bin/%Config%-macosx/Main/ folder.
+5. (Optional) Open a terminal and run the Main project:
 
     ```sh
-    ./Sandbox
+    ./Main
     ```
