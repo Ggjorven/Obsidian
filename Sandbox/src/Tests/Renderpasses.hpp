@@ -155,7 +155,7 @@ public:
 			.SetColourImageSpecification(m_Swapchain->GetImage(0).GetSpecification())
 			.SetColourLoadOperation(LoadOperation::Clear)
 			.SetColourStoreOperation(StoreOperation::Store)
-			.SetColourStartState(ResourceState::Present)
+			.SetColourStartState(ResourceState::Unknown)
 			.SetColourRenderingState(ResourceState::RenderTarget)
 			.SetColourEndState(ResourceState::RenderTarget)
 

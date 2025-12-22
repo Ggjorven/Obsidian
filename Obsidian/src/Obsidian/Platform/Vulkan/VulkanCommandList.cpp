@@ -177,7 +177,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetAcquiredImage());
-            info.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT; // Note: Before a swapchain can be present this stage must be finished
+            info.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT; // Note: Before a swapchain can be present this stage must be finished
             info.value = 0ull;
         }
 
