@@ -77,10 +77,6 @@ local Dependencies =
 		LibName = "GLFW",
 		IncludeDir = this_directory() .. "/vendor/GLFW/GLFW/include"
 	},
-	glm =
-	{
-		IncludeDir = this_directory() .. "/vendor/glm/glm"
-	},
 	shaderc = 
 	{
 		LibName = "shaderc",
@@ -135,7 +131,6 @@ end
 -- IncludeDirs
 append_to_table(Dependencies.Obsidian.IncludeDir, this_directory() .. "Obsidian/src")
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.GLFW.IncludeDir)
-append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.glm.IncludeDir)
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.shaderc.IncludeDir)
 
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.Vulkan.IncludeDir)
@@ -145,9 +140,7 @@ append_to_table(Dependencies.Obsidian.LibName, "Obsidian")
 
 if os.target() == "linux" then
 	append_to_table(Dependencies.Obsidian.LibName, Dependencies.GLFW.LibName)
-	append_to_table(Dependencies.Obsidian.LibName, Dependencies.Tracy.LibName)
 	append_to_table(Dependencies.Obsidian.LibName, Dependencies.shaderc.LibName)
-	append_to_table(Dependencies.Obsidian.LibName, Dependencies.SPIRVCross.LibName)
 
 	append_to_table(Dependencies.Obsidian.LibName, Dependencies.Vulkan.LibName)
 end

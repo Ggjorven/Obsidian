@@ -2,8 +2,8 @@ local Dependencies = local_require("../Dependencies.lua")
 local MacOSVersion = MacOSVersion or "14.5"
 local OutputDir = OutputDir or "%{cfg.buildcfg}-%{cfg.system}"
 
-project "Obsidian"
-	kind "StaticLib"
+project "Main"
+	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++23"
 	staticruntime "On"
