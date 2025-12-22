@@ -71,55 +71,43 @@ project "GLFW"
 			"GLFW/src/linux_joystick.c"
         }
 
-        if OBSIDIAN_DISPLAY_MANAGER == "wayland" then
-            defines { "_GLFW_WAYLAND" }
+		defines { "_GLFW_WAYLAND" }
 
-            files
-            {
-               "GLFW/src/wl_init.c",
-               "GLFW/src/wl_monitor.c",
-               "GLFW/src/wl_window.c",
-            }
+		files
+		{
+		   "GLFW/src/wl_init.c",
+		   "GLFW/src/wl_monitor.c",
+		   "GLFW/src/wl_window.c",
+		}
 
-			includedirs
+		includedirs
+		{
+			"wayland"
+		}
+
+		-- GLFW wayland has some generated files
+		local waylandProtocols = {
+			"wayland.xml",
+			"viewporter.xml",
+			"xdg-shell.xml",
+			"idle-inhibit-unstable-v1.xml",
+			"pointer-constraints-unstable-v1.xml",
+			"relative-pointer-unstable-v1.xml",
+			"fractional-scale-v1.xml",
+			"xdg-activation-v1.xml",
+			"xdg-decoration-unstable-v1.xml"
+		}
+
+		for _, proto in ipairs(waylandProtocols) do
+			local header = proto:gsub("%.xml$", "-client-protocol.h")
+			local code = proto:gsub("%.xml$", "-client-protocol-code.h")
+			prebuildcommands 
 			{
-				"wayland"
+				"wayland-scanner client-header " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. header,
+				"wayland-scanner private-code " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. code
 			}
-
-			-- GLFW wayland has some generated files
-			local waylandProtocols = {
-				"wayland.xml",
-				"viewporter.xml",
-				"xdg-shell.xml",
-				"idle-inhibit-unstable-v1.xml",
-				"pointer-constraints-unstable-v1.xml",
-				"relative-pointer-unstable-v1.xml",
-				"fractional-scale-v1.xml",
-				"xdg-activation-v1.xml",
-				"xdg-decoration-unstable-v1.xml"
-			}
-
-			for _, proto in ipairs(waylandProtocols) do
-				local header = proto:gsub("%.xml$", "-client-protocol.h")
-				local code = proto:gsub("%.xml$", "-client-protocol-code.h")
-				prebuildcommands 
-				{
-					"wayland-scanner client-header " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. header,
-					"wayland-scanner private-code " .. "GLFW/deps/wayland/" .. proto .. " " .. "wayland/" .. code
-				}
-				files { header, code }
-			end	
-		else -- X11
-            defines { "_GLFW_X11" }
-
-            files
-            {
-                "GLFW/src/x11_init.c",
-                "GLFW/src/x11_monitor.c",
-                "GLFW/src/x11_window.c",
-                "GLFW/src/xkb_unicode.c",
-            }
-        end
+			files { header, code }
+		end	
 
 	filter "system:macosx"
 		staticruntime "on"

@@ -60,16 +60,6 @@ project "Main"
 		libdirs(Dependencies.Vulkan.LibDir)
 		links(Dependencies.Vulkan.LibName)
 		
-		if OBSIDIAN_DISPLAY_MANAGER == "x11" then
-			defines("OB_DISPLAY_MANAGER_X11")
-			links
-			{
-				"Xrandr", "Xi", "GLU", "GL", "GLX", "X11"
-			}
-		elseif OBSIDIAN_DISPLAY_MANAGER == "wayland" then
-			defines("OB_DISPLAY_MANAGER_WAYLAND")
-		end
-
 		links
 		{
 			"dl", "pthread", "stdc++fs"
@@ -102,17 +92,14 @@ project "Main"
 		externalincludedirs(includedirs())
 
 	filter "configurations:Debug"
-		defines "OB_CONFIG_DEBUG"
 		runtime "Debug"
 		symbols "on"
 		
 	filter "configurations:Release"
-		defines "OB_CONFIG_RELEASE"
 		runtime "Release"
 		optimize "on"
 
 	filter "configurations:Dist"
-		defines "OB_CONFIG_DIST"
 		runtime "Release"
 		optimize "Full"
 		linktimeoptimization "on"

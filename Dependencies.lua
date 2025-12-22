@@ -77,6 +77,10 @@ local Dependencies =
 		LibName = "GLFW",
 		IncludeDir = this_directory() .. "/vendor/GLFW/GLFW/include"
 	},
+	glm = 
+	{
+		IncludeDir = this_directory() .. "/vendor/glm/glm"
+	},
 	shaderc = 
 	{
 		LibName = "shaderc",
@@ -131,6 +135,7 @@ end
 -- IncludeDirs
 append_to_table(Dependencies.Obsidian.IncludeDir, this_directory() .. "Obsidian/src")
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.GLFW.IncludeDir)
+append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.glm.IncludeDir)
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.shaderc.IncludeDir)
 
 append_to_table(Dependencies.Obsidian.IncludeDir, Dependencies.Vulkan.IncludeDir)
