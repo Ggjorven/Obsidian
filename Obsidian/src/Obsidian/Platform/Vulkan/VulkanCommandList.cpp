@@ -151,7 +151,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkImageAvailableSemaphore(swapchain.GetCurrentFrame());
-            info.stageMask = (m_WaitStage == VK_PIPELINE_STAGE_2_NONE ? VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT : m_WaitStage);
+            info.stageMask = GetWaitStage();
             info.value = 0ull;
         }
         for (const CommandList* list : waitOn)
@@ -159,7 +159,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = waitInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkTimelineSemaphore();
-            info.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT; // TODO: Make the user tell the wait stage
+            info.stageMask = api_cast<const VulkanCommandList*>(list)->GetWaitStage(); 
             info.value = swapchain.GetPreviousCommandListWaitValue(*api_cast<const VulkanCommandList*>(list));
         }
 
@@ -177,7 +177,7 @@ namespace Obsidian::Internal
             VkSemaphoreSubmitInfo& info = signalInfos.emplace_back();
             info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             info.semaphore = swapchain.GetVkSwapchainPresentableSemaphore(swapchain.GetAcquiredImage());
-            info.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            info.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT; // Note: Before a swapchain can be present this stage must be finished
             info.value = 0ull;
         }
 
@@ -317,8 +317,6 @@ namespace Obsidian::Internal
 
         // Renderpass
         {
-            OB_PROFILE("VulkanCommandList::StartRenderpass::Renderpass");
-
             VulkanRenderpass& renderpass = *api_cast<VulkanRenderpass*>(args.Pass);
 
             Framebuffer* framebuffer = args.Frame;
@@ -331,6 +329,8 @@ namespace Obsidian::Internal
 
             // Make sure the attachments are in the begin state
             {
+				OB_PROFILE("VulkanCommandList::StartRenderpass::TransitionImages");
+
                 if (framebuffer->GetSpecification().ColourAttachment.IsValid() && (renderpass.GetSpecification().ColourImageStartState != ResourceState::Unknown))
                 {
                     const FramebufferAttachment& attachment = framebuffer->GetSpecification().ColourAttachment;
@@ -341,6 +341,7 @@ namespace Obsidian::Internal
                     const FramebufferAttachment& attachment = framebuffer->GetSpecification().DepthAttachment;
                     RequireState(*attachment.ImagePtr, attachment.Subresources, renderpass.GetSpecification().DepthImageStartState);
                 }
+
                 CommitBarriers();
             }
 
@@ -767,6 +768,7 @@ namespace Obsidian::Internal
     void VulkanCommandList::DrawIndexed(const DrawArguments& args) const
     {
         OB_PROFILE("VulkanCommandList::DrawIndexed()");
+		// TODO: WaitStage COLOUR_ATTACHMENT?
         vkCmdDrawIndexed(m_CommandBuffer, args.VertexCount, args.InstanceCount, args.StartIndexLocation, args.StartVertexLocation, args.StartInstanceLocation);
     }
 
@@ -793,8 +795,18 @@ namespace Obsidian::Internal
             vkCmdPushConstants(m_CommandBuffer, vkPipeline.GetVkPipelineLayout(), vkPipeline.GetPushConstantsStage(), static_cast<uint32_t>(dstOffset), static_cast<uint32_t>(size), static_cast<const uint8_t*>(memory) + srcOffset);
         }
     }
-
+	
+	////////////////////////////////////////////////////////////////////////////////////
+    // Getters
     ////////////////////////////////////////////////////////////////////////////////////
+	VkPipelineStageFlags2 VulkanCommandList::GetWaitStage() const 
+	{
+		if (m_WaitStage == VK_PIPELINE_STAGE_2_NONE)
+			return VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT; // Note: This seems like a good default, but might need to change
+		return m_WaitStage;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
     // Private methods
     ////////////////////////////////////////////////////////////////////////////////////
     void VulkanCommandList::SetWaitStage(VkPipelineStageFlags2 waitStage)
