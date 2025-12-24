@@ -328,8 +328,15 @@ public:
 						vkScissor.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height  };
 						vkCmdSetScissor(m_CommandBuffers0[m_CurrentFrame], 0, 1, &vkScissor);
 
-						// TODO: Do something
+						vkCmdBindPipeline(m_CommandBuffers0[m_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
+						VkBuffer vertexBuffers[] = {m_VertexBuffer};
+						VkDeviceSize offsets[] = {0};
+						vkCmdBindVertexBuffers(m_CommandBuffers0[m_CurrentFrame], 0, 1, vertexBuffers, offsets);
+
+						vkCmdBindIndexBuffer(m_CommandBuffers0[m_CurrentFrame], m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+						vkCmdDrawIndexed(m_CommandBuffers0[m_CurrentFrame], static_cast<uint32_t>(s_Indices.size()), 1, 0, 0, 0);
 						VkSubpassEndInfo endInfo = {};
 						endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
 
@@ -417,7 +424,15 @@ public:
 						vkScissor.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height  };
 						vkCmdSetScissor(m_CommandBuffers1[m_CurrentFrame], 0, 1, &vkScissor);
 
-						// TODO: Do something
+						vkCmdBindPipeline(m_CommandBuffers1[m_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+
+						VkBuffer vertexBuffers[] = {m_VertexBuffer};
+						VkDeviceSize offsets[] = {0};
+						vkCmdBindVertexBuffers(m_CommandBuffers1[m_CurrentFrame], 0, 1, vertexBuffers, offsets);
+
+						vkCmdBindIndexBuffer(m_CommandBuffers1[m_CurrentFrame], m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+						vkCmdDrawIndexed(m_CommandBuffers1[m_CurrentFrame], static_cast<uint32_t>(s_Indices.size()), 1, 0, 0, 0);
 
 						VkSubpassEndInfo endInfo = {};
 						endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
