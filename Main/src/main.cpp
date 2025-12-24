@@ -38,6 +38,15 @@ inline static constexpr const auto s_ValidationLayers = std::to_array<const char
     "VK_LAYER_KHRONOS_synchronization2"
 });
 
+inline static constexpr const bool TrueVal  = true;
+
+inline constexpr static auto ValidationSettings = std::to_array<VkLayerSettingEXT>({
+	{ "<EMPTY ELEMENT>", "<EMPTY ELEMENT>", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+	// { "VK_LAYER_KHRONOS_validation", "gpu_validation", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+	// { "VK_LAYER_KHRONOS_validation", "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal },
+	// { "VK_LAYER_KHRONOS_validation", "validate_best_practices", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &TrueVal }
+}); 
+
 inline static constexpr const auto s_DeviceExtensions = std::to_array<const char*>({
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
@@ -45,9 +54,7 @@ inline static constexpr const auto s_DeviceExtensions = std::to_array<const char
 	"VK_KHR_portability_subset",
 	#endif
 
-
-	"VK_KHR_synchronization2",
-	"VK_KHR_copy_commands2"
+	"VK_KHR_synchronization2"
 });
 
 // External vulkan functions
@@ -545,7 +552,7 @@ private:
 		glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         m_Window = glfwCreateWindow(1280, 720, "Minimal queuePresent error", nullptr, nullptr);
         glfwSetWindowUserPointer(m_Window, this);
@@ -598,8 +605,8 @@ private:
 
         if constexpr (s_EnableValidationLayers) 
 		{
-			// TODO: Push all extensions
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
         }
 
         return extensions;
@@ -877,6 +884,11 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
+		VkLayerSettingsCreateInfoEXT layerSettings = {};	
+		layerSettings.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+		layerSettings.settingCount = static_cast<uint32_t>(ValidationSettings.size());
+		layerSettings.pSettings = ValidationSettings.data();
+
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
 		if constexpr (s_EnableValidationLayers) 
 		{
@@ -884,7 +896,9 @@ private:
 			createInfo.ppEnabledLayerNames = s_ValidationLayers.data();
 
 			PopulateDebugMessengerCreateInfo(debugCreateInfo);
-			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+
+			layerSettings.pNext = &debugCreateInfo;
+			createInfo.pNext = &layerSettings;
         } 
 		else 
 		{
