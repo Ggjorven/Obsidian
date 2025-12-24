@@ -227,7 +227,9 @@ public:
         vkDestroyBuffer(m_LogicalDevice, m_VertexBuffer, nullptr);
         vkFreeMemory(m_LogicalDevice, m_VertexBufferMemory, nullptr);
 
-		for (auto renderFinishedSemaphore : renderFinishedSemaphores)
+		vkDestroySemaphore(m_LogicalDevice, m_TimelineSemaphore, nullptr);
+
+		for (auto renderFinishedSemaphore : m_RenderFinishedSemaphores)
 			vkDestroySemaphore(m_LogicalDevice, renderFinishedSemaphore, nullptr);
 
         for (size_t i = 0; i < s_MaxFramesInFlight; i++) 
@@ -258,7 +260,238 @@ public:
 		{
             glfwPollEvents();
 
-			// TODO: Draw frame
+			// Draw frame
+			{
+				vkWaitForFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+
+				VkResult result = vkAcquireNextImageKHR(m_LogicalDevice, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_AcquiredImage);
+
+				// if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+				// 	recreateSwapChain();
+				// 	return;
+				// } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+				// 	throw std::runtime_error("failed to acquire swap chain image!");
+				// }
+
+				vkResetFences(m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]);
+
+				// TODO: Maybe reset command pool to mimic Obsidian
+				vkResetCommandBuffer(m_CommandBuffers0[m_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+				vkResetCommandBuffer(m_CommandBuffers1[m_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+				
+				// commandBuffer 0 
+				{
+					{
+						VkCommandBufferBeginInfo beginInfo = {};
+						beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+						if (vkBeginCommandBuffer(m_CommandBuffers0[m_CurrentFrame], &beginInfo) != VK_SUCCESS)
+							throw std::runtime_error("Failed to begin command buffer 0!");
+
+						VkRenderPassBeginInfo renderpassInfo = {};
+						renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+						renderpassInfo.renderPass = m_Renderpass0;
+						renderpassInfo.framebuffer = m_Framebuffers0[m_CurrentFrame];
+						renderpassInfo.renderArea.offset = { 0, 0 };
+						renderpassInfo.renderArea.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height };
+
+						// Clear values
+						VkClearValue colorClear = VkClearValue({ 0.0f, 0.0f, 0.0f, 1.0f }); 
+
+						renderpassInfo.clearValueCount = 1;
+						renderpassInfo.pClearValues = &colorClear;
+
+						VkSubpassBeginInfo subpassInfo = {};
+						subpassInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO;
+						subpassInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
+
+						vkCmdBeginRenderPass2(m_CommandBuffers0[m_CurrentFrame], &renderpassInfo, &subpassInfo);
+
+						VkViewport vkViewport = {};
+						vkViewport.x = 0.0f;
+						vkViewport.y = 0.0f;
+						vkViewport.width = ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width;
+						vkViewport.height = ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height;
+						vkViewport.minDepth = 0.0f;
+						vkViewport.maxDepth = 0.0f;
+						vkCmdSetViewport(m_CommandBuffers0[m_CurrentFrame], 0, 1, &vkViewport);
+
+						VkRect2D vkScissor = {};
+						vkScissor.offset = { 0, 0 };
+						vkScissor.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height  };
+						vkCmdSetScissor(m_CommandBuffers0[m_CurrentFrame], 0, 1, &vkScissor);
+
+						// TODO: Do something
+
+						VkSubpassEndInfo endInfo = {};
+						endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
+
+						vkCmdEndRenderPass2(m_CommandBuffers0[m_CurrentFrame], &endInfo);
+						
+						if (vkEndCommandBuffer(m_CommandBuffers0[m_CurrentFrame]) != VK_SUCCESS)
+							throw std::runtime_error("Failed to end command buffer 0!");
+					}
+					
+					{
+						// Wait for swapchain image
+						VkSemaphoreSubmitInfo imageInfo = {};
+						imageInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+						imageInfo.semaphore = m_ImageAvailableSemaphores[m_CurrentFrame];
+						imageInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+						imageInfo.value = 0ull;
+
+						// Signal timeline 
+						VkSemaphoreSubmitInfo timelineInfo = {};
+						timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+						timelineInfo.semaphore = m_TimelineSemaphore;
+						timelineInfo.value = ++m_CurrentTimelineValue;
+
+						VkCommandBufferSubmitInfo commandInfo = {};
+						commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+						commandInfo.commandBuffer = m_CommandBuffers0[m_CurrentFrame];
+
+						// Submit info
+						VkSubmitInfo2 submitInfo = {};
+						submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+
+						submitInfo.waitSemaphoreInfoCount = 1u;
+						submitInfo.pWaitSemaphoreInfos = &imageInfo;
+
+						submitInfo.commandBufferInfoCount = 1u;
+						submitInfo.pCommandBufferInfos = &commandInfo;
+
+						submitInfo.signalSemaphoreInfoCount = 1;
+						submitInfo.pSignalSemaphoreInfos = &timelineInfo;
+
+						if (vkQueueSubmit2(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+							throw std::runtime_error("Failed to submit command buffer 0.");
+					}
+				}
+
+				// commandBuffer 1
+				{
+					{
+						VkCommandBufferBeginInfo beginInfo = {};
+						beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+						if (vkBeginCommandBuffer(m_CommandBuffers1[m_CurrentFrame], &beginInfo) != VK_SUCCESS)
+							throw std::runtime_error("Failed to begin command buffer 1!");
+
+						VkRenderPassBeginInfo renderpassInfo = {};
+						renderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+						renderpassInfo.renderPass = m_Renderpass1;
+						renderpassInfo.framebuffer = m_Framebuffers1[m_CurrentFrame];
+						renderpassInfo.renderArea.offset = { 0, 0 };
+						renderpassInfo.renderArea.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height };
+
+						// Clear values
+						VkClearValue colorClear = VkClearValue({ 0.0f, 0.0f, 0.0f, 1.0f }); 
+
+						renderpassInfo.clearValueCount = 1;
+						renderpassInfo.pClearValues = &colorClear;
+
+						VkSubpassBeginInfo subpassInfo = {};
+						subpassInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO;
+						subpassInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
+
+						vkCmdBeginRenderPass2(m_CommandBuffers1[m_CurrentFrame], &renderpassInfo, &subpassInfo);
+
+						VkViewport vkViewport = {};
+						vkViewport.x = 0.0f;
+						vkViewport.y = 0.0f;
+						vkViewport.width = ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width;
+						vkViewport.height = ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height;
+						vkViewport.minDepth = 0.0f;
+						vkViewport.maxDepth = 0.0f;
+						vkCmdSetViewport(m_CommandBuffers1[m_CurrentFrame], 0, 1, &vkViewport);
+
+						VkRect2D vkScissor = {};
+						vkScissor.offset = { 0, 0 };
+						vkScissor.extent = { ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).width, ChooseSwapExtent(QuerySwapchainSupport(m_PhysicalDevice).Capabilities).height  };
+						vkCmdSetScissor(m_CommandBuffers1[m_CurrentFrame], 0, 1, &vkScissor);
+
+						// TODO: Do something
+
+						VkSubpassEndInfo endInfo = {};
+						endInfo.sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
+
+						vkCmdEndRenderPass2(m_CommandBuffers1[m_CurrentFrame], &endInfo);
+						
+						if (vkEndCommandBuffer(m_CommandBuffers1[m_CurrentFrame]) != VK_SUCCESS)
+							throw std::runtime_error("Failed to end command buffer 1!");
+					}
+					
+					{
+						// Wait for commandBuffer 0
+						VkSemaphoreSubmitInfo waitInfo = {};
+						waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+						waitInfo.semaphore = m_TimelineSemaphore;
+						waitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+						waitInfo.value = m_CurrentTimelineValue;
+
+						// Signal timeline and renderFinishedSemaphore
+						std::array<VkSemaphoreSubmitInfo, 2> signalInfos = {};
+
+						VkSemaphoreSubmitInfo& timelineInfo = signalInfos[0];
+						timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+						timelineInfo.semaphore = m_TimelineSemaphore;
+						timelineInfo.value = ++m_CurrentTimelineValue;
+
+						VkSemaphoreSubmitInfo& info = signalInfos[1];
+						info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+						info.semaphore = m_RenderFinishedSemaphores[m_AcquiredImage];
+						info.stageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT; // Note: Before a swapchain can be present this stage must be finished
+						info.value = 0ull;
+
+						VkCommandBufferSubmitInfo commandInfo = {};
+						commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+						commandInfo.commandBuffer = m_CommandBuffers1[m_CurrentFrame];
+
+						// Submit info
+						VkSubmitInfo2 submitInfo = {};
+						submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+
+						submitInfo.waitSemaphoreInfoCount = 1u;
+						submitInfo.pWaitSemaphoreInfos = &waitInfo;
+
+						submitInfo.commandBufferInfoCount = 1u;
+						submitInfo.pCommandBufferInfos = &commandInfo;
+
+						submitInfo.signalSemaphoreInfoCount = static_cast<uint32_t>(signalInfos.size());
+						submitInfo.pSignalSemaphoreInfos = signalInfos.data();
+
+						if (vkQueueSubmit2(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS)
+							throw std::runtime_error("Failed to submit command buffer 0.");
+					}
+
+				}
+
+				VkPresentInfoKHR presentInfo = {};
+				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+				presentInfo.waitSemaphoreCount = 1;
+				presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphores[m_AcquiredImage];
+
+				VkSwapchainKHR swapChains[] = {m_Swapchain};
+				presentInfo.swapchainCount = 1;
+				presentInfo.pSwapchains = swapChains;
+
+				presentInfo.pImageIndices = &m_AcquiredImage;
+
+				result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+
+				// if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+				// 	framebufferResized = false;
+				// 	recreateSwapChain();
+				// } else if (result != VK_SUCCESS) {
+				// 	throw std::runtime_error("failed to present swap chain image!");
+				// }
+				
+				if (result != VK_SUCCESS)
+					throw std::runtime_error("QueuePresent failed!");
+
+				m_CurrentFrame = (m_CurrentFrame + 1) % s_MaxFramesInFlight;		
+			}
         }
 	}
 
@@ -298,7 +531,7 @@ private:
 	VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
 
     std::array<VkSemaphore, static_cast<size_t>(s_MaxFramesInFlight)> m_ImageAvailableSemaphores = { };
-    std::vector<VkSemaphore> renderFinishedSemaphores = { };
+    std::vector<VkSemaphore> m_RenderFinishedSemaphores = { };
 	VkSemaphore m_TimelineSemaphore = VK_NULL_HANDLE;
 	uint64_t m_CurrentTimelineValue = 0;
     std::array<VkFence, static_cast<size_t>(s_MaxFramesInFlight)> m_InFlightFences = { };
@@ -312,6 +545,7 @@ private:
 		glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         m_Window = glfwCreateWindow(1280, 720, "Minimal queuePresent error", nullptr, nullptr);
         glfwSetWindowUserPointer(m_Window, this);
@@ -839,7 +1073,7 @@ private:
 
 	void CreateSyncObjects()
 	{
-        renderFinishedSemaphores.resize(m_Images.size());
+        m_RenderFinishedSemaphores.resize(m_Images.size());
 
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -854,6 +1088,13 @@ private:
                 vkCreateFence(m_LogicalDevice, &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
+
+		m_RenderFinishedSemaphores.resize(m_Images.size());
+		for (size_t i = 0; i < m_RenderFinishedSemaphores.size(); i++)
+		{
+			if (vkCreateSemaphore(m_LogicalDevice, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS)
+				throw std::runtime_error("Failed to create synchronization objects for a frame!");
+		}
 
 		VkSemaphoreTypeCreateInfo timelineInfo = {};
 		timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
